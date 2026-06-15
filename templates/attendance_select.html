@@ -1,0 +1,36 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Select Attendance Role{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-dark text-white p-4">
+                    <h2 class="mb-0">Attendance Log Viewer</h2>
+                </div>
+                <div class="card-body p-5">
+                    <p class="text-muted mb-5 lead">Which category of attendance logs would you like to view?</p>
+                    
+                    <div class="d-grid gap-4 mx-auto" style="max-width: 400px;">
+                        <!-- Employee Button routes to the detailed date table -->
+                        <a href="{{ url_for('admin.attendance_employee') }}" class="btn btn-primary btn-lg p-3 fs-4 shadow-sm">
+                            <i class="fa fa-user-tie me-2"></i> Employee Logs
+                        </a>
+                        
+                        <!-- Visitor & Others Buttons (Placeholder logic for later) -->
+                        <button type="button" class="btn btn-warning btn-lg p-3 fs-4 shadow-sm" onclick="alert('Visitor Logs coming soon!')">
+                            <i class="fa fa-id-badge me-2"></i> Visitor Logs
+                        </button>
+                        
+                        <button type="button" class="btn btn-secondary btn-lg p-3 fs-4 shadow-sm" onclick="alert('Other Logs coming soon!')">
+                            <i class="fa fa-users me-2"></i> Other Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

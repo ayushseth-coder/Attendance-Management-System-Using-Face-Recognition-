@@ -1,2 +1,10 @@
 .env
 visit_env/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+chroma_db/
+employee_faces/
+static/shots/
+.DS_Store

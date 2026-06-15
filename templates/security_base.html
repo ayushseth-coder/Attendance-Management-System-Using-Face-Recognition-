@@ -32,6 +32,7 @@
      
     <nav class="col-md-2 col-sm-3 sidebar nav flex-column nav-pills" id="sidebar-tab" role="tablist">
       <a class="nav-link" id="tab-home" href="{{url_for('security.home')}}">Dashboard</a>
+      <a class="nav-link" id="tab-face" href="{{url_for('face_auth.select_role')}}"><i class="fa fa-user-circle"></i> Face Login</a>
       <a class="nav-link" id="tab-camera" href="{{url_for('otp_gen.send_sms')}}">Visitor_Pass</a>
       <a class="nav-link" id="tab-active" href="{{url_for('security.visitor')}}"> Visitors</a>
       <!-- <a class="nav-link" id="tab-overview" href="{{url_for('security.overview')}}">Visitor Overview</a> -->

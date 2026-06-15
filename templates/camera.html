@@ -42,8 +42,7 @@
 
 
 <script>
-
-  let timeLeft = 10; // seconds
+  let timeLeft = 5; // seconds
   const timerEl = document.getElementById('timer');
 
   const countdown = setInterval(() => {
@@ -70,10 +69,10 @@ btn.addEventListener('click', function () {
 
 
 <script>
-// After 11 seconds (10s capture + 1s buffer), redirect to show captured page
+// After 6 seconds (5s capture + 1s buffer), redirect to show captured page
 setTimeout(function() {
     window.location.href = "{{ url_for('image_processing.show_captured') }}";
-}, 11000);
+}, 6000);
 </script>
 </body>
 </html>

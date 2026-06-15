@@ -26,6 +26,7 @@
                         <th>Purpose</th>
                         <th>Approved</th>
                         <th>Entry Details</th>
+                        <th>Photo</th>
                         <th>Decision</th>
                     </tr>
                 </thead>
@@ -42,19 +43,24 @@
                         <td>{{ rvis['Approvedby'] }}</td>
                         <td>{{ rvis['Date'] }}</td>
                         <td>
-                         
-                                <a href="{{ url_for('visitors.acceptvis', uid=rvis['UID']) }}">
-                                    <button type="submit" class="btn btn-success">
-                               
-                              Accept
-                            </button></a>
-                           
-                            <form action="{{ url_for('visitors.rejectvis', uid=rvis['UID']) }}" method="POST">
-                                <button type="submit" class="btn btn-danger">Reject</button>
-                              </form>
-                          
-                              
-                              
+                            {% if rvis.get('shot_filename') %}
+                                <img src="{{ url_for('static', filename='shots/' + rvis['shot_filename']) }}" width="80" height="auto" class="img-thumbnail">
+                            {% else %}
+                                <span class="text-muted">No Photo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-2">
+                                <a href="{{ url_for('visitors.accept_regular', uid=rvis['UID']) }}" class="btn btn-primary btn-sm">
+                                    Approve as Regular
+                                </a>
+                                <a href="{{ url_for('visitors.acceptvis', uid=rvis['UID']) }}" class="btn btn-success btn-sm mt-1 mb-1">
+                                    Approve 1-Day Pass
+                                </a>
+                                <form action="{{ url_for('visitors.rejectvis', uid=rvis['UID']) }}" method="POST">
+                                    <button type="submit" class="btn btn-danger btn-sm w-100">Reject</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                       </tbody>

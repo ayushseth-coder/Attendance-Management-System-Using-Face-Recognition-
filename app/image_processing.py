@@ -16,61 +16,48 @@ def record(out):
    
 image_processing = Blueprint('image_processing', __name__)
 
-global pan_data,frame
+global pan_data, frame, captured_data, captured_image
 pan_data=None
 frame=None
 capture = 0
-camera = get_camera()
-# def gen_frame():
-     
-#     while True:
-#         success, frame = camera.read()
-#         if not success:
-#             break
-#         else:
-#             ret, buffer = cv2.imencode('.jpg', frame)
-#             frame = buffer.tobytes()
-
-#             yield (b'--frame\r\n'
-#                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
+captured_data = None
+captured_image = None
 
 def gen_frames():
     global captured_image, captured_data
+    camera = get_camera()
     captured_data = None
     captured_image = None
     start_time = time.time()
-    countdown_duration = 10.0  # seconds
+    countdown_duration = 5.0  # reduced to 5 seconds
     
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
+    try:
+        while True:
+            success, frame = camera.read()
+            if not success:
+                time.sleep(0.1)
+                continue
 
-        elapsed_time = time.time() - start_time
-        # remaining = max(0, int(countdown_duration - elapsed_time))
+            elapsed_time = time.time() - start_time
 
-        # # Show countdown text on the video
-        # cv2.putText(frame, f"Show your card - {remaining}s", (30, 40),
-        #             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            # # After countdown, detect card and capture
+            if elapsed_time >= countdown_duration and captured_image is None:
+                now = datetime.datetime.now()
+                os.makedirs('static/shots', exist_ok=True)  # save to static to render in HTML
+                filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S')}.png")
+                cv2.imwrite(filename, frame)
+                captured_image = filename
+                print(f"[INFO] Image captured and saved to {filename}")
+                break
 
-        # # After countdown, detect card and capture
-        if elapsed_time >= countdown_duration and captured_image is None:
-            now = datetime.datetime.now()
-            filename = os.path.join('shots', f"shot_{now.strftime('%Y%m%d_%H%M%S')}.png")
-            cv2.imwrite(filename, frame)
-            captured_image = filename
-            captured_data = extract_card_details(filename)
-            release_camera()
-            print(f"[INFO] Card captured and saved to {filename}")
-            break
+            # Encode the current frame for streaming
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
 
-        # Encode the current frame for streaming
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    finally:
+        release_camera()
 
 
 @image_processing.route('/video_feed')
@@ -80,13 +67,17 @@ def video_feed():
 
 @image_processing.route('/show_captured')
 def show_captured():
+    global captured_data, captured_image
     
-   
-    # global captured_image, captured_data
-    if captured_data:
-        approvedby = ""  
-        return render_template('extract.html', data=captured_data, approvedby=approvedby)
-    else:
-        return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    if captured_image:
+        print("[INFO] Processing captured image for OCR...")
+        captured_data = extract_card_details(captured_image)
+    
+    if captured_data is None:
+        captured_data = {}
+
+    approvedby = ""  
+    shot_filename = os.path.basename(captured_image) if captured_image else None
+    return render_template('extract.html', data=captured_data, approvedby=approvedby, shot_filename=shot_filename)
    
  

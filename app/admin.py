@@ -10,23 +10,35 @@ from flask import json
 admin = Blueprint('admin', __name__)
 bcrypt = Bcrypt()
 
-visitobj = list(visitorlogtable.find())
-activeobj = list(activevisitorstable.find())
+# OLD GLOBAL CODE - Commented out to make Dashboard dynamic
+# visitobj = list(visitorlogtable.find())
+# activeobj = list(activevisitorstable.find())
+# rejectobj = list(rejectedvistable.find())
+# adminobj = list(adminlog.find())
+# secobj = list(securitylog.find())
+# reqobj = list(reqvistable.find())
+# pending=len(reqobj)
+# reject=len(rejectobj)
+# countvis = len(visitobj)
+# active = len(activeobj)
+# total=reject+countvis
 
-rejectobj = list(rejectedvistable.find())
-adminobj = list(adminlog.find())
-secobj = list(securitylog.find())
-reqobj = list(reqvistable.find())
-pending=len(reqobj)
-reject=len(rejectobj)
-countvis = len(visitobj)
-active = len(activeobj)
+@admin.context_processor
+def inject_pending_count():
+    # Makes pending_count available to all admin templates for the notification badge
+    reqobj = list(reqvistable.find())
+    return dict(pending_count=len(reqobj))
 
-total=reject+countvis
 
 @admin.route('/admindash')
 
 def admindash():
+    # Dynamically compute stats on every page load
+    pending = len(list(reqvistable.find()))
+    reject = len(list(rejectedvistable.find()))
+    countvis = len(list(visitorlogtable.find()))
+    active = len(list(activevisitorstable.find()))
+    total = reject + countvis
 
     global months,accept_data,total_data
     all_visitors = list(visitors_status.find({}))  
@@ -154,6 +166,13 @@ def visitor_over():
 
 @admin.route("/admin_h",methods=['POst','GET'])
 def admin_h():
+    # Dynamically compute stats on every page load
+    pending = len(list(reqvistable.find()))
+    reject = len(list(rejectedvistable.find()))
+    countvis = len(list(visitorlogtable.find()))
+    active = len(list(activevisitorstable.find()))
+    total = reject + countvis
+
     global months,accept_data,total_data
     all_visitors = list(visitors_status.find({}))  
 
@@ -181,3 +200,183 @@ def admin_h():
     total_data = [monthly_stats[m]["total"] for m in months]
     return render_template ("admin_h.html",  pending=pending ,total=total,countvis=countvis, active=active,rejectobj=reject,
                            months=months, accept_data=accept_data, total_data=total_data)  
+
+@admin.route('/enroll_employees', methods=['GET', 'POST'])
+def enroll_employees():
+    if request.method == 'GET':
+        return render_template('enroll_employee.html')
+    
+    if request.method == 'POST':
+        import os
+        from werkzeug.utils import secure_filename
+        from deepface import DeepFace
+        from models.vector_db import employee_collection
+        
+        if 'employee_images' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(request.url)
+            
+        files = request.files.getlist('employee_images')
+        if not files or files[0].filename == '':
+            flash('No selected file', 'danger')
+            return redirect(request.url)
+            
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
+        os.makedirs(faces_dir, exist_ok=True)
+        
+        success_count = 0
+        error_count = 0
+        
+        for file in files:
+            if file and file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(faces_dir, filename)
+                file.save(filepath)
+                
+                # Extract Name from filename (e.g. "Anshuman.jpg" -> "Anshuman")
+                employee_name = os.path.splitext(filename)[0].capitalize()
+                
+                try:
+                    # Run AI Extraction
+                    representations = DeepFace.represent(img_path=filepath, model_name="Facenet", enforce_detection=False)
+                    
+                    if representations and len(representations) > 0:
+                        embedding = representations[0]["embedding"]
+                        
+                        # Save to Vector DB
+                        employee_collection.upsert(
+                            ids=[employee_name],
+                            embeddings=[embedding],
+                            metadatas=[{"path": filepath}]
+                        )
+                        success_count += 1
+                    else:
+                        error_count += 1
+                except Exception as e:
+                    print(f"[ERROR] Failed to process {filename}: {e}")
+                    error_count += 1
+                    
+        if success_count > 0:
+            flash(f'Successfully enrolled {success_count} employee(s) into the Biometric Database!', 'success')
+        if error_count > 0:
+            flash(f'Failed to process {error_count} file(s). Ensure they contain clear faces.', 'danger')
+            
+        return redirect(url_for('admin.enroll_employees'))
+
+@admin.route('/manage_employees', methods=['GET'])
+def manage_employees():
+    from models.vector_db import employee_collection
+    
+    try:
+        results = employee_collection.get()
+        employee_names = results.get('ids', [])
+        total_count = len(employee_names)
+    except Exception as e:
+        print(f"[ERROR] Could not fetch employees: {e}")
+        employee_names = []
+        total_count = 0
+        flash("Failed to load employees from database.", "danger")
+        
+    return render_template('manage_employees.html', employee_names=employee_names, total_count=total_count)
+
+@admin.route('/delete_employee/<name>', methods=['POST'])
+def delete_employee(name):
+    from models.vector_db import employee_collection
+    
+    try:
+        # Delete from ChromaDB
+        employee_collection.delete(ids=[name])
+        flash(f"Successfully deleted records for {name}.", "success")
+        
+        # Cleanup: Delete ALL local photos matching the employee name (ignoring case and extensions)
+        import os
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
+        if os.path.exists(faces_dir):
+            for filename in os.listdir(faces_dir):
+                name_without_ext = os.path.splitext(filename)[0]
+                # If the name matches (ignoring capital letters), delete it!
+                if name_without_ext.lower() == name.lower():
+                    try:
+                        os.remove(os.path.join(faces_dir, filename))
+                    except Exception:
+                        pass
+                
+    except Exception as e:
+        flash(f"Error deleting {name}: {e}", "danger")
+        
+    return redirect(url_for('admin.manage_employees'))
+
+@admin.route('/delete_all_employees', methods=['POST'])
+def delete_all_employees():
+    from models.vector_db import employee_collection
+    import os
+    
+    try:
+        # 1. Fetch all IDs
+        results = employee_collection.get()
+        all_ids = results.get('ids', [])
+        
+        # 2. Wipe ChromaDB
+        if all_ids:
+            employee_collection.delete(ids=all_ids)
+            
+        # 3. Nuclear Scrub of employee_faces folder (only deleting images, protecting DeepFace .pkl files)
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
+        deleted_files_count = 0
+        if os.path.exists(faces_dir):
+            for filename in os.listdir(faces_dir):
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    file_path = os.path.join(faces_dir, filename)
+                    try:
+                        os.remove(file_path)
+                        deleted_files_count += 1
+                    except Exception:
+                        pass
+                        
+        flash(f"SYSTEM WIPED: Successfully deleted {len(all_ids)} vectors from ChromaDB and {deleted_files_count} physical photos from the server.", "success")
+        
+    except Exception as e:
+        flash(f"Error wiping database: {e}", "danger")
+        
+    return redirect(url_for('admin.manage_employees'))
+
+@admin.route('/attendance/select', methods=['GET'])
+def attendance_select():
+    return render_template('attendance_select.html')
+
+@admin.route('/attendance/employee', methods=['GET'])
+def attendance_employee():
+    from models.database import attendance_log
+    import datetime
+    
+    # Get date from query params, default to today
+    selected_date = request.args.get('date')
+    if not selected_date:
+        selected_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+    # Query MongoDB for records where Date starts with the selected date string
+    query = {"Date": {"$regex": f"^{selected_date}"}}
+    logs = list(attendance_log.find(query).sort("Date", -1)) # Sort newest first
+    
+    return render_template('attendance_employee.html', logs=logs, selected_date=selected_date)
+
+@admin.route('/employee_image/<name>')
+def employee_image(name):
+    import os
+    from flask import send_from_directory, abort
+    
+    faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
+    
+    # Search for the exact file case-insensitively
+    if os.path.exists(faces_dir):
+        for filename in os.listdir(faces_dir):
+            name_without_ext = os.path.splitext(filename)[0]
+            if name_without_ext.lower() == name.lower():
+                return send_from_directory(faces_dir, filename)
+                
+    # If physical image was deleted, serve a clean SVG placeholder instead of a broken image
+    svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>'''
+    from flask import Response
+    return Response(svg_data, mimetype='image/svg+xml')

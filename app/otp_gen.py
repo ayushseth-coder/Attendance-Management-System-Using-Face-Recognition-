@@ -152,17 +152,18 @@ def send_sms():
         session['otp'] = otp
         session['phone'] = phone
        
-        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        message = client.messages.create(
-        from_=TWILIO_PHONE_NUMBER,
-        body=f"Your OTP is {otp}",
-        to=phone
-        )
-
-
-
-
-        return render_template('sms_verify.html')
+        # DEVELOPMENT MODE BYPASS
+        # client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        # message = client.messages.create(
+        # from_=TWILIO_PHONE_NUMBER,
+        # body=f"Your OTP is {otp}",
+        # to=phone
+        # )
+        
+        print(f"DEV MODE: Bypassing SMS for phone {phone}. OTP was {otp}")
+        return render_template('camera.html')
+        
+        # return render_template('sms_verify.html')
     return render_template('sms.html') 
 
     

@@ -33,7 +33,15 @@
 
       <a class="nav-link" id="tab-active"href="{{url_for('admin.filter_role')}}">User Overview</a>
       <a class="nav-link" id="tab-overview" href="{{url_for('admin.visitor_over')}}">Visitor Overview</a>
-      <a class="nav-link" id="tab-camera" href="{{url_for('admin.notification')}}">Notification</a>
+      <a class="nav-link" id="tab-enroll" href="{{url_for('admin.enroll_employees')}}">Enroll Employees</a>
+      <a class="nav-link" id="tab-manage" href="{{url_for('admin.manage_employees')}}">Manage Employees</a>
+      <a class="nav-link" id="tab-attendance" href="{{url_for('admin.attendance_select')}}">Attendance Logs</a>
+      <a class="nav-link d-flex justify-content-between align-items-center" id="tab-camera" href="{{url_for('admin.notification')}}">
+        Notification
+        {% if pending_count and pending_count > 0 %}
+          <span class="badge bg-danger rounded-pill">{{ pending_count }}</span>
+        {% endif %}
+      </a>
       <a class="nav-link" id="tab-logout" href="{{url_for('routes.logout')}}">Logout</a>
     </nav>
 

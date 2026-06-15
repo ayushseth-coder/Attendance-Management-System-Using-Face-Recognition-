@@ -36,5 +36,8 @@ def create_app():
     app.register_blueprint(admin)
     app.register_blueprint(security)
     app.register_blueprint(ocr)
+    
+    from app.face_auth import face_auth
+    app.register_blueprint(face_auth)
 
     return app
