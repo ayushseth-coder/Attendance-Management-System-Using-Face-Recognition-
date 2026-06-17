@@ -7,4 +7,8 @@ __pycache__/
 chroma_db/
 employee_faces/
 static/shots/
+visitor_faces/
+other_faces/
+external_faces/
+test_chroma.py
 .DS_Store
