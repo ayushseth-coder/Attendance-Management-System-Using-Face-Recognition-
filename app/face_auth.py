@@ -15,10 +15,13 @@ face_match_data = None
 # --- PERFORMANCE OPTIMIZATION: PRE-LOAD AI MODEL ---
 try:
     from deepface import DeepFace
-    print("[INFO] Pre-loading Facenet model weights into RAM...")
-    DeepFace.build_model("Facenet")
+    # print("[INFO] Pre-loading Facenet model weights into RAM...")
+    # DeepFace.build_model("Facenet")
+    print("[INFO] Pre-loading ArcFace model weights into RAM...")
+    DeepFace.build_model("ArcFace")
     deepface_available = True
-    print("[SUCCESS] Facenet model ready.")
+    # print("[SUCCESS] Facenet model ready.")
+    print("[SUCCESS] ArcFace model ready.")
 except Exception as e:
     deepface_available = False
     print(f"[WARNING] DeepFace import failed: {e}. Face auth will fail.")
@@ -79,9 +82,24 @@ def face_result():
     global face_match_data
     import app.image_processing as imp
     from models.vector_db import employee_collection
+    import os
+    import datetime
+    import cv2
+    from app.camera_manager import get_camera
 
     match_found = False
     
+    if not imp.captured_image:
+        camera = get_camera()
+        success, frame = camera.read()
+        if success:
+            now = datetime.datetime.now()
+            os.makedirs('static/shots', exist_ok=True)
+            filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S')}.png")
+            cv2.imwrite(filename, frame)
+            imp.captured_image = filename
+            print(f"[INFO] Fallback capture succeeded for Employee: {filename}")
+            
     if imp.captured_image and deepface_available:
         print(f"[INFO] Processing {imp.captured_image} for Face Match using Facenet...")
         try:
@@ -98,7 +116,8 @@ def face_result():
 
             # 1. Extract vector of captured face using the lightweight Facenet model
             # SECURITY UPDATE: enforce_detection=True ensures that if an arm covers the face, it rejects the photo!
-            representations = DeepFace.represent(img_path=imp.captured_image, model_name="Facenet", enforce_detection=True)
+            # representations = DeepFace.represent(img_path=imp.captured_image, model_name="Facenet", enforce_detection=True)
+            representations = DeepFace.represent(img_path=imp.captured_image, model_name="ArcFace", enforce_detection=True)
             
             if representations and len(representations) > 0:
                 embedding = representations[0]["embedding"]
@@ -115,7 +134,8 @@ def face_result():
                         distance = results['distances'][0][0]
                         # SECURITY UPDATE: Tightened threshold from 0.40 to 0.30 for Enterprise Scalability
                         # This prevents False Positives when the database contains hundreds of faces.
-                        if distance < 0.30:  # Highly strict match
+                        # if distance < 0.30:  # Highly strict match
+                        if distance < 0.60:  # Safer threshold for ArcFace cosine distance
                             employee_name = results['ids'][0][0].capitalize()
                             now = datetime.datetime.now()
                             face_match_data = {"Name": employee_name, "Date": now.strftime('%Y-%m-%d %H:%M:%S'), "Status": "Present"}
@@ -135,8 +155,8 @@ def face_result():
         shot_filename = os.path.basename(imp.captured_image) if imp.captured_image else None
         return render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)
     else:
-        print("[INFO] Face not recognized. Falling back to Visitor OCR pipeline.")
-        return redirect(url_for('image_processing.show_captured'))
+        print("[INFO] Face not recognized. Falling back to Employee OCR pipeline.")
+        return redirect(url_for('image_processing.show_captured', role_type='employee'))
 
 @face_auth.route('/visitor_auth')
 def visitor_auth():
@@ -147,13 +167,30 @@ def visitor_result():
     global face_match_data
     import app.image_processing as imp
     from models.vector_db import visitor_collection
+    import os
+    import datetime
+    import cv2
+    from app.camera_manager import get_camera
     
     match_found = False
     
+    if not imp.captured_image:
+        camera = get_camera()
+        success, frame = camera.read()
+        if success:
+            now = datetime.datetime.now()
+            os.makedirs('static/shots', exist_ok=True)
+            filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S')}.png")
+            cv2.imwrite(filename, frame)
+            imp.captured_image = filename
+            print(f"[INFO] Fallback capture succeeded for Visitor: {filename}")
+            
     if imp.captured_image and deepface_available:
-        print(f"[INFO] Processing {imp.captured_image} for Visitor Pre-Check using Facenet...")
+        # print(f"[INFO] Processing {imp.captured_image} for Visitor Pre-Check using Facenet...")
+        print(f"[INFO] Processing {imp.captured_image} for Visitor Pre-Check using ArcFace...")
         try:
-            representations = DeepFace.represent(img_path=imp.captured_image, model_name="Facenet", enforce_detection=True)
+            # representations = DeepFace.represent(img_path=imp.captured_image, model_name="Facenet", enforce_detection=True)
+            representations = DeepFace.represent(img_path=imp.captured_image, model_name="ArcFace", enforce_detection=True)
             
             if representations and len(representations) > 0:
                 embedding = representations[0]["embedding"]
@@ -167,7 +204,8 @@ def visitor_result():
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
                         # Same strict threshold for Regular Visitors
-                        if distance < 0.30: 
+                        # if distance < 0.30: 
+                        if distance < 0.60: 
                             visitor_name = results['ids'][0][0].capitalize()
                             now = datetime.datetime.now()
                             face_match_data = {"Name": visitor_name, "Date": now.strftime('%Y-%m-%d %H:%M:%S'), "Status": "Regular Visitor"}
@@ -189,4 +227,93 @@ def visitor_result():
         return render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)
     else:
         print("[INFO] Unknown Visitor. Falling back to OCR Form Registration.")
-        return redirect(url_for('image_processing.show_captured'))
+        return redirect(url_for('image_processing.show_captured', role_type='visitor'))
+
+@face_auth.route('/other_auth')
+def other_auth():
+    return render_template('other_camera.html')
+
+@face_auth.route('/other_modal')
+def other_modal():
+    import app.image_processing as imp
+    import datetime
+    import os
+    import cv2
+    from app.camera_manager import get_camera
+
+    shot_filename = None
+    if imp.captured_image:
+        shot_filename = os.path.basename(imp.captured_image)
+    else:
+        # Fallback: If the frontend redirected before the stream could save the image
+        camera = get_camera()
+        success, frame = camera.read()
+        if success:
+            now = datetime.datetime.now()
+            os.makedirs('static/shots', exist_ok=True)
+            filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S')}.png")
+            cv2.imwrite(filename, frame)
+            imp.captured_image = filename
+            shot_filename = os.path.basename(filename)
+            print(f"[INFO] Fallback capture succeeded: {filename}")
+
+    return render_template('other_modal.html', shot_filename=shot_filename)
+
+@face_auth.route('/other_result', methods=['POST'])
+def other_result():
+    shot_filename = request.form.get('shot_filename')
+    img_path = os.path.join('static', 'shots', shot_filename) if shot_filename else None
+    
+    global face_match_data
+    from models.vector_db import other_collection
+    
+    match_found = False
+    
+    if img_path and deepface_available and os.path.exists(img_path):
+        # print(f"[INFO] Processing {img_path} for External Staff Attendance using Facenet...")
+        print(f"[INFO] Processing {img_path} for External Staff Attendance using ArcFace...")
+        try:
+            # representations = DeepFace.represent(img_path=img_path, model_name="Facenet", enforce_detection=True)
+            representations = DeepFace.represent(img_path=img_path, model_name="ArcFace", enforce_detection=True)
+            
+            if representations and len(representations) > 0:
+                embedding = representations[0]["embedding"]
+                
+                if other_collection is not None and other_collection.count() > 0:
+                    results = other_collection.query(
+                        query_embeddings=[embedding],
+                        n_results=1,
+                        include=["metadatas", "distances", "documents"]
+                    )
+                    
+                    if results['ids'] and len(results['ids'][0]) > 0:
+                        distance = results['distances'][0][0]
+                        # if distance < 0.30: 
+                        if distance < 0.60:
+                            external_name = results['ids'][0][0]
+                            metadata = results['metadatas'][0][0] or {}
+                            role = metadata.get('Role', 'External Staff')
+                            
+                            now = datetime.datetime.now()
+                            face_match_data = {
+                                "Name": external_name, 
+                                "Date": now.strftime('%Y-%m-%d %H:%M:%S'), 
+                                "Status": f"Present ({role})"
+                            }
+                            attendance_log.insert_one(face_match_data)
+                            match_found = True
+                            print(f"[SUCCESS] External matched: {external_name} as {role}")
+        except Exception as e:
+            print(f"[ERROR] External Recognition failed: {e}")
+
+    if match_found:
+        return render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)
+    else:
+        print("[INFO] Unknown External. Falling back to OCR.")
+        return redirect(url_for('image_processing.show_captured', filename=shot_filename, role_type='external'))
+
+@face_auth.route('/other_skip', methods=['POST'])
+def other_skip():
+    shot_filename = request.form.get('shot_filename')
+    print("[INFO] Option B Selected. Skipping DeepFace, routing to Quick Delivery Log.")
+    return redirect(url_for('image_processing.show_captured', filename=shot_filename, role_type='delivery'))

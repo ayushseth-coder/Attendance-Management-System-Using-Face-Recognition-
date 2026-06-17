@@ -89,7 +89,20 @@
                           <label>Approvedby</label>
                         </div>
                        
+                        {% if role_type == 'employee' %}
+                            <input type="hidden" name="Registration_Role" value="Employee">
+                        {% elif role_type == 'visitor' %}
+                            <input type="hidden" name="Registration_Role" value="Visitor">
+                        {% else %}
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" name="Registration_Role" id="Registration_Role" value="" placeholder="e.g. Plumber, Food Delivery, Auditor" required>
+                                <label for="Registration_Role">Registration Role</label>
+                            </div>
+                        {% endif %}
                         
+                        <!-- Hidden flags from the strict role router -->
+                        <input type="hidden" name="role_type" value="{{ role_type }}">
+
                       </div>
                       <div class="card-footer d-flex justify-content-center">
                         <button type="submit" name="submit" value="pass" class="btn btn-primary">

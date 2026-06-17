@@ -67,7 +67,11 @@ def video_feed():
 
 @image_processing.route('/show_captured')
 def show_captured():
+    from flask import request
     global captured_data, captured_image
+    
+    # Check for strict role routing
+    role_type = request.args.get('role_type', 'visitor')
     
     if captured_image:
         print("[INFO] Processing captured image for OCR...")
@@ -78,6 +82,5 @@ def show_captured():
 
     approvedby = ""  
     shot_filename = os.path.basename(captured_image) if captured_image else None
-    return render_template('extract.html', data=captured_data, approvedby=approvedby, shot_filename=shot_filename)
-   
+    return render_template('extract.html', data=captured_data, approvedby=approvedby, shot_filename=shot_filename, role_type=role_type)
  

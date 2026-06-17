@@ -238,7 +238,8 @@ def enroll_employees():
                 
                 try:
                     # Run AI Extraction
-                    representations = DeepFace.represent(img_path=filepath, model_name="Facenet", enforce_detection=False)
+                    # representations = DeepFace.represent(img_path=filepath, model_name="Facenet", enforce_detection=False)
+                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=False)
                     
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]
@@ -339,6 +340,159 @@ def delete_all_employees():
         flash(f"Error wiping database: {e}", "danger")
         
     return redirect(url_for('admin.manage_employees'))
+
+@admin.route('/manage_visitors', methods=['GET'])
+def manage_visitors():
+    from models.vector_db import visitor_collection
+    
+    try:
+        results = visitor_collection.get()
+        visitor_names = results.get('ids', [])
+        total_count = len(visitor_names)
+    except Exception as e:
+        print(f"[ERROR] Could not fetch visitors: {e}")
+        visitor_names = []
+        total_count = 0
+        flash("Failed to load visitors from database.", "danger")
+        
+    return render_template('manage_visitors.html', visitor_names=visitor_names, total_count=total_count)
+
+@admin.route('/delete_visitor/<name>', methods=['POST'])
+def delete_visitor(name):
+    from models.vector_db import visitor_collection
+    
+    try:
+        # Delete from ChromaDB
+        visitor_collection.delete(ids=[name])
+        flash(f"Successfully deleted records for {name}.", "success")
+        
+        # Cleanup: Delete local photo
+        import os
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
+        if os.path.exists(faces_dir):
+            for filename in os.listdir(faces_dir):
+                name_without_ext = os.path.splitext(filename)[0]
+                if name_without_ext.lower() == name.lower():
+                    try:
+                        os.remove(os.path.join(faces_dir, filename))
+                    except Exception:
+                        pass
+                
+    except Exception as e:
+        flash(f"Error deleting {name}: {e}", "danger")
+        
+    return redirect(url_for('admin.manage_visitors'))
+
+@admin.route('/delete_all_visitors', methods=['POST'])
+def delete_all_visitors():
+    from models.vector_db import visitor_collection
+    import os
+    
+    try:
+        results = visitor_collection.get()
+        all_ids = results.get('ids', [])
+        
+        if all_ids:
+            visitor_collection.delete(ids=all_ids)
+            
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
+        deleted_files_count = 0
+        if os.path.exists(faces_dir):
+            for filename in os.listdir(faces_dir):
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    file_path = os.path.join(faces_dir, filename)
+                    try:
+                        os.remove(file_path)
+                        deleted_files_count += 1
+                    except Exception:
+                        pass
+                        
+        flash(f"SYSTEM WIPED: Successfully deleted {len(all_ids)} visitor vectors from ChromaDB and {deleted_files_count} physical photos.", "success")
+        
+    except Exception as e:
+        flash(f"Error wiping database: {e}", "danger")
+        
+    return redirect(url_for('admin.manage_visitors'))
+
+@admin.route('/manage_other', methods=['GET'])
+def manage_other():
+    from models.vector_db import other_collection
+    
+    try:
+        results = other_collection.get(include=["metadatas"])
+        other_names = results.get('ids', [])
+        metadatas = results.get('metadatas', [])
+        total_count = len(other_names)
+        
+        # Combine names and roles
+        external_staff = []
+        for i in range(total_count):
+            name = other_names[i]
+            role = metadatas[i].get('Role', 'Unknown') if metadatas and i < len(metadatas) and metadatas[i] else 'Unknown'
+            external_staff.append({"name": name, "role": role})
+            
+    except Exception as e:
+        print(f"[ERROR] Could not fetch external staff: {e}")
+        external_staff = []
+        total_count = 0
+        flash("Failed to load external staff from database.", "danger")
+        
+    return render_template('manage_other.html', external_staff=external_staff, total_count=total_count)
+
+@admin.route('/delete_other/<name>', methods=['POST'])
+def delete_other(name):
+    from models.vector_db import other_collection
+    
+    try:
+        other_collection.delete(ids=[name])
+        flash(f"Successfully deleted records for {name}.", "success")
+        
+        import os
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
+        if os.path.exists(faces_dir):
+            for filename in os.listdir(faces_dir):
+                name_without_ext = os.path.splitext(filename)[0]
+                if name_without_ext.lower() == name.lower():
+                    try:
+                        os.remove(os.path.join(faces_dir, filename))
+                    except Exception:
+                        pass
+                
+    except Exception as e:
+        flash(f"Error deleting {name}: {e}", "danger")
+        
+    return redirect(url_for('admin.manage_other'))
+
+@admin.route('/delete_all_other', methods=['POST'])
+def delete_all_other():
+    from models.vector_db import other_collection
+    import os
+    
+    try:
+        results = other_collection.get()
+        all_ids = results.get('ids', [])
+        
+        if all_ids:
+            other_collection.delete(ids=all_ids)
+            
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
+        deleted_files_count = 0
+        if os.path.exists(faces_dir):
+            for filename in os.listdir(faces_dir):
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    file_path = os.path.join(faces_dir, filename)
+                    try:
+                        os.remove(file_path)
+                        deleted_files_count += 1
+                    except Exception:
+                        pass
+                        
+        flash(f"SYSTEM WIPED: Successfully deleted {len(all_ids)} external staff vectors from ChromaDB and {deleted_files_count} physical photos.", "success")
+        
+    except Exception as e:
+        flash(f"Error wiping database: {e}", "danger")
+        
+    return redirect(url_for('admin.manage_other'))
 
 @admin.route('/attendance/select', methods=['GET'])
 def attendance_select():

@@ -26,6 +26,7 @@
                         <th>Purpose</th>
                         <th>Approved</th>
                         <th>Entry Details</th>
+                        <th>Claimed Role</th>
                         <th>Photo</th>
                         <th>Decision</th>
                     </tr>
@@ -43,6 +44,11 @@
                         <td>{{ rvis['Approvedby'] }}</td>
                         <td>{{ rvis['Date'] }}</td>
                         <td>
+                            <span class="badge {% if rvis.get('Registration_Role') == 'Employee' %}bg-success{% elif rvis.get('Registration_Role') == 'Visitor' or not rvis.get('Registration_Role') %}bg-primary{% else %}bg-warning text-dark{% endif %} fs-6">
+                                {{ rvis.get('Registration_Role', 'Visitor') }}
+                            </span>
+                        </td>
+                        <td>
                             {% if rvis.get('shot_filename') %}
                                 <img src="{{ url_for('static', filename='shots/' + rvis['shot_filename']) }}" width="80" height="auto" class="img-thumbnail">
                             {% else %}
@@ -51,14 +57,24 @@
                         </td>
                         <td>
                             <div class="d-flex flex-column gap-2">
-                                <a href="{{ url_for('visitors.accept_regular', uid=rvis['UID']) }}" class="btn btn-primary btn-sm">
-                                    Approve as Regular
-                                </a>
-                                <a href="{{ url_for('visitors.acceptvis', uid=rvis['UID']) }}" class="btn btn-success btn-sm mt-1 mb-1">
-                                    Approve 1-Day Pass
-                                </a>
+                                {% if rvis.get('Registration_Role') == 'Employee' %}
+                                    <a href="{{ url_for('visitors.enroll_employee', uid=rvis['UID']) }}" class="btn btn-success btn-sm mb-1">
+                                        Enroll as Employee
+                                    </a>
+                                {% elif rvis.get('Registration_Role') == 'Visitor' or not rvis.get('Registration_Role') %}
+                                    <a href="{{ url_for('visitors.accept_regular', uid=rvis['UID']) }}" class="btn btn-primary btn-sm">
+                                        Approve as Regular Visitor
+                                    </a>
+                                    <a href="{{ url_for('visitors.acceptvis', uid=rvis['UID']) }}" class="btn btn-success btn-sm mt-1 mb-1">
+                                        Approve 1-Day Pass
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('visitors.enroll_external', uid=rvis['UID']) }}" class="btn btn-warning btn-sm mb-1 text-dark fw-bold">
+                                        Enroll as {{ rvis.get('Registration_Role') }}
+                                    </a>
+                                {% endif %}
                                 <form action="{{ url_for('visitors.rejectvis', uid=rvis['UID']) }}" method="POST">
-                                    <button type="submit" class="btn btn-danger btn-sm w-100">Reject</button>
+                                    <button type="submit" class="btn btn-danger btn-sm w-100">Reject Request</button>
                                 </form>
                             </div>
                         </td>

@@ -23,9 +23,16 @@ try:
         metadata={"hnsw:space": "cosine"}
     )
     
+    # Create or get the collection for storing external staff/contractors face vectors
+    other_collection = chroma_client.get_or_create_collection(
+        name="other_faces",
+        metadata={"hnsw:space": "cosine"}
+    )
+    
     print(f"[INFO] ChromaDB successfully initialized at {CHROMA_DB_PATH}")
     print(f"[INFO] Collection 'employee_faces' loaded. Total records: {employee_collection.count()}")
     print(f"[INFO] Collection 'visitor_faces' loaded. Total records: {visitor_collection.count()}")
+    print(f"[INFO] Collection 'other_faces' loaded. Total records: {other_collection.count()}")
 
 except Exception as e:
     print(f"[ERROR] Failed to initialize ChromaDB: {e}")
