@@ -6,6 +6,7 @@ import time
 from app.camera_manager import get_camera, release_camera
 from models.database import attendance_log
 from app.image_processing import captured_data, captured_image  # Import global to share state with OCR fallback
+from app.extensions import limiter
 
 face_auth = Blueprint('face_auth', __name__)
 
@@ -78,6 +79,7 @@ def face_video_feed():
     return Response(gen_face_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @face_auth.route('/face_result')
+@limiter.limit("6 per minute")
 def face_result():
     global face_match_data
     import app.image_processing as imp
@@ -141,8 +143,33 @@ def face_result():
                         if distance < 0.68:  # ArcFace Default Threshold
                             employee_name = results['ids'][0][0].capitalize()
                             now = datetime.datetime.now()
-                            face_match_data = {"Name": employee_name, "Date": now.strftime('%Y-%m-%d %H:%M:%S'), "Status": "Present"}
-                            attendance_log.insert_one(face_match_data)
+                            today_str = now.strftime('%Y-%m-%d')
+                            time_str = now.strftime('%H:%M:%S')
+                            
+                            # Check if they already scanned in today
+                            existing_log = attendance_log.find_one({
+                                "Name": employee_name,
+                                "Date": {"$regex": f"^{today_str}"}
+                            })
+                            
+                            if existing_log:
+                                # They already scanned in today, so this scan must be an EXIT
+                                attendance_log.update_one(
+                                    {"_id": existing_log["_id"]},
+                                    {"$set": {"ExitTime": time_str}}
+                                )
+                                face_match_data = existing_log
+                                face_match_data["ExitTime"] = time_str
+                            else:
+                                # First time scanning today (ENTRY)
+                                face_match_data = {
+                                    "Name": employee_name, 
+                                    "Date": f"{today_str} {time_str}",
+                                    "Status": "Present",
+                                    "ExitTime": None
+                                }
+                                attendance_log.insert_one(face_match_data)
+                                
                             match_found = True
                             print(f"[SUCCESS] Face matched with {employee_name} (Distance: {distance})")
                         else:
@@ -166,6 +193,7 @@ def visitor_auth():
     return render_template('visitor_camera.html')
 
 @face_auth.route('/visitor_result')
+@limiter.limit("6 per minute")
 def visitor_result():
     global face_match_data
     import app.image_processing as imp
@@ -215,8 +243,30 @@ def visitor_result():
                         if distance < 0.68: 
                             visitor_name = results['ids'][0][0].capitalize()
                             now = datetime.datetime.now()
-                            face_match_data = {"Name": visitor_name, "Date": now.strftime('%Y-%m-%d %H:%M:%S'), "Status": "Regular Visitor"}
-                            attendance_log.insert_one(face_match_data)
+                            today_str = now.strftime('%Y-%m-%d')
+                            time_str = now.strftime('%H:%M:%S')
+                            
+                            existing_log = attendance_log.find_one({
+                                "Name": visitor_name,
+                                "Date": {"$regex": f"^{today_str}"}
+                            })
+                            
+                            if existing_log:
+                                attendance_log.update_one(
+                                    {"_id": existing_log["_id"]},
+                                    {"$set": {"ExitTime": time_str}}
+                                )
+                                face_match_data = existing_log
+                                face_match_data["ExitTime"] = time_str
+                            else:
+                                face_match_data = {
+                                    "Name": visitor_name, 
+                                    "Date": f"{today_str} {time_str}", 
+                                    "Status": "Regular Visitor",
+                                    "ExitTime": None
+                                }
+                                attendance_log.insert_one(face_match_data)
+                                
                             match_found = True
                             print(f"[SUCCESS] Regular Visitor matched with {visitor_name} (Distance: {distance})")
                         else:
@@ -267,6 +317,7 @@ def other_modal():
     return render_template('other_modal.html', shot_filename=shot_filename)
 
 @face_auth.route('/other_result', methods=['POST'])
+@limiter.limit("6 per minute")
 def other_result():
     shot_filename = request.form.get('shot_filename')
     img_path = os.path.join('static', 'shots', shot_filename) if shot_filename else None
@@ -306,12 +357,30 @@ def other_result():
                             role = metadata.get('Role', 'External Staff')
                             
                             now = datetime.datetime.now()
-                            face_match_data = {
-                                "Name": external_name, 
-                                "Date": now.strftime('%Y-%m-%d %H:%M:%S'), 
-                                "Status": f"Present ({role})"
-                            }
-                            attendance_log.insert_one(face_match_data)
+                            today_str = now.strftime('%Y-%m-%d')
+                            time_str = now.strftime('%H:%M:%S')
+                            
+                            existing_log = attendance_log.find_one({
+                                "Name": external_name,
+                                "Date": {"$regex": f"^{today_str}"}
+                            })
+                            
+                            if existing_log:
+                                attendance_log.update_one(
+                                    {"_id": existing_log["_id"]},
+                                    {"$set": {"ExitTime": time_str}}
+                                )
+                                face_match_data = existing_log
+                                face_match_data["ExitTime"] = time_str
+                            else:
+                                face_match_data = {
+                                    "Name": external_name, 
+                                    "Date": f"{today_str} {time_str}", 
+                                    "Status": f"Present ({role})",
+                                    "ExitTime": None
+                                }
+                                attendance_log.insert_one(face_match_data)
+                                
                             match_found = True
                             print(f"[SUCCESS] External matched: {external_name} as {role}")
         except Exception as e:

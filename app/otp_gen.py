@@ -39,7 +39,11 @@ def reset():
     
     print("this is the verify")
     if request.method == 'POST':
-        email = request.form['email']
+        email = request.form.get('email', '').strip()
+        if not email:
+            flash("Email cannot be empty.", "danger")
+            return render_template('forgot.html')
+            
         Exist_email = collection.find_one({"Email": email})
        
        
@@ -88,12 +92,12 @@ def reset():
     
 def match():
     if request.method == 'POST':
-      
-       
-        c_otp=request.form['o'] 
-        c_otp +=request.form['to']
-        c_otp +=request.form['th']
-        c_otp +=request.form['f']
+        c_otp = request.form.get('o', '') + request.form.get('to', '') + request.form.get('th', '') + request.form.get('f', '')
+        
+        if len(c_otp) != 4 or not c_otp.isdigit():
+            flash("Invalid OTP format. Must be 4 digits.", "danger")
+            return render_template('verify.html')
+            
         print(f"verification{c_otp}")
         Exist_otp=otp_send.find_one({"otp_here":c_otp})
         if Exist_otp:
@@ -116,15 +120,20 @@ def reset_password():
         return redirect('/forgot')
 
     if request.method == 'POST':
-        new_pass = request.form['new_pass']
-        confirm_pass = request.form['confirm_pass']
+        new_pass = request.form.get('new_pass', '')
+        confirm_pass = request.form.get('confirm_pass', '')
+
+        if len(new_pass) < 8:
+            flash("Password must be at least 8 characters long.", "error")
+            return redirect('/reset-password')
 
         if new_pass != confirm_pass:
             flash("Passwords do not match.", "error")
             return redirect('/reset-password')
        
         hashed = generate_password_hash(new_pass)
-        collection.update_one({"Email": email}, {"$set": {"Password": confirm_pass}})
+        # CRITICAL SECURITY FIX: Save the hashed password, not the plaintext confirm_pass
+        collection.update_one({"Email": email}, {"$set": {"Password": hashed}})
         session.pop('otp', None)
         session.pop('reset_email', None)
 

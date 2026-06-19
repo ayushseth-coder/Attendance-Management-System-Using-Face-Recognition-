@@ -7,7 +7,7 @@ from flask_bcrypt import Bcrypt
 # from bson import ObjectId  
 from flask_login import UserMixin, login_user, login_required, logout_user, current_user
 from models.database import collection
-from app.extensions import bcrypt,login_manager
+from app.extensions import bcrypt, login_manager, limiter
 
 from models.user import User
 users = User
@@ -33,10 +33,16 @@ def load_user(user_id):
 
 
 @ auth.route('/login', methods=['POST', 'GET'])
+@limiter.limit("10 per minute")
 def login():
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        if not email or not password:
+            flash("Email and Password cannot be empty", "danger")
+            return redirect(url_for('auth.login'))
+            
         user_data = collection.find_one({"Email": email})
         print(f"user data  {user_data}")
         

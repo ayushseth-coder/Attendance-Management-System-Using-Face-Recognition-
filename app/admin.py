@@ -509,7 +509,10 @@ def attendance_employee():
         selected_date = datetime.datetime.now().strftime('%Y-%m-%d')
         
     # Query MongoDB for records where Date starts with the selected date string
-    query = {"Date": {"$regex": f"^{selected_date}"}}
+    query = {
+        "Date": {"$regex": f"^{selected_date}"},
+        "Status": "Present"
+    }
     logs = list(attendance_log.find(query).sort("Date", -1)) # Sort newest first
     
     return render_template('attendance_employee.html', logs=logs, selected_date=selected_date)
@@ -529,6 +532,78 @@ def employee_image(name):
                 return send_from_directory(faces_dir, filename)
                 
     # If physical image was deleted, serve a clean SVG placeholder instead of a broken image
+    svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>'''
+    from flask import Response
+    return Response(svg_data, mimetype='image/svg+xml')
+
+@admin.route('/attendance/visitor', methods=['GET'])
+def attendance_visitor():
+    from models.database import attendance_log
+    import datetime
+    
+    selected_date = request.args.get('date')
+    if not selected_date:
+        selected_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+    query = {
+        "Date": {"$regex": f"^{selected_date}"},
+        "Status": "Regular Visitor"
+    }
+    logs = list(attendance_log.find(query).sort("Date", -1))
+    
+    return render_template('attendance_visitor.html', logs=logs, selected_date=selected_date)
+
+@admin.route('/visitor_image/<name>')
+def visitor_image(name):
+    import os
+    from flask import send_from_directory, abort
+    
+    faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
+    
+    if os.path.exists(faces_dir):
+        for filename in os.listdir(faces_dir):
+            name_without_ext = os.path.splitext(filename)[0]
+            if name_without_ext.lower() == name.lower():
+                return send_from_directory(faces_dir, filename)
+                
+    svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>'''
+    from flask import Response
+    return Response(svg_data, mimetype='image/svg+xml')
+
+@admin.route('/attendance/other', methods=['GET'])
+def attendance_other():
+    from models.database import attendance_log
+    import datetime
+    
+    selected_date = request.args.get('date')
+    if not selected_date:
+        selected_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+    query = {
+        "Date": {"$regex": f"^{selected_date}"},
+        "Status": {"$regex": r"^Present \("}
+    }
+    logs = list(attendance_log.find(query).sort("Date", -1))
+    
+    return render_template('attendance_other.html', logs=logs, selected_date=selected_date)
+
+@admin.route('/other_image/<name>')
+def other_image(name):
+    import os
+    from flask import send_from_directory, abort
+    
+    faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
+    
+    if os.path.exists(faces_dir):
+        for filename in os.listdir(faces_dir):
+            name_without_ext = os.path.splitext(filename)[0]
+            if name_without_ext.lower() == name.lower():
+                return send_from_directory(faces_dir, filename)
+                
     svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                   </svg>'''

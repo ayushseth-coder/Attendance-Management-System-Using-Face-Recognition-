@@ -19,14 +19,14 @@
                             <i class="fa fa-user-tie me-2"></i> Employee Logs
                         </a>
                         
-                        <!-- Visitor & Others Buttons (Placeholder logic for later) -->
-                        <button type="button" class="btn btn-warning btn-lg p-3 fs-4 shadow-sm" onclick="alert('Visitor Logs coming soon!')">
+                        <!-- Visitor & Others Buttons -->
+                        <a href="{{ url_for('admin.attendance_visitor') }}" class="btn btn-warning btn-lg p-3 fs-4 shadow-sm">
                             <i class="fa fa-id-badge me-2"></i> Visitor Logs
-                        </button>
+                        </a>
                         
-                        <button type="button" class="btn btn-secondary btn-lg p-3 fs-4 shadow-sm" onclick="alert('Other Logs coming soon!')">
+                        <a href="{{ url_for('admin.attendance_other') }}" class="btn btn-secondary btn-lg p-3 fs-4 shadow-sm">
                             <i class="fa fa-users me-2"></i> Other Logs
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
