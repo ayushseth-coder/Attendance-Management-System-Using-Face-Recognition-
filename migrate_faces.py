@@ -26,13 +26,13 @@ def migrate_faces():
             # The employee's name is the filename without the extension
             employee_name = os.path.splitext(filename)[0]
             
-            try:5
+            try:
                 print(f"[INFO] Extracting vector for: {employee_name}...")
                 
                 # Extract the 512-dimensional vector embedding
                 # enforce_detection=False ensures it doesn't crash if lighting is bad
                 # model_name="Facenet" is the optimized lightweight DeepFace model
-                representations = DeepFace.represent(img_path=img_path, model_name="Facenet", enforce_detection=False)
+                representations = DeepFace.represent(img_path=img_path, model_name="ArcFace", enforce_detection=False)
                 
                 if representations and len(representations) > 0:
                     embedding = representations[0]["embedding"]

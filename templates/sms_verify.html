@@ -18,7 +18,7 @@
   {% endwith %}
     <div class="otp-container">
         <h2>Please enter the one time password<br> to verify your account</h2>
-        <p>A code has been sent to ******987</p>
+        <p>A code has been sent to <strong>{{ session.get('phone', 'your phone') }}</strong></p>
         <form id="otpForm" action="{{url_for('otp_gen.sms_match')}}" method="POST">
             <div class="otp-inputs">
                 <input type="text" maxlength="1" class="otp-box" required name="o">

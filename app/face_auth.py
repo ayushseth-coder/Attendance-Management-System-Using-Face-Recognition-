@@ -117,7 +117,11 @@ def face_result():
             # 1. Extract vector of captured face using the lightweight Facenet model
             # SECURITY UPDATE: enforce_detection=True ensures that if an arm covers the face, it rejects the photo!
             # representations = DeepFace.represent(img_path=imp.captured_image, model_name="Facenet", enforce_detection=True)
+            import time
+            start_time = time.time()
             representations = DeepFace.represent(img_path=imp.captured_image, model_name="ArcFace", enforce_detection=True)
+            latency = (time.time() - start_time) * 1000
+            print(f"[BENCHMARK] ArcFace Extraction Latency (Employee): {latency:.2f} ms")
             
             if representations and len(representations) > 0:
                 embedding = representations[0]["embedding"]
@@ -134,8 +138,7 @@ def face_result():
                         distance = results['distances'][0][0]
                         # SECURITY UPDATE: Tightened threshold from 0.40 to 0.30 for Enterprise Scalability
                         # This prevents False Positives when the database contains hundreds of faces.
-                        # if distance < 0.30:  # Highly strict match
-                        if distance < 0.60:  # Safer threshold for ArcFace cosine distance
+                        if distance < 0.68:  # ArcFace Default Threshold
                             employee_name = results['ids'][0][0].capitalize()
                             now = datetime.datetime.now()
                             face_match_data = {"Name": employee_name, "Date": now.strftime('%Y-%m-%d %H:%M:%S'), "Status": "Present"}
@@ -190,7 +193,11 @@ def visitor_result():
         print(f"[INFO] Processing {imp.captured_image} for Visitor Pre-Check using ArcFace...")
         try:
             # representations = DeepFace.represent(img_path=imp.captured_image, model_name="Facenet", enforce_detection=True)
+            import time
+            start_time = time.time()
             representations = DeepFace.represent(img_path=imp.captured_image, model_name="ArcFace", enforce_detection=True)
+            latency = (time.time() - start_time) * 1000
+            print(f"[BENCHMARK] ArcFace Extraction Latency (Visitor): {latency:.2f} ms")
             
             if representations and len(representations) > 0:
                 embedding = representations[0]["embedding"]
@@ -205,7 +212,7 @@ def visitor_result():
                         distance = results['distances'][0][0]
                         # Same strict threshold for Regular Visitors
                         # if distance < 0.30: 
-                        if distance < 0.60: 
+                        if distance < 0.68: 
                             visitor_name = results['ids'][0][0].capitalize()
                             now = datetime.datetime.now()
                             face_match_data = {"Name": visitor_name, "Date": now.strftime('%Y-%m-%d %H:%M:%S'), "Status": "Regular Visitor"}
@@ -274,7 +281,11 @@ def other_result():
         print(f"[INFO] Processing {img_path} for External Staff Attendance using ArcFace...")
         try:
             # representations = DeepFace.represent(img_path=img_path, model_name="Facenet", enforce_detection=True)
+            import time
+            start_time = time.time()
             representations = DeepFace.represent(img_path=img_path, model_name="ArcFace", enforce_detection=True)
+            latency = (time.time() - start_time) * 1000
+            print(f"[BENCHMARK] ArcFace Extraction Latency (External): {latency:.2f} ms")
             
             if representations and len(representations) > 0:
                 embedding = representations[0]["embedding"]
@@ -289,7 +300,7 @@ def other_result():
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
                         # if distance < 0.30: 
-                        if distance < 0.60:
+                        if distance < 0.68:
                             external_name = results['ids'][0][0]
                             metadata = results['metadatas'][0][0] or {}
                             role = metadata.get('Role', 'External Staff')
