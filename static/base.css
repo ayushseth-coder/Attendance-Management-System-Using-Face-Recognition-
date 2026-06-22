@@ -3,37 +3,69 @@ body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   position: relative;
+  background-color: #f4f6f9;
+}
+
+.preload * {
+  transition: none !important;
 }
 
 /* Sidebar */
 .sidebar {
   height: 100vh;
-  background-color: #212121;
-  padding-top: 60px; /* Match navbar height */
+  background-color: #0c2d51;
+  padding-top: 20px;
   position: fixed;
-  width: 250px;
+  width: 220px;
   top: 0;
   left: 0;
   z-index: 1000;
-  transition: transform 0.3s ease;
+  transition: width 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
+}
+
+body.sidebar-collapsed .sidebar {
+  width: 75px;
+  transform: translateX(0);
+}
+
+body.sidebar-collapsed .sidebar span.nav-text,
+body.sidebar-collapsed .sidebar .text-center h5,
+body.sidebar-collapsed .sidebar .text-center small {
+  display: none;
+}
+
+body.sidebar-collapsed .sidebar .text-center img {
+  width: 45px !important;
+  height: 45px !important;
+  border-width: 2px !important;
 }
 
 .sidebar a {
   color: #cbd5e1;
-  padding: 12px 20px;
-  display: block;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
   text-decoration: none;
   font-size: 16px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+.sidebar a i {
+  min-width: 35px;
+  font-size: 20px;
+  text-align: center;
 }
 
 .sidebar a:hover
  {
-  background-color: #6d97b9;
+  background-color: #4b6cb7;
   color: #fff;
   border-left: 4px solid #fff;
 }
 .sidebar a.active {
-  background-color: #6d97b9;
+  background-color: #4b6cb7;
   color: #fff;
   border-left: 4px solid #fff;
 }
@@ -48,11 +80,19 @@ body {
   justify-content: space-between;
   position: fixed;
   top: 0;
-  left: 250px;
+  left: 220px;
   right: 0;
   z-index: 1100;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: left 0.3s ease;
+}
+
+body.sidebar-collapsed .navbar {
+  left: 75px;
+}
+
+.navbar-custom {
+  background-color: #2d3e50 !important;
 }
 
 /* Navbar content */
@@ -67,10 +107,13 @@ body {
 
 /* Main Content */
 main {
-  margin-left: 250px;
-  padding-top: 80px; /* Space for navbar */
+  margin-left: 220px;
   padding: 20px;
   transition: margin-left 0.3s ease;
+}
+
+body.sidebar-collapsed main {
+  margin-left: 75px;
 }
 
 /* Toggle Sidebar Button */

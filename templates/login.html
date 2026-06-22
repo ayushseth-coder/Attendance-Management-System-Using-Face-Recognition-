@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,21 +14,25 @@
             overflow: hidden;
             height: 100vh;
         }
+
         .hero {
             padding-bottom: 20px !important;
             padding-top: 40px !important;
         }
+
         .features-section {
             padding: 40px 20px;
             text-align: center;
             background-color: #f9f9f9;
         }
+
         .features-section h3 {
             font-size: 28px;
             color: #333;
             margin-bottom: 30px;
             font-weight: 600;
         }
+
         .features-grid {
             display: flex;
             flex-wrap: wrap;
@@ -36,30 +41,35 @@
             max-width: 1200px;
             margin: 0 auto;
         }
+
         .feature-card {
             background-color: #fff;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 30px 20px;
             width: 280px;
             text-align: center;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border-top: 4px solid #4b6cb7;
         }
+
         .feature-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 10px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
         }
+
         .feature-card h4 {
             color: #4b6cb7;
             font-size: 20px;
             margin: 0;
         }
+
         .feature-card ul {
             list-style-type: none;
             padding: 0;
             margin: 0;
         }
+
         .feature-card ul li {
             font-size: 15px;
             color: #555;
@@ -67,6 +77,7 @@
             position: relative;
             padding-left: 20px;
         }
+
         .feature-card ul li::before {
             content: "•";
             color: #4b6cb7;
@@ -76,6 +87,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <!-- Header -->
@@ -110,27 +122,27 @@
             </button>
         </div>
 
-    <!-- Key Features Section -->
-    <div class="features-section" style="background: transparent; padding-top: 40px;">
-        <h3>Key Features</h3>
-        <div class="features-grid">
-            <div class="feature-card">
-                <h4>Automated Attendance System</h4>
-            </div>
-            <div class="feature-card">
-                <h4>Smart Visitor Management</h4>
-            </div>
-            <div class="feature-card">
-                <h4>Secure Access Portals</h4>
-            </div>
-            <div class="feature-card">
-                <h4>Real-time Notifications</h4>
-            </div>
-            <div class="feature-card">
-                <h4>Easy Reporting & Analytics</h4>
+        <!-- Key Features Section -->
+        <div class="features-section" style="background: transparent; padding-top: 40px;">
+            <h3>Key Features</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>Automated Attendance System</h4>
+                </div>
+                <div class="feature-card">
+                    <h4>Smart Visitor Management</h4>
+                </div>
+                <div class="feature-card">
+                    <h4>Secure Access Portals</h4>
+                </div>
+                <div class="feature-card">
+                    <h4>Real-time Notifications</h4>
+                </div>
+                <div class="feature-card">
+                    <h4>Easy Reporting & Analytics</h4>
+                </div>
             </div>
         </div>
-    </div>
     </section>
 
     <!-- Modal Backdrop -->
@@ -143,12 +155,12 @@
         <div class="login-container" id="admin-login">
             <span class="close-btn" onclick="closeLogin()">&times;</span>
             <h4><i class="fa-solid fa-user-shield"></i> Admin Login</h4>
-            
+
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div class="error-message alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
+            {% for category, message in messages %}
+            <div class="error-message alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
             {% endif %}
             {% endwith %}
 
@@ -160,7 +172,8 @@
                     <i class="fa-solid fa-eye" onclick="togglePassword('admin-password', this)"></i>
                 </div>
                 <div style="text-align: right; margin-bottom: 15px;">
-                    <a href="/forgot" style="text-decoration: none; font-size: 14px; color: #4b6cb7;">Forgot Password?</a>
+                    <a href="/forgot" style="text-decoration: none; font-size: 14px; color: #4b6cb7;">Forgot
+                        Password?</a>
                 </div>
                 <button type="submit" class="login-btn">Login</button>
             </form>
@@ -170,12 +183,12 @@
         <div class="login-container" id="security-login">
             <span class="close-btn" onclick="closeLogin()">&times;</span>
             <h4><i class="fa-solid fa-shield-halved"></i> Security Login</h4>
-            
+
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div class="error-message alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
+            {% for category, message in messages %}
+            <div class="error-message alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
             {% endif %}
             {% endwith %}
 
@@ -187,7 +200,8 @@
                     <i class="fa-solid fa-eye" onclick="togglePassword('security-password', this)"></i>
                 </div>
                 <div style="text-align: right; margin-bottom: 15px;">
-                    <a href="/forgot" style="text-decoration: none; font-size: 14px; color: #4b6cb7;">Forgot Password?</a>
+                    <a href="/forgot" style="text-decoration: none; font-size: 14px; color: #4b6cb7;">Forgot
+                        Password?</a>
                 </div>
                 <button type="submit" class="login-btn">Login</button>
             </form>
@@ -201,7 +215,7 @@
             // Show backdrop
             document.getElementById("modal-backdrop").style.display = "block";
             document.getElementById("login-section").style.display = "flex";
-            
+
             document.getElementById("admin-login").style.display = "none";
             document.getElementById("security-login").style.display = "none";
 
@@ -234,15 +248,15 @@
 
         let navLinks = document.querySelectorAll("nav a");
         navLinks.forEach(link => {
-            link.addEventListener("click", function(){
+            link.addEventListener("click", function () {
                 navLinks.forEach(nav => nav.classList.remove("active"));
                 this.classList.add("active");
             });
         });
-        
+
         let buttons = document.querySelectorAll(".cta-btn, .login-btn");
         buttons.forEach(button => {
-            button.addEventListener("click", function(){
+            button.addEventListener("click", function () {
                 this.style.transform = "scale(0.97)";
                 setTimeout(() => {
                     this.style.transform = "scale(1)";
@@ -251,4 +265,5 @@
         });
     </script>
 </body>
+
 </html>

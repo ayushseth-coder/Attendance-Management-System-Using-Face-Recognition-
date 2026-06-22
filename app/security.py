@@ -81,31 +81,48 @@ def visitor():
     
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
+
+    # Default to today if no dates are provided
+    if not start_date_str or not end_date_str:
+        start_date_str = datetime.today().strftime("%Y-%m-%d")
+        end_date_str = start_date_str
+
     print(f"startdate+++{start_date_str},end date---------{end_date_str}")
-    query = {}
+    
+    # Fetch all records first because Date is stored as string in MongoDB, 
+    # which makes MongoDB string range queries fail.
+    all_visitors = list(visitors_status.find())
     visitobj = []
 
-    if start_date_str and end_date_str:
-        try:
-            # Parse dates from string to datetime
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
-            end_date = end_date.replace(hour=23, minute=59, second=59)  # include full end day            
-            query = {
-                'Date': {
-                    '$gte': start_date,
-                    '$lte': end_date
-                }
-            }
-            print(f"quer++===================={query}")
-            visitobj = list(visitors_status.find(query))
-            print(f"store data in db {visitobj}")
-        except ValueError:            
-            visitobj = []
+    try:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        
+        for v in all_visitors:
+            record_date_str = v.get('Date')
+            if record_date_str:
+                # Clean up the string to remove any extra time parts if present
+                clean_date_str = str(record_date_str).split()[0]
+                record_date = None
+                # Try parsing DD/MM/YYYY
+                try:
+                    record_date = datetime.strptime(clean_date_str, "%d/%m/%Y").date()
+                except ValueError:
+                    # Try parsing YYYY-MM-DD
+                    try:
+                        record_date = datetime.strptime(clean_date_str, "%Y-%m-%d").date()
+                    except ValueError:
+                        pass
+                
+                if record_date and start_date <= record_date <= end_date:
+                    visitobj.append(v)
+        
+        print(f"Filtered records: {len(visitobj)}")
+    except Exception as e:
+        print(f"Error in date filtering: {e}")
+        visitobj = []
 
-    else:        
-        visitobj = list(visitors_status.find())
-    return render_template("visitor.html",visitobj=visitobj)
+    return render_template("visitor.html",visitobj=visitobj, start_date=start_date_str, end_date=end_date_str)
     
 
 

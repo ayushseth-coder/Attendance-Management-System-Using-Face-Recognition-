@@ -1,12 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP Verification</title>
-    <link href="../static/Style2.css" rel="stylesheet">
-</head>
-<body>
+{% extends 'security_base.html' %}
+{% block title %}Visitor Pass{% endblock title %}
+{% block body %}
+<style>
+.otp-container {
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 400px;
+}
+.otp-container h2 { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #333; }
+.otp-container p { font-size: 14px; color: #666; margin-bottom: 20px; }
+.otp-inputs { display: flex; justify-content: space-between; margin-bottom: 20px; }
+.otp-box { width: 50px; height: 50px; font-size: 24px; text-align: center; border: 2px solid #ddd; border-radius: 8px; }
+.otp-box:focus { outline: none; border-color: #20c997; }
+.validate-btn { width: 100%; padding: 12px; font-size: 16px; background-color: #20c997; color: white; border: none; border-radius: 8px; cursor: pointer; }
+.validate-btn:hover { background-color: #17a589; }
+.resend a { color: #f32d3e; text-decoration: none; }
+</style>
+
+<div style="height: calc(100vh - 80px); display: flex; align-items: center; justify-content: center; overflow: hidden;">
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, message in messages %}
@@ -18,7 +33,7 @@
   {% endwith %}
     <div class="otp-container">
         <h2>Please enter the one time password<br> to verify your account</h2>
-        <p>A code has been sent to ******987</p>
+        <p>A code has been sent to registered email</p>
         <form id="otpForm" action="{{url_for('otp_gen.sms_match')}}" method="POST">
             <div class="otp-inputs">
                 <input type="text" maxlength="1" class="otp-box" required name="o">
@@ -31,6 +46,7 @@
         </form>
         <p class="resend">Didn't get the code <a href="/resend">Resend(1/3)</a></p>
     </div>
+</div>
     <script>
         const inputs = document.querySelectorAll('.otp-box');
         inputs.forEach((input, index) => {
@@ -46,5 +62,4 @@
             });
         });
     </script>
-</body>
-</html>
+{% endblock body %}

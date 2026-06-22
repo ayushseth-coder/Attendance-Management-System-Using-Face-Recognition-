@@ -46,7 +46,7 @@ def login():
 
         # Check password
         if bcrypt.check_password_hash(user_data["Password"], password):
-            role = user_data.get("Job", "").lower()
+            role = (user_data.get("Job") or "").lower()
             login_type = request.form.get('login_type')
             
             if login_type and login_type != role:
@@ -58,7 +58,7 @@ def login():
                 user_data["Name"],
                 user_data["Email"],
                 user_data["Password"],
-                user_data["Job"]
+                user_data.get("Job")
             )
 
             login_user(user)
@@ -91,7 +91,7 @@ def profile():
             # Convert _id to string
             user_data['_id'] = str(user_data['_id'])
             name = user_data.get('Name', '')  
-            role=user_data.get('Job', '').lower()
+            role = (user_data.get('Job') or "").lower()
             if role == "security":
                 
                 return render_template('profile_security.html', user_data=user_data, name=name, email=email)
