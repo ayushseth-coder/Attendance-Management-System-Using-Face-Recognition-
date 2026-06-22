@@ -51,7 +51,18 @@ def login():
             return redirect(url_for('auth.login'))
 
         # Check password
-        if bcrypt.check_password_hash(user_data["Password"], password):
+        try:
+            db_pass = user_data.get("Password", "")
+            if db_pass.startswith('scrypt:') or db_pass.startswith('pbkdf2:'):
+                from werkzeug.security import check_password_hash as werkzeug_check
+                is_valid_password = werkzeug_check(db_pass, password)
+            else:
+                is_valid_password = bcrypt.check_password_hash(db_pass, password)
+        except ValueError:
+            # Catches invalid/empty strings
+            is_valid_password = False
+            
+        if is_valid_password:
             role = user_data.get("Job", "").lower()
             login_type = request.form.get('login_type')
             
