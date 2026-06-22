@@ -51,7 +51,14 @@ def login():
             return redirect(url_for('auth.login'))
 
         # Check password
-        if check_password_hash(user_data["Password"], password):
+        if bcrypt.check_password_hash(user_data["Password"], password):
+            role = user_data.get("Job", "").lower()
+            login_type = request.form.get('login_type')
+            
+            if login_type and login_type != role:
+                flash("You are not authorized to login from this portal.", "danger")
+                return redirect(url_for('auth.login'))
+
             user = User(
                 str(user_data["_id"]),
                 user_data["Name"],
@@ -61,7 +68,6 @@ def login():
             )
 
             login_user(user)
-            role = user_data.get("Job", "").lower()
             print(f"user data role:{role}")
             if role == "admin":
                 session['user_id'] = email

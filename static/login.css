@@ -1,140 +1,256 @@
-/* Container with Background Blur Effect */
-.login_html_container {
-    min-height: 100vh;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #ffffff; /* Matching the lower section of the image */
+    color: #333;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2d3e50; /* Dark header from the image */
+    padding: 10px 40px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-circle {
+    background: white;
+    border-radius: 50%;
+    padding: 2px;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: url("./images/c.jpg") no-repeat center center;
-    background-size: cover;
-    padding: 20px; /* Prevent content from touching edges on mobile */
-    position: relative; /* Needed for ::before and ::after */
-    box-sizing: border-box;
+    width: 90px;
+    height: 90px;
     overflow: hidden;
 }
 
-/* Pseudo-element for blurred background */
-.login_html_container::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
+.logo img {
     width: 100%;
     height: 100%;
-    background: linear-gradient(120deg, #1d2b64, #f8cdda);
-    background-size: cover;
-    filter: blur(18px);
-    z-index: -2;
+    object-fit: cover;
 }
 
-/* Slight overlay to soften */
-.login_html_container::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.35);
-    z-index: -1;
+header h1 {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
 }
 
-/* 3D ELGOSS Branding */
-.branding {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 12px;
-    font-weight: 2;
-    letter-spacing: 3px;
-    color: #ffffff;
-    text-transform: uppercase;
-    z-index: 10;
-    text-shadow:
-        1px 1px 0 #ccc,
-        2px 2px 0 #bbb,
-        3px 3px 2px rgba(0, 0, 0, 0.3);
-    transform: perspective(800px) rotateX(4deg) rotateY(-6deg);
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 30px;
 }
 
-/* Login Box with Glass Effect */
-.login_html_block {
-    padding: 40px 30px;
-    width: 100%;
-    max-width: 420px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow:
-        0 10px 25px rgba(0, 0, 0, 0.4),
-        inset 0 0 25px rgba(255, 255, 255, 0.06);
-    transition: all 0.4s ease;
-    box-sizing: border-box;
+nav a {
+    text-decoration: none;
+    color: #e2e8f0;
+    font-size: 16px;
+    font-weight: 500;
 }
 
-/* Login Box Hover */
-.login_html_block:hover {
-    transform: scale(1.01);
-    backdrop-filter: blur(25px);
+nav a:hover, nav a.active {
+    color: white;
 }
 
-/* Form Inputs */
-.login_html_row input,
-.login_html_row input:focus {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    padding: 10px;
-    border-radius: 10px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Labels */
-.login_html_row label {
-    color: #ffffffd9;
-}
-
-/* Heading */
-p.login_html_heading {
-    font-size: 34px;
-    font-weight: 800;
+/* Hero Section */
+.hero {
     text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    color: #ffffff;
-    text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.4);
+    padding: 60px 20px 80px 20px; /* Reduced top padding to move content up */
+    min-height: calc(100vh - 100px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Start from top + padding */
+    align-items: center;
+    background: #f1f5f9; /* Light greyish-blue background from image */
+}
+
+.hero h2 {
+    font-size: 40px;
+    color: #2c3e50; /* Darker heading color from image */
     margin-bottom: 20px;
+    font-weight: bold;
 }
 
-/* Responsive Tweaks */
-@media (max-width: 768px) {
-    .login_html_block {
-        padding: 30px 20px;
-        max-width: 90%;
-    }
-
-    p.login_html_heading {
-        font-size: 26px;
-        letter-spacing: 2px;
-    }
-
-    .branding {
-        font-size: 10px;
-        left: 5px;
-        top: 5px;
-    }
+.hero p {
+    font-size: 20px;
+    color: #7f8c8d; /* Grey text for bullets */
+    margin-bottom: 40px;
 }
 
-@media (max-width: 480px) {
-    .login_html_block {
-        padding: 25px 15px;
-    }
+.hero-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
 
-    p.login_html_heading {
-        font-size: 22px;
-    }
+.cta-btn {
+    background: #3498db; /* Specific blue color from the image buttons */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-    .login_html_row input {
-        padding: 8px;
-    }
+.cta-btn:hover {
+    background: #2980b9;
+    transform: scale(0.97);
+}
+
+/* Modals / Login Section */
+#modal-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 1000;
+    display: none;
+    pointer-events: none; /* Let background be clickable/scrollable as requested */
+}
+
+.login-section {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+    pointer-events: none; /* Allows scrolling background */
+}
+
+.login-container {
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+    pointer-events: auto; /* Catch clicks */
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px; right: 20px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.close-btn:hover {
+    color: red;
+}
+
+.login-container h4 {
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.login-container h4 i {
+    margin-right: 10px;
+    color: #3498db;
+}
+
+.login-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login-container input[type="email"],
+.login-container input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    outline: none;
+}
+
+.login-container input[type="email"]:focus,
+.login-container input[type="text"]:focus {
+    border-color: #3498db;
+}
+
+.password-box {
+    position: relative;
+    width: 100%;
+}
+
+.password-box input {
+    width: 100%;
+    padding: 12px;
+    padding-right: 40px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    outline: none;
+}
+
+.password-box input:focus {
+    border-color: #3498db;
+}
+
+.password-box i {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #888;
+}
+
+.password-box i:hover {
+    color: #333;
+}
+
+.login-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 10px;
+}
+
+.login-btn:hover {
+    background: #2980b9;
+    transform: scale(0.97);
+}
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid #f5c6cb;
 }

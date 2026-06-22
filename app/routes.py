@@ -12,9 +12,8 @@ routes = Blueprint('routes', __name__, template_folder='templates')
 
 
 @routes.route('/')
-@login_required
 def login():
-  return render_template('login.html')
+  return render_template('landing.html')
 
 
 
