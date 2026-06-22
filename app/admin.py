@@ -267,18 +267,40 @@ def enroll_employees():
 @admin.route('/manage_employees', methods=['GET'])
 def manage_employees():
     from models.vector_db import employee_collection
+    from models.database import collection
     
     try:
         results = employee_collection.get()
         employee_names = results.get('ids', [])
         total_count = len(employee_names)
+        
+        # Cross-reference with the users collection
+        all_users = list(collection.find())
+        user_lookup = {}
+        for user in all_users:
+            name = user.get("Name", "")
+            if name:
+                user_lookup[name] = {
+                    "Email": user.get("Email", "Unknown"),
+                    "Job": user.get("Job", "Unknown")
+                }
+                
+        employees_data = []
+        for name in employee_names:
+            user_info = user_lookup.get(name, {"Email": "Unknown", "Job": "Unknown"})
+            employees_data.append({
+                "Name": name,
+                "Email": user_info["Email"],
+                "Job": user_info["Job"]
+            })
+            
     except Exception as e:
         print(f"[ERROR] Could not fetch employees: {e}")
-        employee_names = []
+        employees_data = []
         total_count = 0
         flash("Failed to load employees from database.", "danger")
         
-    return render_template('manage_employees.html', employee_names=employee_names, total_count=total_count)
+    return render_template('manage_employees.html', employees_data=employees_data, total_count=total_count)
 
 @admin.route('/delete_employee/<name>', methods=['POST'])
 def delete_employee(name):
@@ -609,3 +631,107 @@ def other_image(name):
                   </svg>'''
     from flask import Response
     return Response(svg_data, mimetype='image/svg+xml')
+
+@admin.route('/attendance/timesheet', methods=['GET'])
+def attendance_timesheet():
+    from models.database import attendance_log, collection
+    import datetime
+    
+    selected_date = request.args.get('date')
+    if not selected_date:
+        selected_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+    # 1. Fetch raw logs for the selected date (Only Employees)
+    query = {
+        "Date": {"$regex": f"^{selected_date}"},
+        "Status": "Present"
+    }
+    raw_logs = list(attendance_log.find(query).sort("Date", -1))
+    
+    # 2. Fetch Users collection to get Emails and Roles
+    all_users = list(collection.find())
+    # Create a quick lookup dictionary: {"John Doe": {"Email": "john@x.com", "Job": "Developer"}}
+    user_lookup = {}
+    for user in all_users:
+        name = user.get("Name", "")
+        if name:
+            user_lookup[name] = {
+                "Email": user.get("Email", "N/A"),
+                "Job": user.get("Job", "Employee")
+            }
+            
+    # 3. Build the consolidated Timesheet
+    timesheet_data = []
+    for log in raw_logs:
+        name = log.get("Name", "")
+        entry_datetime_str = log.get("Date", "")  # e.g. "2026-06-19 09:00:00"
+        exit_time_str = log.get("ExitTime")       # e.g. "17:00:00" or None
+        
+        # Extract just the time from entry_datetime_str
+        entry_time_str = entry_datetime_str.split(' ')[1] if ' ' in entry_datetime_str else entry_datetime_str
+        
+        # Calculate Working Hours
+        working_hours = None
+        if exit_time_str and ' ' in entry_datetime_str:
+            try:
+                fmt = '%H:%M:%S'
+                t1 = datetime.datetime.strptime(entry_time_str, fmt)
+                t2 = datetime.datetime.strptime(exit_time_str, fmt)
+                
+                # Handle cases where exit is past midnight (though rare for a day-based scan)
+                if t2 < t1:
+                    t2 += datetime.timedelta(days=1)
+                    
+                diff = t2 - t1
+                hours, remainder = divmod(diff.seconds, 3600)
+                minutes, _ = divmod(remainder, 60)
+                working_hours = f"{hours}h {minutes}m"
+            except Exception as e:
+                print(f"[ERROR] Failed to calculate working hours for {name}: {e}")
+                working_hours = "Error"
+                
+        # Lookup User Info
+        user_info = user_lookup.get(name, {"Email": "Unknown", "Job": "Unknown"})
+        
+        timesheet_data.append({
+            "Name": name,
+            "Email": user_info["Email"],
+            "Job": user_info["Job"],
+            "EntryTime": entry_time_str,
+            "ExitTime": exit_time_str,
+            "WorkingHours": working_hours
+        })
+        
+    return render_template('attendance_timesheet.html', timesheet=timesheet_data, selected_date=selected_date)
+
+@admin.route('/update_employee_details', methods=['POST'])
+def update_employee_details():
+    from models.database import collection
+    import datetime
+    
+    name = request.form.get('name')
+    email = request.form.get('email')
+    job = request.form.get('job')
+    
+    if name:
+        # Upsert: Update if exists, Insert if not
+        collection.update_one(
+            {"Name": name},
+            {
+                "$set": {
+                    "Email": email, 
+                    "Job": job,
+                    "Phone": request.form.get('phone', 'N/A')
+                },
+                "$setOnInsert": {
+                    "Date": datetime.datetime.now(),
+                    "Password": ""  # Require password reset if they want to login later
+                }
+            },
+            upsert=True
+        )
+        flash(f"Successfully updated details for {name}", "success")
+    else:
+        flash("Error: Missing Employee Name", "danger")
+        
+    return redirect(request.referrer or url_for('admin.manage_employees'))

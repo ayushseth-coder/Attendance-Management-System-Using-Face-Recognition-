@@ -51,7 +51,10 @@ def create_app():
 
     # Init APScheduler
     scheduler = BackgroundScheduler()
-    scheduler.add_job(func=cleanup_old_shots, trigger="interval", hours=24)
+    # Run the cleanup immediately when the server boots up
+    cleanup_old_shots()
+    # Then schedule it to check every 1 hour (instead of waiting 24 hours to fire)
+    scheduler.add_job(func=cleanup_old_shots, trigger="interval", hours=1)
     scheduler.start()
 
 
