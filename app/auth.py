@@ -147,16 +147,22 @@ def update_profile():
         return redirect(url_for('auth.login'))
     
     email = session['user_id']
-    updated_data = {
-        'Name': request.form.get('Name'),
-        'mobile': request.form.get('mobile'),
-        'address': request.form.get('address'),
-        'Job': request.form.get('Job')
-    }
+    
+    if request.method == 'GET':
+        user_data = collection.find_one({'Email': email})
+        return render_template('update_profile.html', data=user_data)
 
-    result = collection.update_one({'Email': email}, {'$set': updated_data})
+    updated_data = {}
+    if request.form.get('Name'): updated_data['Name'] = request.form.get('Name')
+    if request.form.get('mobile'): updated_data['Phone'] = request.form.get('mobile')
+    if request.form.get('address'): updated_data['address'] = request.form.get('address')
 
-    flash("Profile updated successfully!" if result.modified_count else "No changes made.")
+    if updated_data:
+        result = collection.update_one({'Email': email}, {'$set': updated_data})
+        flash("Profile updated successfully!" if result.modified_count else "No changes made.", "success")
+    else:
+        flash("No changes made.", "warning")
+
     return redirect(url_for('auth.profile'))
 
 
@@ -178,6 +184,6 @@ def upload_profile_image():
 
         # Update DB
         email = session['user_id']
-        collection.update_one({'Email': email}, {'$set': {'profile_image': f'static/images/{filename}'}})
+        collection.update_one({'Email': email}, {'$set': {'image': f'/static/images/{filename}'}})
 
-    return redirect(url_for('profile')) 
+    return redirect(url_for('auth.profile')) 

@@ -52,19 +52,65 @@
                                 </td>
                             </tr>
                             {% else %}
-                            {% for name in visitor_names %}
+                            {% for vis in visitor_profiles %}
                             <tr>
                                 <th scope="row" class="ps-4 align-middle">{{ loop.index }}</th>
-                                <td class="align-middle fw-bold">{{ name }}</td>
+                                <td class="align-middle fw-bold">
+                                    <span class="badge bg-secondary me-2">REGVIS-{{ vis.num_id }}</span>
+                                    {{ vis.Name }}
+                                    {% if vis.Phone != 'Unknown' or vis.Email != 'Unknown' %}
+                                    <br>
+                                    <small class="text-muted fw-normal">
+                                        {% if vis.Phone != 'Unknown' %}<i class="fa fa-phone me-1"></i>{{ vis.Phone }} {% endif %}
+                                        {% if vis.Email != 'Unknown' %}<i class="fa fa-envelope ms-2 me-1"></i>{{ vis.Email }}{% endif %}
+                                    </small>
+                                    {% endif %}
+                                </td>
                                 <td class="text-center align-middle">
+                                    <!-- Edit Button -->
+                                    <button type="button" class="btn btn-sm btn-outline-primary shadow-sm fw-bold me-2" data-bs-toggle="modal" data-bs-target="#editModal{{ loop.index }}">
+                                        <i class="fa fa-pencil"></i> Edit
+                                    </button>
+                                    
                                     <!-- Delete Form -->
-                                    <form action="{{ url_for('admin.delete_visitor', name=name) }}" method="POST"
+                                    <form action="{{ url_for('admin.delete_visitor', visitor_id=vis.num_id) }}" method="POST"
                                         style="display:inline;"
-                                        onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for {{ name }}?');">
-                                        <button type="submit" class="btn btn-sm btn-danger">
+                                        onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for REGVIS-{{ vis.num_id }} ({{ vis.Name }})?');">
+                                        <button type="submit" class="btn btn-sm btn-danger shadow-sm fw-bold">
                                             <i class="fa fa-trash"></i> Delete
                                         </button>
                                     </form>
+                                    
+                                    <!-- Edit Modal -->
+                                    <div class="modal fade" id="editModal{{ loop.index }}" tabindex="-1" aria-labelledby="editModalLabel{{ loop.index }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content shadow-lg border-0 rounded-3">
+                                                <div class="modal-header bg-primary text-white border-bottom-0 rounded-top-3">
+                                                    <h5 class="modal-title fw-bold" id="editModalLabel{{ loop.index }}">Edit Profile: {{ vis.Name }}</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form action="{{ url_for('admin.update_visitor_details') }}" method="POST">
+                                                    <div class="modal-body p-4 text-start">
+                                                        <input type="hidden" name="visitor_id" value="{{ vis.num_id }}">
+                                                        <input type="hidden" name="name" value="{{ vis.Name }}">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label class="form-label text-dark fw-bold mb-1">Email Address</label>
+                                                            <input type="email" class="form-control" name="email" value="{{ '' if vis.get('Email', 'Unknown') == 'Unknown' else vis.get('Email', '') }}" placeholder="visitor@example.com">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label text-dark fw-bold mb-1">Phone Number</label>
+                                                            <input type="text" class="form-control" name="phone" value="{{ '' if vis.get('Phone', 'Unknown') == 'Unknown' else vis.get('Phone', '') }}" placeholder="+1 234 567 8900">
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-top-0 bg-light">
+                                                        <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold">Save Changes</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}

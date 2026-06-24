@@ -160,6 +160,10 @@ def face_result():
                                 )
                                 face_match_data = existing_log
                                 face_match_data["ExitTime"] = time_str
+                                
+                                # SHADOW DB INJECTION
+                                from models.universal_db_helper import log_to_universal_registry
+                                log_to_universal_registry(employee_name, "Employee", existing_log.get("Date").split(" ")[1], time_str)
                             else:
                                 # First time scanning today (ENTRY)
                                 face_match_data = {
@@ -169,6 +173,10 @@ def face_result():
                                     "ExitTime": None
                                 }
                                 attendance_log.insert_one(face_match_data)
+                                
+                                # SHADOW DB INJECTION
+                                from models.universal_db_helper import log_to_universal_registry
+                                log_to_universal_registry(employee_name, "Employee", time_str, None)
                                 
                             match_found = True
                             print(f"[SUCCESS] Face matched with {employee_name} (Distance: {distance})")
@@ -233,15 +241,15 @@ def visitor_result():
                 if visitor_collection is not None and visitor_collection.count() > 0:
                     results = visitor_collection.query(
                         query_embeddings=[embedding],
-                        n_results=1
+                        n_results=1,
+                        include=["documents", "distances"]
                     )
                     
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
-                        # Same strict threshold for Regular Visitors
-                        # if distance < 0.30: 
                         if distance < 0.68: 
-                            visitor_name = results['ids'][0][0].capitalize()
+                            visitor_id = results['ids'][0][0]
+                            visitor_name = results['documents'][0][0].capitalize() if results.get('documents') and results['documents'][0] else visitor_id
                             now = datetime.datetime.now()
                             today_str = now.strftime('%Y-%m-%d')
                             time_str = now.strftime('%H:%M:%S')
@@ -258,6 +266,10 @@ def visitor_result():
                                 )
                                 face_match_data = existing_log
                                 face_match_data["ExitTime"] = time_str
+                                
+                                # SHADOW DB INJECTION
+                                from models.universal_db_helper import log_to_universal_registry
+                                log_to_universal_registry(visitor_name, "Visitor", existing_log.get("Date").split(" ")[1], time_str, visitor_id=visitor_id)
                             else:
                                 face_match_data = {
                                     "Name": visitor_name, 
@@ -266,6 +278,10 @@ def visitor_result():
                                     "ExitTime": None
                                 }
                                 attendance_log.insert_one(face_match_data)
+                                
+                                # SHADOW DB INJECTION
+                                from models.universal_db_helper import log_to_universal_registry
+                                log_to_universal_registry(visitor_name, "Visitor", time_str, None, visitor_id=visitor_id)
                                 
                             match_found = True
                             print(f"[SUCCESS] Regular Visitor matched with {visitor_name} (Distance: {distance})")
@@ -350,9 +366,9 @@ def other_result():
                     
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
-                        # if distance < 0.30: 
                         if distance < 0.68:
-                            external_name = results['ids'][0][0]
+                            external_id = results['ids'][0][0]
+                            external_name = results['documents'][0][0] if results.get('documents') and results['documents'][0] else external_id
                             metadata = results['metadatas'][0][0] or {}
                             role = metadata.get('Role', 'External Staff')
                             
@@ -372,6 +388,10 @@ def other_result():
                                 )
                                 face_match_data = existing_log
                                 face_match_data["ExitTime"] = time_str
+                                
+                                # SHADOW DB INJECTION
+                                from models.universal_db_helper import log_to_universal_registry
+                                log_to_universal_registry(external_name, role, existing_log.get("Date").split(" ")[1], time_str, visitor_id=external_id)
                             else:
                                 face_match_data = {
                                     "Name": external_name, 
@@ -380,6 +400,10 @@ def other_result():
                                     "ExitTime": None
                                 }
                                 attendance_log.insert_one(face_match_data)
+                                
+                                # SHADOW DB INJECTION
+                                from models.universal_db_helper import log_to_universal_registry
+                                log_to_universal_registry(external_name, role, time_str, None, visitor_id=external_id)
                                 
                             match_found = True
                             print(f"[SUCCESS] External matched: {external_name} as {role}")

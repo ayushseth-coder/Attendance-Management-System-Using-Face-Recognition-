@@ -56,19 +56,69 @@
                             {% for staff in external_staff %}
                             <tr>
                                 <th scope="row" class="ps-4 align-middle">{{ loop.index }}</th>
-                                <td class="align-middle fw-bold">{{ staff.name }}</td>
+                                <td class="align-middle fw-bold">
+                                    <span class="badge bg-secondary me-2">EXTSTF-{{ staff.num_id }}</span>
+                                    {{ staff.Name }}
+                                    {% if staff.Phone != 'Unknown' or staff.Email != 'Unknown' %}
+                                    <br>
+                                    <small class="text-muted fw-normal">
+                                        {% if staff.Phone != 'Unknown' %}<i class="fa fa-phone me-1"></i>{{ staff.Phone }} {% endif %}
+                                        {% if staff.Email != 'Unknown' %}<i class="fa fa-envelope ms-2 me-1"></i>{{ staff.Email }}{% endif %}
+                                    </small>
+                                    {% endif %}
+                                </td>
                                 <td class="align-middle">
-                                    <span class="badge bg-warning text-dark">{{ staff.role }}</span>
+                                    <span class="badge bg-warning text-dark">{{ staff.Role }}</span>
                                 </td>
                                 <td class="text-center align-middle">
+                                    <!-- Edit Button -->
+                                    <button type="button" class="btn btn-sm btn-outline-primary shadow-sm fw-bold me-2" data-bs-toggle="modal" data-bs-target="#editModal{{ loop.index }}">
+                                        <i class="fa fa-pencil"></i> Edit
+                                    </button>
+                                    
                                     <!-- Delete Form -->
-                                    <form action="{{ url_for('admin.delete_other', name=staff.name) }}" method="POST"
+                                    <form action="{{ url_for('admin.delete_other', staff_id=staff.num_id) }}" method="POST"
                                         style="display:inline;"
-                                        onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for {{ staff.name }}?');">
-                                        <button type="submit" class="btn btn-sm btn-danger">
+                                        onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for EXTSTF-{{ staff.num_id }} ({{ staff.Name }})?');">
+                                        <button type="submit" class="btn btn-sm btn-danger shadow-sm fw-bold">
                                             <i class="fa fa-trash"></i> Delete
                                         </button>
                                     </form>
+                                    
+                                    <!-- Edit Modal -->
+                                    <div class="modal fade" id="editModal{{ loop.index }}" tabindex="-1" aria-labelledby="editModalLabel{{ loop.index }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content shadow-lg border-0 rounded-3">
+                                                <div class="modal-header bg-warning border-bottom-0 rounded-top-3">
+                                                    <h5 class="modal-title fw-bold text-dark" id="editModalLabel{{ loop.index }}">Edit Profile: {{ staff.Name }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form action="{{ url_for('admin.update_other_details') }}" method="POST">
+                                                    <div class="modal-body p-4 text-start">
+                                                        <input type="hidden" name="staff_id" value="{{ staff.num_id }}">
+                                                        <input type="hidden" name="name" value="{{ staff.Name }}">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label class="form-label text-dark fw-bold mb-1">Email Address</label>
+                                                            <input type="email" class="form-control" name="email" value="{{ '' if staff.get('Email', 'Unknown') == 'Unknown' else staff.get('Email', '') }}" placeholder="staff@example.com">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label text-dark fw-bold mb-1">Phone Number</label>
+                                                            <input type="text" class="form-control" name="phone" value="{{ '' if staff.get('Phone', 'Unknown') == 'Unknown' else staff.get('Phone', '') }}" placeholder="+1 234 567 8900">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label text-dark fw-bold mb-1">Assigned Role</label>
+                                                            <input type="text" class="form-control" name="role" value="{{ '' if staff.get('Role', 'Unknown') == 'Unknown' else staff.get('Role', '') }}" placeholder="e.g. Contractor">
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-top-0 bg-light">
+                                                        <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-warning text-dark px-4 rounded-pill fw-bold">Save Changes</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}

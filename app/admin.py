@@ -146,9 +146,21 @@ def notification():
 
 @admin.route("/filter_role", methods=['GET'])  # dropdown filtering
 def filter_role():
-   
     status = request.args.get('role', 'all')
-    query = {} if status == 'all' else {"Job": status}
+    
+    # Only allow legitimate Dashboard Access users to appear on the User Overview page.
+    # We do this by ensuring they actually have a Password (facial recognition employees have Password="").
+    base_query = {"Password": {"$ne": ""}}
+    
+    if status.lower() == 'all':
+        query = base_query
+    else:
+        query = {
+            "$and": [
+                base_query,
+                {"Job": {"$regex": f"^{status}$", "$options": "i"}}
+            ]
+        }
 
     users = list(collection.find(query))  
     return render_template('user_overview.html', users=users, selected_role=status)
@@ -309,7 +321,7 @@ def delete_employee(name):
     try:
         # Delete from ChromaDB
         employee_collection.delete(ids=[name])
-        flash(f"Successfully deleted records for {name}.", "success")
+        flash(f"Successfully deleted records for ID {visitor_id}.", "success")
         
         # Cleanup: Delete ALL local photos matching the employee name (ignoring case and extensions)
         import os
@@ -318,14 +330,14 @@ def delete_employee(name):
             for filename in os.listdir(faces_dir):
                 name_without_ext = os.path.splitext(filename)[0]
                 # If the name matches (ignoring capital letters), delete it!
-                if name_without_ext.lower() == name.lower():
+                if name_without_ext.lower() == visitor_id.lower():
                     try:
                         os.remove(os.path.join(faces_dir, filename))
                     except Exception:
                         pass
                 
     except Exception as e:
-        flash(f"Error deleting {name}: {e}", "danger")
+        flash(f"Error deleting {visitor_id}: {e}", "danger")
         
     return redirect(url_for('admin.manage_employees'))
 
@@ -366,27 +378,81 @@ def delete_all_employees():
 @admin.route('/manage_visitors', methods=['GET'])
 def manage_visitors():
     from models.vector_db import visitor_collection
+    from models.database import universal_registry
     
     try:
-        results = visitor_collection.get()
-        visitor_names = results.get('ids', [])
-        total_count = len(visitor_names)
+        results = visitor_collection.get(include=["documents"])
+        visitor_ids = results.get('ids', [])
+        documents = results.get('documents', [])
+        total_count = len(visitor_ids)
+        
+        visitor_profiles = []
+        for i, vis_id in enumerate(visitor_ids):
+            smart_id = f"REGVIS-{vis_id}"
+            profile = universal_registry.find_one({"_id": smart_id})
+            name = documents[i] if documents and i < len(documents) and documents[i] else vis_id
+            
+            if profile:
+                profile['num_id'] = vis_id
+                visitor_profiles.append(profile)
+            else:
+                visitor_profiles.append({"num_id": vis_id, "Name": name, "Phone": "Unknown", "Email": "Unknown"})
+                
     except Exception as e:
         print(f"[ERROR] Could not fetch visitors: {e}")
-        visitor_names = []
+        visitor_profiles = []
         total_count = 0
         flash("Failed to load visitors from database.", "danger")
         
-    return render_template('manage_visitors.html', visitor_names=visitor_names, total_count=total_count)
+    return render_template('manage_visitors.html', visitor_profiles=visitor_profiles, total_count=total_count)
 
-@admin.route('/delete_visitor/<name>', methods=['POST'])
-def delete_visitor(name):
+@admin.route('/update_visitor_details', methods=['POST'])
+def update_visitor_details():
+    from models.database import universal_registry
+    import datetime
+    
+    visitor_id = request.form.get('visitor_id')
+    name = request.form.get('name')
+    email = request.form.get('email', 'Unknown')
+    phone = request.form.get('phone', 'Unknown')
+    
+    if visitor_id and name:
+        smart_id = f"REGVIS-{visitor_id}"
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+        universal_registry.update_one(
+            {"_id": smart_id},
+            {
+                "$set": {
+                    "Email": email,
+                    "Phone": phone
+                },
+                "$setOnInsert": {
+                    "Name": name,
+                    "Role": "Visitor",
+                    "Address": "Unknown",
+                    "Visitor_Type": "Regular",
+                    "Date": today_str,
+                    "In_Time": None,
+                    "Out_Time": None
+                }
+            },
+            upsert=True
+        )
+        flash(f"Successfully updated details for {name}", "success")
+    else:
+        flash("Error: Missing Visitor Name", "danger")
+        
+    return redirect(url_for('admin.manage_visitors'))
+
+@admin.route('/delete_visitor/<visitor_id>', methods=['POST'])
+def delete_visitor(visitor_id):
     from models.vector_db import visitor_collection
     
     try:
         # Delete from ChromaDB
-        visitor_collection.delete(ids=[name])
-        flash(f"Successfully deleted records for {name}.", "success")
+        visitor_collection.delete(ids=[visitor_id])
+        flash(f"Successfully deleted records for ID {visitor_id}.", "success")
         
         # Cleanup: Delete local photo
         import os
@@ -394,14 +460,14 @@ def delete_visitor(name):
         if os.path.exists(faces_dir):
             for filename in os.listdir(faces_dir):
                 name_without_ext = os.path.splitext(filename)[0]
-                if name_without_ext.lower() == name.lower():
+                if name_without_ext.lower() == visitor_id.lower():
                     try:
                         os.remove(os.path.join(faces_dir, filename))
                     except Exception:
                         pass
                 
     except Exception as e:
-        flash(f"Error deleting {name}: {e}", "danger")
+        flash(f"Error deleting {visitor_id}: {e}", "danger")
         
     return redirect(url_for('admin.manage_visitors'))
 
@@ -439,20 +505,32 @@ def delete_all_visitors():
 @admin.route('/manage_other', methods=['GET'])
 def manage_other():
     from models.vector_db import other_collection
+    from models.database import universal_registry
     
     try:
-        results = other_collection.get(include=["metadatas"])
-        other_names = results.get('ids', [])
+        results = other_collection.get(include=["metadatas", "documents"])
+        other_ids = results.get('ids', [])
+        documents = results.get('documents', [])
         metadatas = results.get('metadatas', [])
-        total_count = len(other_names)
+        total_count = len(other_ids)
         
-        # Combine names and roles
         external_staff = []
-        for i in range(total_count):
-            name = other_names[i]
+        for i, stf_id in enumerate(other_ids):
+            name = documents[i] if documents and i < len(documents) and documents[i] else stf_id
             role = metadatas[i].get('Role', 'Unknown') if metadatas and i < len(metadatas) and metadatas[i] else 'Unknown'
-            external_staff.append({"name": name, "role": role})
             
+            smart_id = f"EXTSTF-{stf_id}"
+            profile = universal_registry.find_one({"_id": smart_id})
+            
+            if profile:
+                profile['num_id'] = stf_id
+                # Ensure the ChromaDB role is passed through if missing
+                if "Role" not in profile or profile["Role"] == "Unknown":
+                    profile["Role"] = role
+                external_staff.append(profile)
+            else:
+                external_staff.append({"num_id": stf_id, "Name": name, "Role": role, "Phone": "Unknown", "Email": "Unknown"})
+                
     except Exception as e:
         print(f"[ERROR] Could not fetch external staff: {e}")
         external_staff = []
@@ -461,27 +539,67 @@ def manage_other():
         
     return render_template('manage_other.html', external_staff=external_staff, total_count=total_count)
 
-@admin.route('/delete_other/<name>', methods=['POST'])
-def delete_other(name):
+@admin.route('/update_other_details', methods=['POST'])
+def update_other_details():
+    from models.database import universal_registry
+    import datetime
+    
+    staff_id = request.form.get('staff_id')
+    name = request.form.get('name')
+    email = request.form.get('email', 'Unknown')
+    phone = request.form.get('phone', 'Unknown')
+    role = request.form.get('role', 'Unknown')
+    
+    if staff_id and name:
+        smart_id = f"EXTSTF-{staff_id}"
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+        universal_registry.update_one(
+            {"_id": smart_id},
+            {
+                "$set": {
+                    "Email": email,
+                    "Phone": phone,
+                    "Role": role
+                },
+                "$setOnInsert": {
+                    "Name": name,
+                    "Address": "Unknown",
+                    "Visitor_Type": "Regular",
+                    "Date": today_str,
+                    "In_Time": None,
+                    "Out_Time": None
+                }
+            },
+            upsert=True
+        )
+        flash(f"Successfully updated details for {name}", "success")
+    else:
+        flash("Error: Missing Staff Name", "danger")
+        
+    return redirect(url_for('admin.manage_other'))
+
+@admin.route('/delete_other/<staff_id>', methods=['POST'])
+def delete_other(staff_id):
     from models.vector_db import other_collection
     
     try:
-        other_collection.delete(ids=[name])
-        flash(f"Successfully deleted records for {name}.", "success")
+        other_collection.delete(ids=[staff_id])
+        flash(f"Successfully deleted records for ID {visitor_id}.", "success")
         
         import os
         faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
         if os.path.exists(faces_dir):
             for filename in os.listdir(faces_dir):
                 name_without_ext = os.path.splitext(filename)[0]
-                if name_without_ext.lower() == name.lower():
+                if name_without_ext.lower() == visitor_id.lower():
                     try:
                         os.remove(os.path.join(faces_dir, filename))
                     except Exception:
                         pass
                 
     except Exception as e:
-        flash(f"Error deleting {name}: {e}", "danger")
+        flash(f"Error deleting {visitor_id}: {e}", "danger")
         
     return redirect(url_for('admin.manage_other'))
 
@@ -550,7 +668,7 @@ def employee_image(name):
     if os.path.exists(faces_dir):
         for filename in os.listdir(faces_dir):
             name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == name.lower():
+            if name_without_ext.lower() == visitor_id.lower():
                 return send_from_directory(faces_dir, filename)
                 
     # If physical image was deleted, serve a clean SVG placeholder instead of a broken image
@@ -587,7 +705,7 @@ def visitor_image(name):
     if os.path.exists(faces_dir):
         for filename in os.listdir(faces_dir):
             name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == name.lower():
+            if name_without_ext.lower() == visitor_id.lower():
                 return send_from_directory(faces_dir, filename)
                 
     svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
@@ -623,7 +741,7 @@ def other_image(name):
     if os.path.exists(faces_dir):
         for filename in os.listdir(faces_dir):
             name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == name.lower():
+            if name_without_ext.lower() == visitor_id.lower():
                 return send_from_directory(faces_dir, filename)
                 
     svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
@@ -706,32 +824,79 @@ def attendance_timesheet():
 
 @admin.route('/update_employee_details', methods=['POST'])
 def update_employee_details():
-    from models.database import collection
+    from models.database import collection, universal_registry
     import datetime
+    import re
     
     name = request.form.get('name')
     email = request.form.get('email')
     job = request.form.get('job')
+    phone = request.form.get('phone', 'Unknown')
+    address = request.form.get('address', 'Unknown')
+    leave_status = request.form.get('leave_status', 'Active')
     
     if name:
-        # Upsert: Update if exists, Insert if not
+        # 1. Update Old Architecture
         collection.update_one(
             {"Name": name},
             {
                 "$set": {
                     "Email": email, 
                     "Job": job,
-                    "Phone": request.form.get('phone', 'N/A')
+                    "Phone": phone,
+                    "Address": address,
+                    "Leave_Status": leave_status
                 },
                 "$setOnInsert": {
                     "Date": datetime.datetime.now(),
-                    "Password": ""  # Require password reset if they want to login later
+                    "Password": ""
                 }
             },
             upsert=True
         )
+        
+        # 2. Update Shadow Architecture
+        try:
+            match = re.match(r"([A-Za-z]+)(\d*)", name)
+            if match:
+                clean_name = match.group(1).capitalize()
+                extracted_id = match.group(2) if match.group(2) else None
+            else:
+                clean_name = name.capitalize()
+                extracted_id = None
+                
+            smart_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+            
+            universal_registry.update_one(
+                {"_id": smart_id},
+                {
+                    "$set": {
+                        "Email": email,
+                        "Phone": phone,
+                        "Address": address,
+                        "Leave_Status": leave_status
+                    }
+                }
+            )
+        except Exception as e:
+            print(f"[SHADOW DB ERROR] Failed to sync update: {e}")
+            
         flash(f"Successfully updated details for {name}", "success")
     else:
         flash("Error: Missing Employee Name", "danger")
         
     return redirect(request.referrer or url_for('admin.manage_employees'))
+
+@admin.route('/universal_records', methods=['GET'])
+def universal_records():
+    from models.database import universal_registry
+    
+    # Fetch all records from the Shadow Database
+    try:
+        records = list(universal_registry.find().sort("Name", 1))
+    except Exception as e:
+        print(f"[ERROR] Fetching Universal Records: {e}")
+        records = []
+        flash("Failed to load Universal Records.", "danger")
+        
+    return render_template('universal_records.html', records=records)

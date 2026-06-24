@@ -93,11 +93,27 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="form-label text-dark fw-bold mb-1">Email Address</label>
-                                                    <input type="email" class="form-control" name="email" value="{{ '' if emp.Email == 'Unknown' else emp.Email }}" placeholder="employee@elgoss.com" required>
+                                                    <input type="email" class="form-control" name="email" value="{{ '' if emp.get('Email', 'Unknown') == 'Unknown' else emp.get('Email', '') }}" placeholder="employee@elgoss.com" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-dark fw-bold mb-1">Phone Number</label>
+                                                    <input type="text" class="form-control" name="phone" value="{{ '' if emp.get('Phone', 'Unknown') == 'Unknown' else emp.get('Phone', '') }}" placeholder="+1 234 567 8900">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-dark fw-bold mb-1">Home Address</label>
+                                                    <input type="text" class="form-control" name="address" value="{{ '' if emp.get('Address', 'Unknown') == 'Unknown' else emp.get('Address', '') }}" placeholder="123 Main St, City">
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="form-label text-dark fw-bold mb-1">Job Title / Role</label>
-                                                    <input type="text" class="form-control" name="job" value="{{ '' if emp.Job == 'Unknown' else emp.Job }}" placeholder="e.g. Developer, HR" required>
+                                                    <input type="text" class="form-control" name="job" value="{{ '' if emp.get('Job', 'Unknown') == 'Unknown' else emp.get('Job', '') }}" placeholder="e.g. Developer, HR" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-dark fw-bold mb-1">Leave Status</label>
+                                                    <select class="form-select" name="leave_status">
+                                                        <option value="Active" {% if emp.get('Leave_Status', 'Active') == 'Active' %}selected{% endif %}>Active</option>
+                                                        <option value="On Leave" {% if emp.get('Leave_Status', 'Active') == 'On Leave' %}selected{% endif %}>On Leave</option>
+                                                        <option value="Suspended" {% if emp.get('Leave_Status', 'Active') == 'Suspended' %}selected{% endif %}>Suspended</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div class="modal-footer border-top-0 bg-light">

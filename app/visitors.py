@@ -110,12 +110,16 @@ def accept_regular(uid):
                     embedding = representations[0]["embedding"]
                     
                     if visitor_collection is not None:
+                        # Generate a random 6-digit numerical ID to prevent duplicates
+                        import random
+                        num_id = str(random.randint(100000, 999999))
+                        
                         visitor_collection.upsert(
                             embeddings=[embedding],
                             documents=[visitor_name],
-                            ids=[visitor_name]
+                            ids=[num_id]
                         )
-                        print(f"[SUCCESS] Regular Visitor {visitor_name} permanently enrolled in ChromaDB!")
+                        print(f"[SUCCESS] Regular Visitor {visitor_name} permanently enrolled in ChromaDB with Numerical ID {num_id}!")
         except Exception as e:
             print(f"[ERROR] Failed to enroll Regular Visitor in ChromaDB: {e}")
 
@@ -225,13 +229,15 @@ def enroll_external(uid):
                     embedding = representations[0]["embedding"]
                     
                     if other_collection is not None:
+                        import random
+                        num_id = str(random.randint(100000, 999999))
                         other_collection.upsert(
                             embeddings=[embedding],
                             documents=[external_name],
                             metadatas=[{"Role": role}],
-                            ids=[external_name]
+                            ids=[num_id]
                         )
-                        print(f"[SUCCESS] {role} {external_name} permanently enrolled in ChromaDB!")
+                        print(f"[SUCCESS] {role} {external_name} permanently enrolled in ChromaDB with Numerical ID {num_id}!")
         except Exception as e:
             print(f"[ERROR] Failed to enroll External Staff in ChromaDB: {e}")
 
