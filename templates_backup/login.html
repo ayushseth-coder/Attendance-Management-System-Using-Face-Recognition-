@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elgoss Automated Attendance Management System</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <style>
+        body {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .hero {
+            padding-bottom: 20px !important;
+            padding-top: 40px !important;
+        }
+
+        .features-section {
+            padding: 40px 20px;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+
+        .features-section h3 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .features-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px 20px;
+            width: 280px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 4px solid #4b6cb7;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-card h4 {
+            color: #4b6cb7;
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .feature-card ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .feature-card ul li {
+            font-size: 15px;
+            color: #555;
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .feature-card ul li::before {
+            content: "•";
+            color: #4b6cb7;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="logo-circle">
+                <img src="{{ url_for('static', filename='images/reg logo.png') }}" alt="Logo">
+            </div>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/" class="active">Home</a></li>
+                <li><a href="#">Contact</a></li>
+                <li><a href="#">Reports</a></li>
+                <li><a href="#">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h2>Elgoss Automated Attendance Management System</h2>
+        <p>• Fast • Accurate • Reliable</p>
+        <div class="hero-buttons">
+            <!-- Admin -->
+            <button class="cta-btn" onclick="showLogin('admin')">
+                <i class="fa-solid fa-user-shield"></i> Admin Login
+            </button>
+            <!-- Security -->
+            <button class="cta-btn" onclick="showLogin('security')">
+                <i class="fa-solid fa-shield-halved"></i> Security Login
+            </button>
+        </div>
+
+        <!-- Key Features Section -->
+        <div class="features-section" style="background: transparent; padding-top: 40px;">
+            <h3>Key Features</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>Automated Attendance System</h4>
+                </div>
+                <div class="feature-card">
+                    <h4>Smart Visitor Management</h4>
+                </div>
+                <div class="feature-card">
+                    <h4>Secure Access Portals</h4>
+                </div>
+                <div class="feature-card">
+                    <h4>Real-time Notifications</h4>
+                </div>
+                <div class="feature-card">
+                    <h4>Easy Reporting & Analytics</h4>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal Backdrop -->
+    <div id="modal-backdrop"></div>
+
+    <!-- Login Section -->
+    <section class="login-section" id="login-section">
+
+        <!-- ================= ADMIN LOGIN ================= -->
+        <div class="login-container" id="admin-login">
+            <span class="close-btn" onclick="closeLogin()">&times;</span>
+            <h4><i class="fa-solid fa-user-shield"></i> Admin Login</h4>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="error-message alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('auth.login') }}" method="POST">
+                <input type="hidden" name="login_type" value="admin">
+                <input type="email" name="email" placeholder="Enter Email" required>
+                <div class="password-box">
+                    <input type="password" id="admin-password" name="password" placeholder="Enter Password" required>
+                    <i class="fa-solid fa-eye" onclick="togglePassword('admin-password', this)"></i>
+                </div>
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <a href="/forgot" style="text-decoration: none; font-size: 14px; color: #4b6cb7;">Forgot
+                        Password?</a>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+        </div>
+
+        <!-- ================= SECURITY LOGIN ================= -->
+        <div class="login-container" id="security-login">
+            <span class="close-btn" onclick="closeLogin()">&times;</span>
+            <h4><i class="fa-solid fa-shield-halved"></i> Security Login</h4>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="error-message alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('auth.login') }}" method="POST">
+                <input type="hidden" name="login_type" value="security">
+                <input type="email" name="email" placeholder="Enter Email" required>
+                <div class="password-box">
+                    <input type="password" id="security-password" name="password" placeholder="Enter Password" required>
+                    <i class="fa-solid fa-eye" onclick="togglePassword('security-password', this)"></i>
+                </div>
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <a href="/forgot" style="text-decoration: none; font-size: 14px; color: #4b6cb7;">Forgot
+                        Password?</a>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+        </div>
+
+    </section>
+
+    <!-- JS -->
+    <script>
+        function showLogin(type) {
+            // Show backdrop
+            document.getElementById("modal-backdrop").style.display = "block";
+            document.getElementById("login-section").style.display = "flex";
+
+            document.getElementById("admin-login").style.display = "none";
+            document.getElementById("security-login").style.display = "none";
+
+            if (type === "admin") {
+                document.getElementById("admin-login").style.display = "block";
+            } else if (type === "security") {
+                document.getElementById("security-login").style.display = "block";
+            }
+        }
+
+        function closeLogin() {
+            document.getElementById("modal-backdrop").style.display = "none";
+            document.getElementById("login-section").style.display = "none";
+            document.getElementById("admin-login").style.display = "none";
+            document.getElementById("security-login").style.display = "none";
+        }
+
+        function togglePassword(id, icon) {
+            let input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+
+        let navLinks = document.querySelectorAll("nav a");
+        navLinks.forEach(link => {
+            link.addEventListener("click", function () {
+                navLinks.forEach(nav => nav.classList.remove("active"));
+                this.classList.add("active");
+            });
+        });
+
+        let buttons = document.querySelectorAll(".cta-btn, .login-btn");
+        buttons.forEach(button => {
+            button.addEventListener("click", function () {
+                this.style.transform = "scale(0.97)";
+                setTimeout(() => {
+                    this.style.transform = "scale(1)";
+                }, 100);
+            });
+        });
+    </script>
+</body>
+
+</html>

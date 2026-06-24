@@ -201,6 +201,10 @@ def admin_h():
     return render_template ("admin_h.html",  pending=pending ,total=total,countvis=countvis, active=active,rejectobj=reject,
                            months=months, accept_data=accept_data, total_data=total_data)  
 
+@admin.route('/manage_section', methods=['GET'])
+def manage_section():
+    return render_template('manage_section.html')
+
 @admin.route('/enroll_employees', methods=['GET', 'POST'])
 def enroll_employees():
     if request.method == 'GET':

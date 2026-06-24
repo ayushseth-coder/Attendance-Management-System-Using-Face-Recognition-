@@ -17,57 +17,52 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-body p-0">
-                    <table class="table table-hover table-striped mb-0 align-middle">
-                        <thead class="table-dark">
-                            <tr>
-                                <th scope="col" class="ps-4" style="width: 15%;">Photo</th>
-                                <th scope="col" style="width: 40%;">Visitor Name</th>
-                                <th scope="col" style="width: 25%;">Entry Time</th>
-                                <th scope="col" style="width: 20%;">Exit Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if logs|length == 0 %}
-                            <tr>
-                                <td colspan="3" class="text-center py-5 text-muted">
-                                    <i class="fa fa-calendar-times-o fa-3x mb-3 text-secondary"></i><br>
-                                    <h5>No visitor records found for {{ selected_date }}</h5>
-                                </td>
-                            </tr>
-                            {% else %}
-                                {% for log in logs %}
-                                <tr>
-                                    <td class="ps-4">
-                                        <!-- Fetch Secure Image Bridge for Visitors -->
-                                        <img src="{{ url_for('admin.visitor_image', name=log.Name) }}" alt="{{ log.Name }}" class="rounded-circle shadow-sm" style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #ddd;">
-                                    </td>
-                                    <td class="fw-bold fs-5">{{ log.Name }}</td>
-                                    <td>
-                                        <span class="badge bg-warning text-dark p-2 fs-6">
-                                            <i class="fa fa-clock-o me-1"></i> {{ log.Date.split(' ')[1] if ' ' in log.Date else log.Date }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if log.ExitTime %}
-                                            <span class="badge bg-danger p-2 fs-6">
-                                                <i class="fa fa-sign-out me-1"></i> {{ log.ExitTime }}
-                                            </span>
-                                        {% else %}
-                                            <span class="text-muted fst-italic">Still Inside</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6 mt-4">
+  <div class="overflow-x-auto p-4 md:p-6 pt-2">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-[#0f52ba] border-b-2 border-[#0a387c]">
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 15%;">Photo</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 40%;">Visitor Name</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 25%;">Entry Time</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 20%;">Exit Time</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% if logs|length == 0 %}
+        <tr>
+          <td colspan="4" class="text-center py-8 text-slate-500 font-medium">
+            <i class="fa fa-calendar-times-o fa-3x mb-3 text-slate-300"></i><br>
+            <h5>No visitor records found for {{ selected_date }}</h5>
+          </td>
+        </tr>
+        {% else %}
+          {% for log in logs %}
+          <tr class="hover:bg-slate-50 transition-colors duration-150">
+            <td class="px-3 py-2.5 whitespace-nowrap">
+              <img src="{{ url_for('admin.visitor_image', name=log.Name) }}" alt="{{ log.Name }}" class="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm">
+            </td>
+            <td class="px-3 py-2.5 whitespace-nowrap font-bold text-slate-800">{{ log.Name }}</td>
+            <td class="px-3 py-2.5 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-md text-sm font-semibold">
+                <i class="fa fa-clock-o"></i> {{ log.Date.split(' ')[1] if ' ' in log.Date else log.Date }}
+              </span>
+            </td>
+            <td class="px-3 py-2.5 whitespace-nowrap">
+              {% if log.ExitTime %}
+                <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2 py-1 rounded-md text-sm font-semibold">
+                  <i class="fa fa-sign-out"></i> {{ log.ExitTime }}
+                </span>
+              {% else %}
+                <span class="text-slate-400 italic text-sm font-medium">Still Inside</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
 </div>
 {% endblock %}

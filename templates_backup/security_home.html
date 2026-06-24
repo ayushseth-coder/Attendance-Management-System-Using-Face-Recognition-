@@ -1,0 +1,102 @@
+{% extends 'security_base.html' %}
+
+{% block title %}home{% endblock title %}
+<link href="../static/base.css" rel="stylesheet">
+{% block body %}
+
+
+<!-- Home -->
+<div>
+    <style>
+        .dash-card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e0e0e0 !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+        }
+        .dash-card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+            border-color: #20c997 !important;
+        }
+        .circular-btn {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        }
+        .circular-btn i {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+        .circular-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+            color: white;
+        }
+        .btn-employee { background: linear-gradient(135deg, #007bff, #0056b3); }
+        .btn-visitor { background: linear-gradient(135deg, #20c997, #17a2b8); }
+        .btn-other { background: linear-gradient(135deg, #6f42c1, #563d7c); }
+    </style>
+    <h2 class="mb-4"><b style="color: black;">Welcome</b> <span style="color: #20c997;">Security</span></h2>
+    <div class="row g-3 mt-2">
+        <div class="col-md-3">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
+                <h4 class="text-dark fw-bold mb-1"> {{countvis}}</h4>
+                <p class="text-muted mb-0">Today's Entries</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
+                <h4 class="text-dark fw-bold mb-1">0</h4>
+                <p class="text-muted mb-0">Today's Exits</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
+                <h4 class="text-dark fw-bold mb-1">0</h4>
+                <p class="text-muted mb-0">Checkpoints</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
+                <h4 class="text-dark fw-bold mb-1">{{ total }}</h4>
+                <p class="text-muted mb-0">Total Visitors</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Face Login Section -->
+    <h3 class="mt-5 mb-4 text-dark fw-bold" style="border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">Quick Face Login</h3>
+    <div class="row mt-4">
+        <div class="col-md-4 text-center">
+            <a href="{{ url_for('face_auth.face_login') }}" class="circular-btn btn-employee">
+                <i class="fas fa-user-tie"></i>
+                Employee
+            </a>
+        </div>
+        <div class="col-md-4 text-center">
+            <a href="{{ url_for('face_auth.visitor_auth') }}" class="circular-btn btn-visitor">
+                <i class="fas fa-user"></i>
+                Visitor
+            </a>
+        </div>
+        <div class="col-md-4 text-center">
+            <a href="{{ url_for('face_auth.other_auth') }}" class="circular-btn btn-other">
+                <i class="fas fa-users"></i>
+                Other
+            </a>
+        </div>
+    </div>
+</div>
+
+
+{% endblock body %}

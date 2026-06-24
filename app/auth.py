@@ -147,17 +147,23 @@ def update_profile():
         return redirect(url_for('auth.login'))
     
     email = session['user_id']
-    updated_data = {
-        'Name': request.form.get('Name'),
-        'mobile': request.form.get('mobile'),
-        'address': request.form.get('address'),
-        'Job': request.form.get('Job')
-    }
+    user_data = collection.find_one({'Email': email})
+    
+    if request.method == 'GET':
+        return render_template('update_profile.html', user=user_data)
+        
+    if request.method == 'POST':
+        updated_data = {
+            'Name': request.form.get('Name') or user_data.get('Name'),
+            'mobile': request.form.get('mobile') or user_data.get('mobile'),
+            'address': request.form.get('address') or user_data.get('address'),
+            'Job': request.form.get('Job') or user_data.get('Job')
+        }
 
-    result = collection.update_one({'Email': email}, {'$set': updated_data})
+        result = collection.update_one({'Email': email}, {'$set': updated_data})
 
-    flash("Profile updated successfully!" if result.modified_count else "No changes made.")
-    return redirect(url_for('auth.profile'))
+        flash("Profile updated successfully!" if result.modified_count else "No changes made.", "success")
+        return redirect(url_for('auth.profile'))
 
 
 @ auth.route('/cancle', methods=['POST', 'GET'])

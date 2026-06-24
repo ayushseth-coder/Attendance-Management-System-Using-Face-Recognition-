@@ -1,0 +1,18 @@
+
+{% extends 'security_base.html' %}
+
+{% block title %}otp{% endblock title %}
+
+
+
+{% block body %}  
+<link href="../static/sms.css" rel="stylesheet" />
+    <div class="container">
+        <h2>Enter Your Phone Number</h2>
+        <form method="POST" action="{{url_for('otp_gen.send_sms')}}">
+            <input type="text" name="phone" placeholder="Enter Phone Number" required>
+            <button type="submit">Get OTP</button>
+        </form>
+    </div>
+{% endblock body %}
+

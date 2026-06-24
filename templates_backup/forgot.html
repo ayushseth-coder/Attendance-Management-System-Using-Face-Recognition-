@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset</title>
+    <link href="../static/Style2.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+  {% endwith %}
+    <div class="reset-container">
+        <div class="reset-card">
+            <h2>Password Reset</h2>
+            <p>Enter your email address and we'll send you an email with instructions to reset your password.</p>
+            <form id="resetForm" action="{{url_for('otp_gen.reset')}}" method="POST">
+                <input type="email" name="email" placeholder="Email input" required>
+                <button type="submit" class="reset-btn">RESET PASSWORD</button>
+            </form>
+            <!-- <div class="links">
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            </div> -->
+        </div>
+    </body>
+</html>

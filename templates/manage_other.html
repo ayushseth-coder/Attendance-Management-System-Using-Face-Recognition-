@@ -3,10 +3,15 @@
 {% block title %}Manage External Staff{% endblock %}
 
 {% block body %}
-<div class="container mt-4">
+<div class="container-fluid px-0 mt-4">
     <div class="row mb-4">
         <div class="col-md-12 d-flex justify-content-between align-items-center">
-            <h2>Manage External Staff (Contractors, Vendors)</h2>
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('admin.manage_section') }}" class="btn btn-outline-secondary me-3" style="border-radius: 50%; width: 40px; height: 40px; display: inline-flex; justify-content: center; align-items: center;" title="Back to Manage Section">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h2 class="mb-0">Manage External Staff (Contractors, Vendors)</h2>
+            </div>
             <div class="d-flex align-items-center">
                 <span class="badge bg-warning text-dark fs-6 me-3">Total Enrolled: {{ total_count }}</span>
                 {% if total_count > 0 %}
@@ -32,52 +37,51 @@
     {% endif %}
     {% endwith %}
 
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-body p-0">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="table-dark">
-                            <tr>
-                                <th scope="col" class="ps-4" style="width: 10%;">#</th>
-                                <th scope="col" style="width: 40%;">Staff Name</th>
-                                <th scope="col" style="width: 30%;">Assigned Role</th>
-                                <th scope="col" class="text-center" style="width: 20%;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if total_count == 0 %}
-                            <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">
-                                    No External Staff are currently enrolled in the Database.
-                                </td>
-                            </tr>
-                            {% else %}
-                            {% for staff in external_staff %}
-                            <tr>
-                                <th scope="row" class="ps-4 align-middle">{{ loop.index }}</th>
-                                <td class="align-middle fw-bold">{{ staff.name }}</td>
-                                <td class="align-middle">
-                                    <span class="badge bg-warning text-dark">{{ staff.role }}</span>
-                                </td>
-                                <td class="text-center align-middle">
-                                    <!-- Delete Form -->
-                                    <form action="{{ url_for('admin.delete_other', name=staff.name) }}" method="POST"
-                                        style="display:inline;"
-                                        onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for {{ staff.name }}?');">
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="fa fa-trash"></i> Delete
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6 mt-4">
+  <div class="overflow-x-auto p-4 md:p-6 pt-2">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-[#0f52ba] border-b-2 border-[#0a387c]">
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 10%;">#</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 40%;">Staff Name</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 30%;">Assigned Role</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap text-center" style="width: 20%;">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% if total_count == 0 %}
+        <tr>
+          <td colspan="4" class="text-center py-8 text-slate-500 font-medium">
+            No External Staff are currently enrolled in the Database.
+          </td>
+        </tr>
+        {% else %}
+        {% for staff in external_staff %}
+        <tr class="hover:bg-slate-50 transition-colors duration-150">
+          <td class="px-3 py-2.5 whitespace-nowrap text-sm font-medium text-slate-600">{{ loop.index }}</td>
+          <td class="px-3 py-2.5 whitespace-nowrap">
+            <div class="flex items-center gap-3">
+              <div class="h-8 w-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-primary font-bold text-xs shrink-0 shadow-sm">
+                {{ staff.name[0] | upper if staff.name else 'S' }}
+              </div>
+              <span class="text-sm font-bold text-slate-800">{{ staff.name }}</span>
             </div>
-        </div>
-    </div>
+          </td>
+          <td class="px-3 py-2.5 whitespace-nowrap text-sm font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 inline-block mt-2">{{ staff.role }}</td>
+          <td class="px-3 py-2.5 whitespace-nowrap text-center">
+            <!-- Delete Form -->
+            <form action="{{ url_for('admin.delete_other', name=staff.name) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for {{ staff.name }}?');">
+              <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm">
+                Delete
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
 </div>
 {% endblock %}

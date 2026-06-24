@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Other Logs Smart Gateway</title>
+  <link href="../static/camera.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <style>
+    .modal-backdrop { opacity: 0.8 !important; }
+    .action-btn { font-size: 1.2rem; padding: 15px; margin-bottom: 10px; width: 100%; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+        <div class="camera-wrapper">
+          <div class="camera-box">
+  <form>
+    <h2>SMART GATEWAY</h2>
+    <p class="text-muted text-center">Stand in front of the camera...</p>
+    <div style="margin-top: 20px;" class="form-row">
+      <!-- Reusing the standard video feed -->
+      <img src="{{ url_for('face_auth.face_video_feed') }}" width="100%" height="auto" alt="Camera Feed" />
+    </div>
+  </form>
+</div>
+</div>
+</div>
+
+<script>
+  let timeLeft = 5; // seconds
+  const timerEl = document.getElementById('timer');
+
+  const countdown = setInterval(() => {
+    timeLeft--;
+    if (timerEl) {
+      timerEl.textContent = timeLeft;
+    }
+    
+    if (timeLeft <= 0) {
+      clearInterval(countdown);
+    }
+  }, 1000);
+
+// After 7 seconds, redirect to the smart gateway modal
+setTimeout(function() {
+    window.location.href = "{{ url_for('face_auth.other_modal') }}";
+}, 7000);
+</script>
+</body>
+</html>

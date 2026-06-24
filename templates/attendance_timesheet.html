@@ -19,76 +19,72 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="card shadow-lg border-0 rounded-3">
-                <div
-                    class="card-header bg-dark text-white p-3 rounded-top d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Consolidated Data for {{ selected_date }}</h5>
-                    <span class="badge bg-light text-dark fs-6">{{ timesheet|length }} Records</span>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-striped table-borderless align-middle mb-0">
-                            <thead class="table-light border-bottom">
-                                <tr>
-                                    <th scope="col" class="ps-4" style="width: 8%;">Photo</th>
-                                    <th scope="col" style="width: 15%;">Employee ID</th>
-                                    <th scope="col" style="width: 20%;">Email</th>
-                                    <th scope="col" style="width: 15%;">Role</th>
-                                    <th scope="col" style="width: 12%;">In Time</th>
-                                    <th scope="col" style="width: 12%;">Out Time</th>
-                                    <th scope="col" style="width: 18%;">Working Hours</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if timesheet|length == 0 %}
-                                <tr>
-                                    <td colspan="7" class="text-center py-5">
-                                        <i class="fa fa-calendar-times-o fa-3x mb-3 text-secondary"></i><br>
-                                        <h5>No timesheet records found for {{ selected_date }}</h5>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                {% for log in timesheet %}
-                                <tr>
-                                    <td class="ps-4">
-                                        <img src="{{ url_for('admin.employee_image', name=log.Name) }}"
-                                            alt="{{ log.Name }}" class="rounded-circle shadow-sm"
-                                            style="width: 45px; height: 45px; object-fit: cover; border: 2px solid #ddd;">
-                                    </td>
-                                    <td class="fw-bold text-dark">{{ log.Name }}</td>
-                                    <td class="text-muted">{{ log.Email }}</td>
-                                    <td><span class="badge bg-secondary">{{ log.Job }}</span></td>
-                                    <td>
-                                        <span class="text-success fw-bold">
-                                            <i class="fa fa-sign-in me-1"></i> {{ log.EntryTime }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if log.ExitTime %}
-                                        <span class="text-danger fw-bold">
-                                            <i class="fa fa-sign-out me-1"></i> {{ log.ExitTime }}
-                                        </span>
-                                        {% else %}
-                                        <span class="text-muted fst-italic">Still Inside</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if log.WorkingHours %}
-                                        <span class="badge bg-primary p-2 fs-6 shadow-sm">
-                                            <i class="fa fa-clock-o me-1"></i> {{ log.WorkingHours }}
-                                        </span>
-                                        {% else %}
-                                        <span class="badge bg-light text-dark p-2 fs-6 border">Calculating...</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-
-                                {% endfor %}
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6 mt-4">
+              <div class="bg-slate-50 border-b border-slate-200 p-4 md:px-6 py-4 flex justify-between items-center">
+                <h5 class="m-0 font-bold text-slate-800 text-lg">Consolidated Data for {{ selected_date }}</h5>
+                <span class="bg-[#0f52ba] text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">{{ timesheet|length }} Records</span>
+              </div>
+              <div class="overflow-x-auto p-4 md:p-6 pt-2">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-[#0f52ba] border-b-2 border-[#0a387c]">
+                      <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 8%;">Photo</th>
+                      <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 15%;">Employee ID</th>
+                      <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 20%;">Email</th>
+                      <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 15%;">Role</th>
+                      <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 12%;">In Time</th>
+                      <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 12%;">Out Time</th>
+                      <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 18%;">Working Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    {% if timesheet|length == 0 %}
+                    <tr>
+                      <td colspan="7" class="text-center py-8 text-slate-500 font-medium">
+                        <i class="fa fa-calendar-times-o fa-3x mb-3 text-slate-300"></i><br>
+                        <h5>No timesheet records found for {{ selected_date }}</h5>
+                      </td>
+                    </tr>
+                    {% else %}
+                    {% for log in timesheet %}
+                    <tr class="hover:bg-slate-50 transition-colors duration-150">
+                      <td class="px-3 py-2.5 whitespace-nowrap">
+                        <img src="{{ url_for('admin.employee_image', name=log.Name) }}" alt="{{ log.Name }}" class="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm">
+                      </td>
+                      <td class="px-3 py-2.5 whitespace-nowrap font-bold text-slate-800">{{ log.Name }}</td>
+                      <td class="px-3 py-2.5 whitespace-nowrap text-sm font-medium text-slate-600">{{ log.Email }}</td>
+                      <td class="px-3 py-2.5 whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-300 px-2 py-1 rounded-md text-sm font-semibold">{{ log.Job }}</span>
+                      </td>
+                      <td class="px-3 py-2.5 whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-md text-sm font-semibold">
+                          <i class="fa fa-sign-in"></i> {{ log.EntryTime }}
+                        </span>
+                      </td>
+                      <td class="px-3 py-2.5 whitespace-nowrap">
+                        {% if log.ExitTime %}
+                          <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2 py-1 rounded-md text-sm font-semibold">
+                            <i class="fa fa-sign-out"></i> {{ log.ExitTime }}
+                          </span>
+                        {% else %}
+                          <span class="text-slate-400 italic text-sm font-medium">Still Inside</span>
+                        {% endif %}
+                      </td>
+                      <td class="px-3 py-2.5 whitespace-nowrap">
+                        {% if log.WorkingHours %}
+                          <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-md text-sm font-semibold">
+                            <i class="fa fa-clock-o"></i> {{ log.WorkingHours }}
+                          </span>
+                        {% else %}
+                          <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-500 border border-slate-200 px-2 py-1 rounded-md text-sm font-semibold italic">Calculating...</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div class="mt-4">
