@@ -1,9 +1,5 @@
 <script type="text/javascript">
-  const chartData = {{ {
-    "months": months,
-    "acceptData": accept_data,
-    "totalData": total_data
-  } | tojson | safe }};
+  const chartData = JSON.parse('{{ {"months": months, "acceptData": accept_data, "totalData": total_data} | tojson | safe }}');
 </script>
 
 
@@ -110,6 +106,4 @@ chart.setAttribute("data-chart-initialized", "true");
 }
 });
 </script>
-
-
-{% endblock body %}  
+

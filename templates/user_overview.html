@@ -6,10 +6,8 @@
 
 {% block body %}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -24,200 +22,35 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0" style="font-size: 32px;"><b style="color: black;">User</b> <span style="color: #20c997;">Detail</span></h2>
-    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-  <form method="GET" action="{{ url_for('admin.filter_role') }}">
-    <div class="dropdown">
-      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
-        aria-expanded="false">
+<div class="flex flex-col xl:flex-row xl:items-center justify-between mb-6 gap-4">
+    <h2 class="mb-0" style="font-size: 32px; line-height: 1.2;"><b style="color: black;">User</b> <span style="color: #20c997;">Detail</span></h2>
+    
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Custom Length Menu Native Select -->
+      <select id="customLengthMenu" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-[#0f52ba]/20 focus:border-[#0f52ba] block px-3 py-2 cursor-pointer shadow-sm outline-none transition-all">
+        <option value="" disabled selected hidden>Show Entries</option>
+        <option value="5" class="py-2 text-slate-700 font-medium">5 Entries</option>
+        <option value="10" class="py-2 text-slate-700 font-medium">10 Entries</option>
+        <option value="20" class="py-2 text-slate-700 font-medium">20 Entries</option>
+        <option value="50" class="py-2 text-slate-700 font-medium">50 Entries</option>
+        <option value="-1" class="py-2 text-slate-700 font-medium">All Entries</option>
+      </select>
 
-        {{ selected_role if selected_role and selected_role != 'all' else 'All' }}
-      </button>
-      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <li><a class="dropdown-item" href="{{ url_for('admin.filter_role', role='Admin') }}">Admin Details</a></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin.filter_role', role='Security') }}">Security Details</a>
-        </li>
-        <li><a class="dropdown-item" href="{{ url_for('admin.filter_role', role='Intern') }}">Intern Details</a></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin.filter_role', role='ALL') }}">ALL</a></li>
-      </ul>
-    </div>
-  </form>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-
-  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-  </head>
-
-  <body>
-
-    <div id="reportrange"
-      style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 300px">
-      <i class="fa fa-calendar"></i>&nbsp;
-      <span></span> <i class="fa fa-caret-down"></i>
-    </div>
-</div>
-
-    <script type="text/javascript">
-      $(function () {
-        var start = moment().subtract(29, 'days');
-        var end = moment();
-
-        function cb(start, end) {
-          $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
-        }
-
-        $('#reportrange').daterangepicker({
-          startDate: start,
-          endDate: end,
-          ranges: {
-            'Today': [moment(), moment()],
-            'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-            'This Month': [moment().startOf('month'), moment().endOf('month')],
-            'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-          }
-        }, cb);
-
-        cb(start, end);
-      });
-    </script>
-
-
-
-
-
-
-
-
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-      ADD User
-    </button>
-
-    <!-- Modal -->
-    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-      aria-labelledby="staticBackdropLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-
-            <div class="row">
-
-              <div class="col-md-5 pr-lg-5 mb-5 mb-md-0">
-                <img src="../static/images/Home Image.jpg" alt="" class="img-fluid mb-3 d-none d-md-block" />
-                <div style="text-align: center">
-                  <h3>Create an Account</h3>
-                </div>
-              </div>
-
-              <!-- Registeration Form -->
-              <div class="col-md-7 col-lg-6 ml-auto" name="admin">
-                <form action="/addadmin" method="post" class="admin_popup_form_style" onsubmit="return validate()">
-                  <div class="row">
-                    <!-- First Name -->
-                    <div class="input-group col-lg-6 mb-4">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text bg-white px-4 border-md border-right-0">
-                          <i class="fa fa-user text-muted"></i>
-                          <i class="fa fa-user"></i>
-                        </span>
-                      </div>
-                      <input id="Name" type="text" name="fullname" placeholder="Full Name"
-                        class="form-control bg-white border-left-0 border-md" required />
-                    </div>
-
-                    <!-- Email Address -->
-                    <div class="input-group col-lg-12 mb-4">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text bg-white px-4 border-md border-right-0">
-                          <i class="fa fa-envelope text-muted"></i>
-                        </span>
-                      </div>
-                      <input id="email" type="email" name="addemail" placeholder="Email Address" value=""
-                        class="form-control bg-white border-left-0 border-md" required />
-                    </div>
-
-                    <!-- Phone Number -->
-                    <div class="input-group col-lg-12 mb-4">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text bg-white px-4 border-md border-right-0">
-                          <i class="fa fa-phone-square text-muted"></i>
-                        </span>
-                      </div>
-                      <input id="country-prefix" type="text" value="+91" style="max-width: 80px"
-                        class="custom-select form-control bg-white border-left-0 border-md h-100 font-weight-bold text-muted" />
-                      <input id="phoneNumber" type="number" name="phone" placeholder="Phone Number"
-                        class="form-control bg-white border-md border-left-0 pl-3" maxlength="10" required />
-                    </div>
-
-
-                    <!-- Job -->
-                    <div class="input-group col-lg-12 mb-4">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text bg-white px-4 border-md border-right-0">
-                          <i class="fa fa-black-tie text-muted"></i>
-                        </span>
-                      </div>
-                      <select id="jobtitle" name="jobtitle" class="form-control bg-white border-md border-left-0 pl-3"
-                        required>
-                        <option value="">Select Job Title</option> <!-- Default option -->
-                        <option value="Security">Security</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Intern">Intern</option>
-                      </select>
-                    </div>
-
-                    <!-- Password -->
-                    <div class="input-group col-lg-6 mb-4">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text bg-white px-4 border-md border-right-0">
-                          <i class="fa fa-lock text-muted"></i>
-                        </span>
-                      </div>
-                      <input id="password_admin" type="password" name="password" placeholder="Password"
-                        class="form-control bg-white border-left-0 border-md" required>
-                    </div>
-
-                    <!-- Password Confirmation -->
-                    <div class="input-group col-lg-6 mb-4">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text bg-white px-4 border-md border-right-0">
-                          <i class="fa fa-lock text-muted"></i>
-                        </span>
-                      </div>
-                      <input id="passwordConfirmation_admin" type="password" name="passwordConfirmation"
-                        placeholder="Confirm Password" class="form-control bg-white border-left-0 border-md"
-                        onkeyup="check(this)" required>
-                    </div>
-                    <div>
-                      <error id="alert" style="color: darkred"></error>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="form-group col-lg-12 mx-auto mb-0">
-                      <button type="submit" id="submit" name="submit1" value="pass"
-                        class="pure-button pure-button-primary btn btn-primary">
-                        Create Account
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Search Icon with Toggleable Input -->
+      <div class="flex items-center shadow-sm rounded-lg border border-slate-200 bg-white overflow-hidden">
+        <button id="customSearchIcon" class="px-3 py-2 text-slate-400 hover:text-[#0f52ba] bg-white transition-colors focus:outline-none">
+          <i class="fas fa-search text-sm"></i>
+        </button>
+        <input type="text" id="customSearchInput" class="border-none focus:ring-0 text-sm font-medium text-slate-700 bg-white placeholder-slate-400" placeholder="Search users...">
       </div>
+
+      <button type="button" class="btn btn-primary m-0 px-4 py-2" data-bs-toggle="modal" data-bs-target="#staticBackdrop" style="background-color: #0f52ba; border-color: #0f52ba; border-radius: 0.5rem; font-weight: bold;">
+        ADD User
+      </button>
     </div>
 </div>
-<!-- modal -->
+
+
 
 <style>
   /* Hide default DataTables elements */
@@ -270,24 +103,7 @@
   }
 </style>
 
-<div class="flex flex-wrap items-center gap-3 justify-end mb-4">
-  <!-- Custom Length Menu Native Select -->
-  <select id="customLengthMenu" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary block px-3 py-2 cursor-pointer shadow-sm outline-none transition-all">
-    <option value="" disabled selected hidden>Show Entries</option>
-    <option value="5">5 Entries</option>
-    <option value="10">10 Entries</option>
-    <option value="20">20 Entries</option>
-    <option value="-1">All Entries</option>
-  </select>
 
-  <!-- Search Icon with Toggleable Input -->
-  <div class="flex items-center shadow-sm rounded-lg border border-slate-200 bg-white overflow-hidden">
-    <button id="customSearchIcon" class="px-3 py-2 text-slate-400 hover:text-primary bg-white transition-colors focus:outline-none">
-      <i class="fas fa-search text-sm"></i>
-    </button>
-    <input type="text" id="customSearchInput" class="border-none focus:ring-0 text-sm font-medium text-slate-700 bg-white placeholder-slate-400" placeholder="Search users...">
-  </div>
-</div>
 
 <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6">
   <div class="overflow-x-auto p-4 md:p-6 pt-2">
@@ -366,7 +182,126 @@
       table.page.len($(this).val()).draw();
     });
   });
-</script>
+  </script>
+
+  <!-- Modal -->
+  <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+
+          <div class="row">
+
+            <div class="col-md-5 pr-lg-5 mb-5 mb-md-0">
+              <img src="../static/images/Home Image.jpg" alt="" class="img-fluid mb-3 d-none d-md-block" />
+              <div style="text-align: center">
+                <h3>Create an Account</h3>
+              </div>
+            </div>
+
+            <!-- Registeration Form -->
+            <div class="col-md-7 col-lg-6 ml-auto" name="admin">
+              <form action="/addadmin" method="post" class="admin_popup_form_style" onsubmit="return validate()">
+                <div class="row">
+                  <!-- First Name -->
+                  <div class="input-group col-lg-6 mb-4">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text bg-white px-4 border-md border-right-0">
+                        <i class="fa fa-user text-muted"></i>
+                        <i class="fa fa-user"></i>
+                      </span>
+                    </div>
+                    <input id="Name" type="text" name="fullname" placeholder="Full Name"
+                      class="form-control bg-white border-left-0 border-md" required />
+                  </div>
+
+                  <!-- Email Address -->
+                  <div class="input-group col-lg-12 mb-4">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text bg-white px-4 border-md border-right-0">
+                        <i class="fa fa-envelope text-muted"></i>
+                      </span>
+                    </div>
+                    <input id="email" type="email" name="addemail" placeholder="Email Address" value=""
+                      class="form-control bg-white border-left-0 border-md" required />
+                  </div>
+
+                  <!-- Phone Number -->
+                  <div class="input-group col-lg-12 mb-4">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text bg-white px-4 border-md border-right-0">
+                        <i class="fa fa-phone-square text-muted"></i>
+                      </span>
+                    </div>
+                    <input id="country-prefix" type="text" value="+91" style="max-width: 80px"
+                      class="custom-select form-control bg-white border-left-0 border-md h-100 font-weight-bold text-muted" />
+                    <input id="phoneNumber" type="number" name="phone" placeholder="Phone Number"
+                      class="form-control bg-white border-md border-left-0 pl-3" maxlength="10" required />
+                  </div>
+
+                  <!-- Job -->
+                  <div class="input-group col-lg-12 mb-4">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text bg-white px-4 border-md border-right-0">
+                        <i class="fa fa-black-tie text-muted"></i>
+                      </span>
+                    </div>
+                    <select id="jobtitle" name="jobtitle" class="form-control bg-white border-md border-left-0 pl-3"
+                      required>
+                      <option value="">Select Job Title</option>
+                      <option value="Security">Security</option>
+                      <option value="Admin">Admin</option>
+                      <option value="Intern">Intern</option>
+                    </select>
+                  </div>
+
+                  <!-- Password -->
+                  <div class="input-group col-lg-6 mb-4">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text bg-white px-4 border-md border-right-0">
+                        <i class="fa fa-lock text-muted"></i>
+                      </span>
+                    </div>
+                    <input id="password_admin" type="password" name="password" placeholder="Password"
+                      class="form-control bg-white border-left-0 border-md" required>
+                  </div>
+
+                  <!-- Password Confirmation -->
+                  <div class="input-group col-lg-6 mb-4">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text bg-white px-4 border-md border-right-0">
+                        <i class="fa fa-lock text-muted"></i>
+                      </span>
+                    </div>
+                    <input id="passwordConfirmation_admin" type="password" name="passwordConfirmation"
+                      placeholder="Confirm Password" class="form-control bg-white border-left-0 border-md"
+                      onkeyup="check(this)" required>
+                  </div>
+                  <div>
+                    <error id="alert" style="color: darkred"></error>
+                  </div>
+
+                  <!-- Submit Button -->
+                  <div class="form-group col-lg-12 mx-auto mb-0">
+                    <button type="submit" id="submit" name="submit1" value="pass"
+                      class="pure-button pure-button-primary btn btn-primary">
+                      Create Account
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- modal -->
 {% endblock body%}
 <script>
   var password = document.getElementById('password_admin')

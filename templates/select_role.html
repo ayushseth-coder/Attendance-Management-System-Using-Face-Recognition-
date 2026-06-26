@@ -1,35 +1,98 @@
 {% extends 'security_base.html' %}
 
-{% block title %}Select Role{% endblock %}
+{% block title %}Face Login - Select Role{% endblock %}
 
 {% block body %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-dark text-white p-4">
-                    <h2 class="mb-0">Please Select Identity Role</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0" style="font-size: 32px;"><b style="color: black;">Face</b> <span style="color: #20c997;">Login</span></h2>
+</div>
+
+<div class="mb-5 text-center mt-4">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 text-slate-400 mb-4">
+        <i class="fas fa-expand text-4xl"></i>
+    </div>
+    <h3 class="text-2xl font-bold text-slate-800 mb-2">Select Identity Role</h3>
+    <p class="text-slate-500 text-lg max-w-lg mx-auto">Please select the identity role of the person before initiating the Face Scanner.</p>
+</div>
+
+<style>
+    .role-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        border: 2px solid transparent !important;
+        border-radius: 16px;
+        background-color: white;
+        text-decoration: none !important;
+        color: inherit !important;
+        display: flex;
+        align-items: center;
+        padding: 20px 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    }
+    .role-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    }
+    .role-icon-box {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        margin-right: 20px;
+    }
+    .role-card-employee:hover { border-color: #3b82f6 !important; }
+    .role-card-visitor:hover { border-color: #20c997 !important; }
+    .role-card-others:hover { border-color: #8b5cf6 !important; }
+</style>
+
+<div class="row g-4 justify-content-center">
+    <div class="col-md-8 col-lg-5">
+        <div class="d-flex flex-column gap-4">
+            
+            <!-- Employee Card -->
+            <a href="{{ url_for('face_auth.face_login') }}" class="role-card role-card-employee group">
+                <div class="role-icon-box bg-blue-50 text-[#3b82f6] group-hover:bg-[#3b82f6] group-hover:text-white transition-colors duration-300">
+                    <i class="fas fa-user-tie"></i>
                 </div>
-                <div class="card-body p-5">
-                    <p class="text-muted mb-5 lead">Before initiating the Face Scanner, select the person's declared role.</p>
-                    
-                    <div class="d-grid gap-4 mx-auto" style="max-width: 400px;">
-                        <!-- Employee Button routes to the normal face_login camera -->
-                        <a href="{{ url_for('face_auth.face_login') }}" class="btn btn-primary btn-lg p-3 fs-4 shadow-sm">
-                            <i class="fa fa-user-tie me-2"></i> Employee
-                        </a>
-                        
-                        <!-- Visitor Button routes to the visitor pre-check camera -->
-                        <a href="{{ url_for('face_auth.visitor_auth') }}" class="btn btn-warning btn-lg p-3 fs-4 shadow-sm text-dark">
-                            <i class="fa fa-id-badge me-2"></i> Visitor
-                        </a>
-                        
-                        <a href="{{ url_for('face_auth.other_auth') }}" class="btn btn-secondary btn-lg p-3 fs-4 shadow-sm">
-                            <i class="fa fa-users me-2"></i> Others
-                        </a>
-                    </div>
+                <div class="flex-grow-1">
+                    <h3 class="font-bold text-xl text-slate-800 mb-1">Employee</h3>
+                    <p class="text-slate-500 mb-0 text-sm">Scan face for registered staff members</p>
                 </div>
-            </div>
+                <div class="text-slate-300 group-hover:text-[#3b82f6] transition-colors duration-300">
+                    <i class="fas fa-chevron-right fs-4"></i>
+                </div>
+            </a>
+            
+            <!-- Visitor Card -->
+            <a href="{{ url_for('face_auth.visitor_auth') }}" class="role-card role-card-visitor group">
+                <div class="role-icon-box bg-emerald-50 text-[#20c997] group-hover:bg-[#20c997] group-hover:text-white transition-colors duration-300">
+                    <i class="fas fa-id-badge"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h3 class="font-bold text-xl text-slate-800 mb-1">Visitor</h3>
+                    <p class="text-slate-500 mb-0 text-sm">Scan face for pre-registered visitors</p>
+                </div>
+                <div class="text-slate-300 group-hover:text-[#20c997] transition-colors duration-300">
+                    <i class="fas fa-chevron-right fs-4"></i>
+                </div>
+            </a>
+            
+            <!-- Others Card -->
+            <a href="{{ url_for('face_auth.other_auth') }}" class="role-card role-card-others group">
+                <div class="role-icon-box bg-purple-50 text-[#8b5cf6] group-hover:bg-[#8b5cf6] group-hover:text-white transition-colors duration-300">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h3 class="font-bold text-xl text-slate-800 mb-1">Others</h3>
+                    <p class="text-slate-500 mb-0 text-sm">Scan face for contractors & temporary staff</p>
+                </div>
+                <div class="text-slate-300 group-hover:text-[#8b5cf6] transition-colors duration-300">
+                    <i class="fas fa-chevron-right fs-4"></i>
+                </div>
+            </a>
+
         </div>
     </div>
 </div>

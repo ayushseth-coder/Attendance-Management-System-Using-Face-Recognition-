@@ -1,18 +1,34 @@
-
 {% extends 'security_base.html' %}
 
-{% block title %}otp{% endblock title %}
-
-
+{% block title %}Visitor Pass - Send OTP{% endblock title %}
 
 {% block body %}  
-<link href="../static/sms.css" rel="stylesheet" />
-    <div class="container">
-        <h2>Enter Your Phone Number</h2>
-        <form method="POST" action="{{url_for('otp_gen.send_sms')}}">
-            <input type="text" name="phone" placeholder="Enter Phone Number" required>
-            <button type="submit">Get OTP</button>
-        </form>
-    </div>
-{% endblock body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0" style="font-size: 32px;"><b style="color: black;">Visitor</b> <span style="color: #20c997;">Pass</span></h2>
+</div>
 
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="p-5 md:p-8 text-center">
+                <div class="mb-4">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-[#0f52ba]">
+                        <i class="fas fa-mobile-alt text-3xl"></i>
+                    </div>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">Enter Phone Number</h3>
+                <p class="text-slate-500 text-sm mb-6">Please enter the visitor's phone number to send an OTP for verification.</p>
+                
+                <form method="POST" action="{{url_for('otp_gen.send_sms')}}">
+                    <div class="mb-5">
+                        <input type="text" name="phone" class="w-full border-2 border-slate-200 rounded-lg px-4 py-3 text-center text-lg font-medium text-slate-700 focus:border-[#0f52ba] focus:ring-0 outline-none transition-colors" placeholder="e.g. 9876543210" required>
+                    </div>
+                    <button type="submit" class="w-full bg-[#0f52ba] hover:bg-[#0a387c] text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2">
+                        <span>Get OTP</span> <i class="fas fa-arrow-right text-sm"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock body %}

@@ -1,269 +1,338 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elgoss Automated Attendance Management System</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <!-- Google Fonts: Manrope -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#0f52ba' },
+                    fontFamily: { sans: ['Manrope', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            overflow: hidden;
-            height: 100vh;
+        body { font-family: 'Manrope', sans-serif; background-color: #f8f9ff; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            border-radius: 24px;
         }
 
-        .hero {
-            padding-bottom: 20px !important;
-            padding-top: 40px !important;
-        }
-
-        .features-section {
-            padding: 40px 20px;
-            text-align: center;
-            background-color: #f9f9f9;
-        }
-
-        .features-section h3 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 30px;
-            font-weight: 600;
-        }
-
-        .features-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .feature-card {
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px 20px;
-            width: 280px;
-            text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border-top: 4px solid #4b6cb7;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
-        }
-
-        .feature-card h4 {
-            color: #4b6cb7;
-            font-size: 20px;
-            margin: 0;
-        }
-
-        .feature-card ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .feature-card ul li {
+        .login-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #f1f5f9;
+            border: 2px solid transparent;
+            border-radius: 12px;
             font-size: 15px;
-            color: #555;
-            margin-bottom: 10px;
-            position: relative;
-            padding-left: 20px;
+            font-weight: 500;
+            color: #1e293b;
+            transition: all 0.3s ease;
+            outline: none;
         }
 
-        .feature-card ul li::before {
-            content: "•";
-            color: #4b6cb7;
-            font-weight: bold;
-            position: absolute;
-            left: 0;
+        .login-input:focus {
+            background: #ffffff;
+            border-color: #0f52ba;
+            box-shadow: 0 0 0 4px rgba(15, 82, 186, 0.1);
+        }
+
+        .bg-pattern {
+            background-color: #f8f9ff;
+            background-image: radial-gradient(#0f52ba 0.5px, transparent 0.5px), radial-gradient(#0f52ba 0.5px, #f8f9ff 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            opacity: 0.8;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            transform: scale(0.95) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
         }
     </style>
 </head>
 
-<body>
+<body class="bg-pattern min-h-screen flex flex-col">
 
     <!-- Header -->
-    <header>
-        <div class="logo">
-            <div class="logo-circle">
-                <img src="{{ url_for('static', filename='images/reg logo.png') }}" alt="Logo">
+    <header class="bg-[#0f52ba] border-b border-[#0a387c] sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white rounded-full shadow-sm border border-blue-200 flex items-center justify-center p-1 overflow-hidden">
+                    <img src="{{ url_for('static', filename='images/reg logo.png') }}" alt="Logo" class="w-full h-full object-cover">
+                </div>
+                <h1 class="text-xl font-extrabold text-white tracking-tight">Elgoss Attendance System</h1>
             </div>
+            <nav class="hidden md:block">
+                <ul class="flex gap-8">
+                    <li><a href="/" class="text-white font-bold hover:text-blue-200 transition-colors">Home</a></li>
+                    <li><a href="#" class="text-blue-100 font-medium hover:text-white transition-colors">Contact</a></li>
+                    <li><a href="#" class="text-blue-100 font-medium hover:text-white transition-colors">About</a></li>
+                </ul>
+            </nav>
         </div>
-        <nav>
-            <ul>
-                <li><a href="/" class="active">Home</a></li>
-                <li><a href="#">Contact</a></li>
-                <li><a href="#">Reports</a></li>
-                <li><a href="#">About</a></li>
-            </ul>
-        </nav>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <h2>Elgoss Automated Attendance Management System</h2>
-        <p>• Fast • Accurate • Reliable</p>
-        <div class="hero-buttons">
-            <!-- Admin -->
-            <button class="cta-btn" onclick="showLogin('admin')">
-                <i class="fa-solid fa-user-shield"></i> Admin Login
-            </button>
-            <!-- Security -->
-            <button class="cta-btn" onclick="showLogin('security')">
-                <i class="fa-solid fa-shield-halved"></i> Security Login
-            </button>
-        </div>
-
-        <!-- Key Features Section -->
-        <div class="features-section" style="background: transparent; padding-top: 40px;">
-            <h3>Key Features</h3>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <h4>Automated Attendance System</h4>
+    <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center p-6 relative">
+        <div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            
+            <!-- Left Hero Section -->
+            <div class="text-center md:text-left">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-primary font-bold text-sm mb-6 border border-blue-100 shadow-sm">
+                    <span class="relative flex h-2.5 w-2.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                    </span>
+                    Automated Attendance System
                 </div>
-                <div class="feature-card">
-                    <h4>Smart Visitor Management</h4>
-                </div>
-                <div class="feature-card">
-                    <h4>Secure Access Portals</h4>
-                </div>
-                <div class="feature-card">
-                    <h4>Real-time Notifications</h4>
-                </div>
-                <div class="feature-card">
-                    <h4>Easy Reporting & Analytics</h4>
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
+                    Smart Access,<br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">Simplified.</span>
+                </h2>
+                <p class="text-lg text-slate-600 mb-10 max-w-lg">
+                    Fast, accurate, and reliable visitor and attendance management. Choose your portal to securely access the system.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                    <button onclick="openModal('admin')" class="group relative px-8 py-4 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden">
+                        <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-slate-800 to-slate-900 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <span class="relative flex items-center gap-3">
+                            <i class="fa-solid fa-user-shield text-lg text-slate-300"></i>
+                            Admin Portal
+                        </span>
+                    </button>
+                    
+                    <button onclick="openModal('security')" class="group relative px-8 py-4 bg-white text-primary border-2 border-primary font-bold rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden">
+                        <div class="absolute inset-0 w-full h-full bg-primary opacity-0 group-hover:opacity-5 transition-opacity"></div>
+                        <span class="relative flex items-center gap-3">
+                            <i class="fa-solid fa-shield-halved text-lg"></i>
+                            Security Portal
+                        </span>
+                    </button>
                 </div>
             </div>
+
+            <!-- Right Visual Section -->
+            <div class="hidden md:grid grid-cols-2 gap-4">
+                <div class="space-y-4 pt-12">
+                    <div class="bg-white p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col items-center text-center transform transition-transform hover:-translate-y-2">
+                        <div class="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center text-primary text-2xl mb-4"><i class="fas fa-user-check"></i></div>
+                        <h4 class="font-bold text-slate-800">Face Login</h4>
+                        <p class="text-sm text-slate-500 mt-2">Instant authentication</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col items-center text-center transform transition-transform hover:-translate-y-2">
+                        <div class="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 text-2xl mb-4"><i class="fas fa-id-card"></i></div>
+                        <h4 class="font-bold text-slate-800">Smart Passes</h4>
+                        <p class="text-sm text-slate-500 mt-2">Digital visitor entry</p>
+                    </div>
+                </div>
+                <div class="space-y-4 pb-12">
+                    <div class="bg-white p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col items-center text-center transform transition-transform hover:-translate-y-2">
+                        <div class="w-14 h-14 bg-purple-50 rounded-xl flex items-center justify-center text-purple-500 text-2xl mb-4"><i class="fas fa-chart-pie"></i></div>
+                        <h4 class="font-bold text-slate-800">Live Analytics</h4>
+                        <p class="text-sm text-slate-500 mt-2">Real-time reporting</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col items-center text-center transform transition-transform hover:-translate-y-2">
+                        <div class="w-14 h-14 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 text-2xl mb-4"><i class="fas fa-bell"></i></div>
+                        <h4 class="font-bold text-slate-800">Instant Alerts</h4>
+                        <p class="text-sm text-slate-500 mt-2">Push notifications</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
-    </section>
+    </main>
 
-    <!-- Modal Backdrop -->
-    <div id="modal-backdrop"></div>
+    <!-- Modals -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-content glass-card w-full max-w-md p-8 relative mx-4">
+            <!-- Close Button -->
+            <button onclick="closeModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
 
-    <!-- Login Section -->
-    <section class="login-section" id="login-section">
+            <!-- Dynamic Header -->
+            <div class="text-center mb-8">
+                <div id="modal-icon-bg" class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4 bg-blue-50 text-primary">
+                    <i id="modal-icon" class="fa-solid fa-user-shield"></i>
+                </div>
+                <h3 id="modal-title" class="text-2xl font-extrabold text-slate-900">Admin Login</h3>
+                <p class="text-slate-500 text-sm mt-2">Welcome back! Please enter your details.</p>
+            </div>
 
-        <!-- ================= ADMIN LOGIN ================= -->
-        <div class="login-container" id="admin-login">
-            <span class="close-btn" onclick="closeLogin()">&times;</span>
-            <h4><i class="fa-solid fa-user-shield"></i> Admin Login</h4>
-
+            <!-- Flash Messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-            {% for category, message in messages %}
-            <div class="error-message alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
+            <div class="mb-6 space-y-2">
+                {% for category, message in messages %}
+                <div class="bg-red-50 text-red-600 border border-red-200 px-4 py-3 rounded-xl text-sm font-medium flex items-start gap-3">
+                    <i class="fas fa-exclamation-circle mt-0.5"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
             {% endif %}
             {% endwith %}
 
-            <form action="{{ url_for('auth.login') }}" method="POST">
-                <input type="hidden" name="login_type" value="admin">
-                <input type="email" name="email" placeholder="Enter Email" required>
-                <div class="password-box">
-                    <input type="password" id="admin-password" name="password" placeholder="Enter Password" required>
-                    <i class="fa-solid fa-eye" onclick="togglePassword('admin-password', this)"></i>
+            <form action="{{ url_for('auth.login') }}" method="POST" class="space-y-5">
+                <input type="hidden" name="login_type" id="login_type" value="admin">
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <input type="email" name="email" class="login-input pl-11" placeholder="name@company.com" required>
+                    </div>
                 </div>
-                <div style="text-align: right; margin-bottom: 15px;">
-                    <a href="/forgot" style="text-decoration: none; font-size: 14px; color: #4b6cb7;">Forgot
-                        Password?</a>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-slate-700">Password</label>
+                        <a href="/forgot" class="text-sm font-bold text-primary hover:text-blue-700 transition-colors">Forgot password?</a>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <input type="password" id="password-input" name="password" class="login-input pl-11 pr-11" placeholder="••••••••" required>
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer text-slate-400 hover:text-slate-600 transition-colors" onclick="togglePassword()">
+                            <i id="password-eye" class="fas fa-eye"></i>
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" class="login-btn">Login</button>
+
+                <button type="submit" id="modal-submit-btn" class="w-full py-4 mt-2 bg-primary hover:bg-blue-700 text-white font-bold rounded-xl shadow-[0_4px_14px_0_rgba(15,82,186,0.39)] hover:shadow-[0_6px_20px_rgba(15,82,186,0.23)] hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
+                    <span>Sign In</span>
+                    <i class="fas fa-arrow-right text-sm"></i>
+                </button>
             </form>
         </div>
+    </div>
 
-        <!-- ================= SECURITY LOGIN ================= -->
-        <div class="login-container" id="security-login">
-            <span class="close-btn" onclick="closeLogin()">&times;</span>
-            <h4><i class="fa-solid fa-shield-halved"></i> Security Login</h4>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="error-message alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
-
-            <form action="{{ url_for('auth.login') }}" method="POST">
-                <input type="hidden" name="login_type" value="security">
-                <input type="email" name="email" placeholder="Enter Email" required>
-                <div class="password-box">
-                    <input type="password" id="security-password" name="password" placeholder="Enter Password" required>
-                    <i class="fa-solid fa-eye" onclick="togglePassword('security-password', this)"></i>
-                </div>
-                <div style="text-align: right; margin-bottom: 15px;">
-                    <a href="/forgot" style="text-decoration: none; font-size: 14px; color: #4b6cb7;">Forgot
-                        Password?</a>
-                </div>
-                <button type="submit" class="login-btn">Login</button>
-            </form>
-        </div>
-
-    </section>
+    <!-- Pass Flash Messages safely to JS -->
+    {% with messages = get_flashed_messages() %}
+    <script type="application/json" id="flash-data">
+        {{ messages | tojson | safe }}
+    </script>
+    {% endwith %}
 
     <!-- JS -->
     <script>
-        function showLogin(type) {
-            // Show backdrop
-            document.getElementById("modal-backdrop").style.display = "block";
-            document.getElementById("login-section").style.display = "flex";
+        const modal = document.getElementById('login-modal');
+        const loginTypeInput = document.getElementById('login_type');
+        const modalTitle = document.getElementById('modal-title');
+        const modalIcon = document.getElementById('modal-icon');
+        const modalIconBg = document.getElementById('modal-icon-bg');
+        const modalSubmitBtn = document.getElementById('modal-submit-btn');
 
-            document.getElementById("admin-login").style.display = "none";
-            document.getElementById("security-login").style.display = "none";
-
-            if (type === "admin") {
-                document.getElementById("admin-login").style.display = "block";
-            } else if (type === "security") {
-                document.getElementById("security-login").style.display = "block";
+        // Auto-open modal if there are flash messages (usually from failed login)
+        document.addEventListener('DOMContentLoaded', () => {
+            const flashData = document.getElementById('flash-data');
+            if (flashData) {
+                try {
+                    const messages = JSON.parse(flashData.textContent || '[]');
+                    if (messages && messages.length > 0) {
+                        const lastAttempt = localStorage.getItem('last_login_attempt') || 'admin';
+                        openModal(lastAttempt);
+                    }
+                } catch (e) {}
             }
-        }
+        });
 
-        function closeLogin() {
-            document.getElementById("modal-backdrop").style.display = "none";
-            document.getElementById("login-section").style.display = "none";
-            document.getElementById("admin-login").style.display = "none";
-            document.getElementById("security-login").style.display = "none";
-        }
-
-        function togglePassword(id, icon) {
-            let input = document.getElementById(id);
-            if (input.type === "password") {
-                input.type = "text";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
+        function openModal(type) {
+            loginTypeInput.value = type;
+            localStorage.setItem('last_login_attempt', type);
+            
+            if (type === 'admin') {
+                modalTitle.textContent = 'Admin Portal';
+                modalIcon.className = 'fa-solid fa-user-shield';
+                modalIconBg.className = 'w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4 bg-slate-900 text-white';
+                modalSubmitBtn.className = 'w-full py-4 mt-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2';
             } else {
-                input.type = "password";
-                icon.classList.remove("fa-eye-slash");
-                icon.classList.add("fa-eye");
+                modalTitle.textContent = 'Security Portal';
+                modalIcon.className = 'fa-solid fa-shield-halved';
+                modalIconBg.className = 'w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4 bg-blue-50 text-primary';
+                modalSubmitBtn.className = 'w-full py-4 mt-2 bg-primary hover:bg-blue-700 text-white font-bold rounded-xl shadow-[0_4px_14px_0_rgba(15,82,186,0.39)] hover:shadow-[0_6px_20px_rgba(15,82,186,0.23)] hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2';
             }
+
+            modal.style.display = 'flex';
+            // Slight delay for animation to trigger
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
         }
 
-        let navLinks = document.querySelectorAll("nav a");
-        navLinks.forEach(link => {
-            link.addEventListener("click", function () {
-                navLinks.forEach(nav => nav.classList.remove("active"));
-                this.classList.add("active");
-            });
+        function closeModal() {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                // Reset password visibility on close
+                const pwdInput = document.getElementById('password-input');
+                const eyeIcon = document.getElementById('password-eye');
+                pwdInput.type = 'password';
+                eyeIcon.className = 'fas fa-eye';
+            }, 300); // Wait for transition
+        }
+
+        // Close on clicking outside
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
         });
 
-        let buttons = document.querySelectorAll(".cta-btn, .login-btn");
-        buttons.forEach(button => {
-            button.addEventListener("click", function () {
-                this.style.transform = "scale(0.97)";
-                setTimeout(() => {
-                    this.style.transform = "scale(1)";
-                }, 100);
-            });
-        });
+        function togglePassword() {
+            const pwdInput = document.getElementById('password-input');
+            const eyeIcon = document.getElementById('password-eye');
+            
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.className = 'fas fa-eye-slash';
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.className = 'fas fa-eye';
+            }
+        }
     </script>
 </body>
-
 </html>
