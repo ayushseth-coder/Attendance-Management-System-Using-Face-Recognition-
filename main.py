@@ -71,4 +71,18 @@ def create_app():
     from app.face_auth import face_auth
     app.register_blueprint(face_auth)
 
+    @app.context_processor
+    def inject_global_user_data():
+        from flask import session
+        from models.database import collection
+        user_img = None
+        user_name = None
+        if session.get('user_id'):
+            email = session.get('user_id')
+            user_data = collection.find_one({"Email": email})
+            if user_data:
+                user_img = user_data.get('image')
+                user_name = user_data.get('Name')
+        return dict(global_user_image=user_img, global_user_name=user_name)
+
     return app

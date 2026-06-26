@@ -71,10 +71,10 @@
         
         <a href="{{url_for('auth.profile')}}" class="mt-4 block group">
           <div class="profile-avatar-container w-20 h-20 rounded-full border-4 border-slate-50 p-1 bg-white shadow-sm group-hover:border-primary/20 transition-all mx-auto">
-            <img src="https://ui-avatars.com/api/?name=Security&background=0f52ba&color=fff&font-size=0.33" alt="Avatar" class="w-full h-full rounded-full object-cover">
+            <img src="{% if global_user_image %}{{ global_user_image }}{% else %}https://ui-avatars.com/api/?name={% if global_user_name %}{{ global_user_name }}{% else %}Security{% endif %}&background=0f52ba&color=fff&font-size=0.33{% endif %}" alt="Avatar" class="w-full h-full rounded-full object-cover">
           </div>
         </a>
-        <h5 class="profile-name mt-3 text-[13px] font-bold text-slate-800 tracking-wider uppercase text-center w-full">SECURITY</h5>
+        <h5 class="profile-name mt-3 text-[13px] font-bold text-slate-800 tracking-wider uppercase text-center w-full">{% if global_user_name %}{{ global_user_name }}{% else %}SECURITY{% endif %}</h5>
       </div>
       
       <!-- Navigation Items -->
