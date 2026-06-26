@@ -1,0 +1,115 @@
+<script type="text/javascript">
+  const chartData = {{ {
+    "months": months,
+    "acceptData": accept_data,
+    "totalData": total_data
+  } | tojson | safe }};
+</script>
+
+
+
+<script>
+  if (document.querySelector(".chart-line")) {
+    var chartsLine = document.querySelectorAll(".chart-line");
+
+    chartsLine.forEach(function(chart) {
+      var ctx = chart.getContext("2d");
+
+      var gradientStroke1 = ctx.createLinearGradient(0, 230, 0, 50);
+      gradientStroke1.addColorStop(1, "rgba(203,12,159,0.2)");
+      gradientStroke1.addColorStop(0.2, "rgba(72,72,176,0.0)");
+      gradientStroke1.addColorStop(0, "rgba(203,12,159,0)");
+
+      var gradientStroke2 = ctx.createLinearGradient(0, 230, 0, 50);
+      gradientStroke2.addColorStop(1, "rgba(20,23,39,0.2)");
+      gradientStroke2.addColorStop(0.2, "rgba(72,72,176,0.0)");
+      gradientStroke2.addColorStop(0, "rgba(20,23,39,0)");
+
+      if (!chart.getAttribute('data-chart-initialized')) {
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: chartData.months,
+            datasets: [{
+              label: "Accept Visitors",
+              tension: 0.4,
+              borderColor: "#cb0c9f",
+              borderWidth: 3,
+              backgroundColor: gradientStroke1,
+              fill: true,
+              data: chartData.acceptData,
+            }, {
+              label: "Total Visitors",
+              tension: 0.4,
+              borderColor: "#3A416F",
+              borderWidth: 3,
+              backgroundColor: gradientStroke2,
+              fill: true,
+              data: chartData.totalData,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            interaction: { intersect: false, mode: "index" },
+            scales: {
+              y: {
+                ticks: { color: "#b2b9bf", font: { size: 11 } },
+                grid: { drawBorder: false, borderDash: [5, 5] }
+              },
+              x: {
+                ticks: { color: "#b2b9bf", font: { size: 11 } },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+        chart.setAttribute("data-chart-initialized", "true");
+      }
+    });
+  }
+</script>
+
+
+ 
+ <!-- SAFELY inject Flask values into JS -->
+<script>
+const pieData = JSON.parse('{{ [total, active, rejectobj]|tojson | safe }}');
+</script>
+
+<script>
+var chartsPie = document.querySelectorAll(".chart-pie");
+
+chartsPie.forEach(function(chart) {
+if (!chart.getAttribute('data-chart-initialized')) {
+new Chart(chart, {
+type: "pie",
+data: {
+  labels: ["Total", "Active", "Rejected"],
+  datasets: [{
+    data: pieData,
+    backgroundColor: [
+      window.theme?.primary || "#007bff",
+      window.theme?.warning || "#ffc107",
+      window.theme?.danger || "#dc3545"
+    ],
+    borderWidth: 5
+  }]
+},
+options: {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false }
+  },
+  cutout: "75%"
+}
+});
+chart.setAttribute("data-chart-initialized", "true");
+}
+});
+</script>
+
+
+{% endblock body %}  

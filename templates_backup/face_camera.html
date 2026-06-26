@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Face Login</title>
+  <link href="../static/camera.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+        <div class="camera-wrapper">
+          <div class="camera-box">
+  <form>
+    <h2>EMPLOYEE FACE LOGIN: <span id="timer">10</span> seconds</h2>
+    <p class="text-muted text-center">Look directly at the camera. If no match is found, you will be processed as a Visitor.</p>
+    <div style="margin-top: 20px;" class="form-row">
+      <img src="{{ url_for('face_auth.face_video_feed') }}" width="100%" height="auto" alt="Camera Feed" />
+    </div>
+  </form>
+</div>
+</div>
+</div>
+<script>
+  let timeLeft = 5; // seconds
+  const timerEl = document.getElementById('timer');
+
+  const countdown = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+    
+    if (timeLeft <= 0) {
+      clearInterval(countdown);
+      timerEl.textContent = "Processing...";
+    }
+  }, 1000);
+
+// After 6 seconds (5s capture + 1s processing buffer), redirect to result page
+setTimeout(function() {
+    window.location.href = "{{ url_for('face_auth.face_result') }}";
+}, 6000);
+</script>
+</body>
+</html>

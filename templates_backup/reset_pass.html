@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password</title>
+    <link href="../static/Style2.css" rel="stylesheet">
+</head>
+<body>
+    <div class="reset-container">
+        <div class="reset-card">
+            <h2>Reset Password</h2>
+            <p>Enter your new password and confirm it to reset your password.</p>
+            <form id="resetForm" action="{{url_for('otp_gen.reset_password')}}"method='POST'>
+                <input type="password" name="new_pass" placeholder="New Password" required  onChange="onChange()">
+                <input type="password" name="confirm_pass" placeholder="Confirm Password" required onChange="onChange()">
+                <button type="submit" class="reset-btn">Submit</button>
+            </form>
+          
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,320 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}user_overview{% endblock title %}
+<!-- <link href="../static/style.css" rel="stylesheet" /> -->
+
+
+{% block body %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+  integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"
+  integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"
+  integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+<div class="d-grid gap-2 d-md-flex justify-content-md-end">
+  <form method="GET" action="{{ url_for('admin.filter_role') }}">
+    <div class="dropdown">
+      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
+        aria-expanded="false">
+
+        {{ selected_role if selected_role and selected_role != 'all' else 'All' }}
+      </button>
+      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <li><a class="dropdown-item" href="{{ url_for('admin.filter_role', role='Admin') }}">Admin Details</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin.filter_role', role='Security') }}">Security Details</a>
+        </li>
+        <li><a class="dropdown-item" href="{{ url_for('admin.filter_role', role='Intern') }}">Intern Details</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin.filter_role', role='ALL') }}">ALL</a></li>
+      </ul>
+    </div>
+  </form>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  </head>
+
+  <body>
+
+    <div id="reportrange"
+      style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 300px">
+      <i class="fa fa-calendar"></i>&nbsp;
+      <span></span> <i class="fa fa-caret-down"></i>
+    </div>
+
+    <script type="text/javascript">
+      $(function () {
+        var start = moment().subtract(29, 'days');
+        var end = moment();
+
+        function cb(start, end) {
+          $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        }
+
+        $('#reportrange').daterangepicker({
+          startDate: start,
+          endDate: end,
+          ranges: {
+            'Today': [moment(), moment()],
+            'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+            'This Month': [moment().startOf('month'), moment().endOf('month')],
+            'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+          }
+        }, cb);
+
+        cb(start, end);
+      });
+    </script>
+
+
+
+
+
+
+
+
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+      ADD User
+    </button>
+
+    <!-- Modal -->
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+      aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+
+            <div class="row">
+
+              <div class="col-md-5 pr-lg-5 mb-5 mb-md-0">
+                <img src="../static/images/Home Image.jpg" alt="" class="img-fluid mb-3 d-none d-md-block" />
+                <div style="text-align: center">
+                  <h3>Create an Account</h3>
+                </div>
+              </div>
+
+              <!-- Registeration Form -->
+              <div class="col-md-7 col-lg-6 ml-auto" name="admin">
+                <form action="/addadmin" method="post" class="admin_popup_form_style" onsubmit="return validate()">
+                  <div class="row">
+                    <!-- First Name -->
+                    <div class="input-group col-lg-6 mb-4">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-white px-4 border-md border-right-0">
+                          <i class="fa fa-user text-muted"></i>
+                          <i class="fa fa-user"></i>
+                        </span>
+                      </div>
+                      <input id="Name" type="text" name="fullname" placeholder="Full Name"
+                        class="form-control bg-white border-left-0 border-md" required />
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="input-group col-lg-12 mb-4">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-white px-4 border-md border-right-0">
+                          <i class="fa fa-envelope text-muted"></i>
+                        </span>
+                      </div>
+                      <input id="email" type="email" name="addemail" placeholder="Email Address" value=""
+                        class="form-control bg-white border-left-0 border-md" required />
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="input-group col-lg-12 mb-4">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-white px-4 border-md border-right-0">
+                          <i class="fa fa-phone-square text-muted"></i>
+                        </span>
+                      </div>
+                      <input id="country-prefix" type="text" value="+91" style="max-width: 80px"
+                        class="custom-select form-control bg-white border-left-0 border-md h-100 font-weight-bold text-muted" />
+                      <input id="phoneNumber" type="number" name="phone" placeholder="Phone Number"
+                        class="form-control bg-white border-md border-left-0 pl-3" maxlength="10" required />
+                    </div>
+
+
+                    <!-- Job -->
+                    <div class="input-group col-lg-12 mb-4">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-white px-4 border-md border-right-0">
+                          <i class="fa fa-black-tie text-muted"></i>
+                        </span>
+                      </div>
+                      <select id="jobtitle" name="jobtitle" class="form-control bg-white border-md border-left-0 pl-3"
+                        required>
+                        <option value="">Select Job Title</option> <!-- Default option -->
+                        <option value="Security">Security</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Intern">Intern</option>
+                      </select>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="input-group col-lg-6 mb-4">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-white px-4 border-md border-right-0">
+                          <i class="fa fa-lock text-muted"></i>
+                        </span>
+                      </div>
+                      <input id="password_admin" type="password" name="password" placeholder="Password"
+                        class="form-control bg-white border-left-0 border-md" required>
+                    </div>
+
+                    <!-- Password Confirmation -->
+                    <div class="input-group col-lg-6 mb-4">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-white px-4 border-md border-right-0">
+                          <i class="fa fa-lock text-muted"></i>
+                        </span>
+                      </div>
+                      <input id="passwordConfirmation_admin" type="password" name="passwordConfirmation"
+                        placeholder="Confirm Password" class="form-control bg-white border-left-0 border-md"
+                        onkeyup="check(this)" required>
+                    </div>
+                    <div>
+                      <error id="alert" style="color: darkred"></error>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="form-group col-lg-12 mx-auto mb-0">
+                      <button type="submit" id="submit" name="submit1" value="pass"
+                        class="pure-button pure-button-primary btn btn-primary">
+                        Create Account
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+<!-- modal -->
+
+<div>
+  <h3>
+    <center>User Details</center>
+  </h3>
+  <div class="table-responsive">
+    <table id="example" class="table table-striped table-bordered nowrap" style="width:100%">
+      <thead class="table-dark">
+        <th>Sr No</th>
+        <th>Name</th>
+        <th>Phone No</th>
+        <th>Role</th>
+        <th>Date</th>
+        <th>Email</th>
+
+        <th>Options</th>
+      </thead>
+      {% for adm in users%}
+      <tbody>
+        <td>{{ loop.index }}</td>
+        <td>{{ adm['Name'] }}</td>
+        <td>{{ adm['Phone'] }}</td>
+        <td>{{ adm['Job'] }}</td>
+        <td>{{ adm['Date'] }}</td>
+        <td>{{ adm['Email'] }}</td>
+
+        <td>
+
+
+
+          <!-- Delete Button -->
+          <form action="{{ url_for('admin.deleteuser', Phone=adm['Phone']) }}" method="POST" style="display:inline;"
+            onsubmit="return confirmDelete();">
+            <button type="submit" class="btn btn-danger">Delete</button>
+          </form>
+        </td>
+
+
+
+      </tbody>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+
+<script>
+  function confirmEdit() {
+    return confirm("Are you sure you want to save the changes?");
+  }
+  function confirmDelete() {
+    return confirm("Are you sure you want to delete this user?");
+  }
+
+  $(document).ready(function () {
+    $('#example ,#example1,#example2').DataTable({
+      responsive: true
+    });
+  });
+</script>
+{% endblock body%}
+<script>
+  var password = document.getElementById('password_admin')
+  var flag = 1;  // 1 -> no errors | 0-> error is there.
+  function check(elem) {
+    if (elem.value.length > 0) {
+      if (elem.value != password.value) {
+        document.getElementById('alert').innerText = "Confirm Password does not Matched";
+        flag = 0;
+      }
+      else {
+        document.getElementById('alert').innerText = "Password matched Successfully..!";
+        flag = 1;
+      }
+    } else {
+      document.getElementById('alert').innerText = "Please confirm your Password";
+      flag = 0;
+    }
+
+  }
+
+  function validate() {
+    if (flag == 1) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+</script>
+
+<script>
+  function onChange() {
+    const pswd = document.querySelector('input[name=password]');
+    const confirm = document.querySelector('input[name=passwordConfirmation]');
+    if (confirm.value === pswd.value) {
+      confirm.setCustomValidity('');
+    } else {
+      confirm.setCustomValidity('Passwords do not match');
+    }
+  }
+</script>
+</body>
+
+</html>

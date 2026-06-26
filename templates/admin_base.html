@@ -3,64 +3,147 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link href="../static/base.css" rel="stylesheet" />
-  <title>{% block title %}MySite{% endblock title %}</title>
+  <title>{% block title %}Admin Portal{% endblock title %}</title>
   
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap (Kept for existing plugins/modals to not break immediately) -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
- 
 
-<!-- Top Navbar  -->
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top px-4 py-2" >
-  <button class="toggle-sidebar" onclick="toggleSidebar()">☰ Menu</button>
-  <div class="container-fluid" >
-    <a class="navbar-brand fw-bold" href="#">VisitDesk</a>
-    <div class="ms-auto d-flex align-items-center">
-      <span class="text-white me-3">Welcome, Admin</span>
-      
-      
-      <a href="{{url_for('auth.profile')}}"><img src="https://i.pravatar.cc/40" class="rounded-circle border border-white" alt="Avatar"></a>
-    </div>
-  </div>
-</nav>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { 
+            primary: '#0f52ba',
+            surface: '#f8f9ff'
+          },
+          fontFamily: { sans: ['Manrope', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    body { font-family: 'Manrope', sans-serif; background-color: #f8f9ff; }
+    :root { --bs-font-sans-serif: 'Manrope', sans-serif; }
+    a { text-decoration: none !important; }
 
-<div class="container-fluid">
-  <div class="row">
-    <!-- Sidebar -->
-    <nav class="col-md-2 col-sm-3 sidebar nav flex-column nav-pills"    id="sidebar-tab" role="tablist">
-      
-      <a class="nav-link " id="tab-home" href="{{url_for('admin.admin_h')}}">Home</a>
-
-      <a class="nav-link" id="tab-active"href="{{url_for('admin.filter_role')}}">User Overview</a>
-      <a class="nav-link" id="tab-overview" href="{{url_for('admin.visitor_over')}}">Visitor Overview</a>
-      <a class="nav-link" id="tab-enroll" href="{{url_for('admin.enroll_employees')}}">Enroll Employees</a>
-      <a class="nav-link" id="tab-manage" href="{{url_for('admin.manage_employees')}}">Manage Employees</a>
-      <a class="nav-link" id="tab-manage-visitors" href="{{url_for('admin.manage_visitors')}}">Manage Visitors</a>
-      <a class="nav-link" id="tab-manage-other" href="{{url_for('admin.manage_other')}}">Manage External Staff</a>
-      <a class="nav-link" id="tab-attendance" href="{{url_for('admin.attendance_select')}}">Attendance Logs</a>
-      <a class="nav-link" id="tab-universal" href="{{url_for('admin.universal_records')}}">Universal Records</a>
-      <a class="nav-link d-flex justify-content-between align-items-center" id="tab-camera" href="{{url_for('admin.notification')}}">
-        Notification
-        {% if pending_count and pending_count > 0 %}
-          <span class="badge bg-danger rounded-pill">{{ pending_count }}</span>
-        {% endif %}
-      </a>
-      <a class="nav-link" id="tab-logout" href="{{url_for('routes.logout')}}">Logout</a>
-    </nav>
-
-    <!-- Content Area -->
-    <main class="col-md-10 col-sm-9 py-4">
-      {% block body %}
-      {% endblock body %}
-    </main>
+    /* Sidebar Collapsible Styles */
+    #sidebar { width: 16rem; transition: width 0.3s ease; }
+    body.sidebar-collapsed #sidebar { width: 5.5rem; }
+    body.sidebar-collapsed .nav-text, 
+    body.sidebar-collapsed .profile-name, 
+    body.sidebar-collapsed .action-text { display: none; }
     
+    body.sidebar-collapsed .profile-avatar-container { width: 45px; height: 45px; margin-top: 10px; }
+    body.sidebar-collapsed #sidebarToggleBtn { position: static; margin-bottom: 10px; }
+    body.sidebar-collapsed .nav-link-btn { justify-content: center; padding-left: 0; padding-right: 0; }
+    body.sidebar-collapsed .action-btn { justify-content: center; padding-left: 0; padding-right: 0; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-surface text-slate-800 antialiased font-sans flex h-screen overflow-hidden">
+  <script>
+    if (localStorage.getItem('sidebarState') === 'collapsed') {
+      document.body.classList.add('sidebar-collapsed');
+    }
+  </script>
+
+  <!-- Sidebar Navigation (Fixed Left) -->
+  <aside id="sidebar" class="bg-white border-r border-slate-200 flex flex-col justify-between hidden md:flex h-full shadow-[2px_0_8px_rgba(0,0,0,0.02)] z-20">
+    <div>
+      <!-- Profile Section with Hamburger -->
+      <div class="flex flex-col items-center justify-center py-6 border-b border-slate-100 relative w-full">
+        <!-- Hamburger Button -->
+        <button id="sidebarToggleBtn" onclick="toggleSidebar()" class="absolute top-4 left-6 text-slate-400 hover:text-primary transition-colors focus:outline-none">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+        
+        <a href="{{url_for('auth.profile')}}" class="mt-4 block group">
+          <div class="profile-avatar-container w-20 h-20 rounded-full border-4 border-slate-50 p-1 bg-white shadow-sm group-hover:border-primary/20 transition-all mx-auto">
+            <img src="https://ui-avatars.com/api/?name=Admin&background=0f52ba&color=fff&font-size=0.33" alt="Avatar" class="w-full h-full rounded-full object-cover">
+          </div>
+        </a>
+        <h5 class="profile-name mt-3 text-[13px] font-bold text-slate-800 tracking-wider uppercase text-center w-full">ADMIN</h5>
+      </div>
+      
+      <!-- Navigation Items -->
+      <nav class="p-4 space-y-1.5 mt-2">
+        <a href="{{url_for('admin.admin_h')}}" class="nav-link-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 font-medium hover:bg-slate-50 hover:text-primary transition-all duration-200 {% if request.endpoint == 'admin.admin_h' %}bg-[#eef3fb] text-primary font-semibold shadow-sm border-l-4 border-primary{% endif %}">
+          <i class="fas fa-chart-pie w-5 text-center text-[18px]"></i> <span class="nav-text">Dashboard</span>
+        </a>
+        <a href="{{url_for('admin.visitor_over')}}" class="nav-link-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 font-medium hover:bg-slate-50 hover:text-primary transition-all duration-200 {% if request.endpoint == 'admin.visitor_over' %}bg-[#eef3fb] text-primary font-semibold shadow-sm border-l-4 border-primary{% endif %}">
+          <i class="fas fa-users w-5 text-center text-[18px]"></i> <span class="nav-text">Visitors</span>
+        </a>
+        <a href="{{url_for('admin.filter_role')}}" class="nav-link-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 font-medium hover:bg-slate-50 hover:text-primary transition-all duration-200 {% if request.endpoint == 'admin.filter_role' %}bg-[#eef3fb] text-primary font-semibold shadow-sm border-l-4 border-primary{% endif %}">
+          <i class="fas fa-user-shield w-5 text-center text-[18px]"></i> <span class="nav-text">Users</span>
+        </a>
+        <a href="{{url_for('admin.manage_section')}}" class="nav-link-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 font-medium hover:bg-slate-50 hover:text-primary transition-all duration-200 {% if request.endpoint == 'admin.manage_section' %}bg-[#eef3fb] text-primary font-semibold shadow-sm border-l-4 border-primary{% endif %}">
+          <i class="fas fa-layer-group w-5 text-center text-[18px]"></i> <span class="nav-text">Manages</span>
+        </a>
+        <a href="{{url_for('admin.attendance_select')}}" class="nav-link-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 font-medium hover:bg-slate-50 hover:text-primary transition-all duration-200 {% if request.endpoint == 'admin.attendance_select' %}bg-[#eef3fb] text-primary font-semibold shadow-sm border-l-4 border-primary{% endif %}">
+          <i class="fas fa-file-alt w-5 text-center text-[18px]"></i> <span class="nav-text">Attendance log</span>
+        </a>
+        <a href="{{url_for('admin.enroll_employees')}}" class="nav-link-btn flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 font-medium hover:bg-slate-50 hover:text-primary transition-all duration-200 {% if request.endpoint == 'admin.enroll_employees' %}bg-[#eef3fb] text-primary font-semibold shadow-sm border-l-4 border-primary{% endif %}">
+          <i class="fas fa-user-plus w-5 text-center text-[18px]"></i> <span class="nav-text">Enroll Employee</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Bottom Actions Removed As Requested -->
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+    <!-- Scrollable Content Area -->
+    <main class="flex-1 overflow-y-auto bg-surface">
+      <div class="p-6 md:p-8 max-w-[1920px] mx-auto">
+        {% block body %}{% endblock body %}
+      </div>
+    </main>
   </div>
-</div>
-<script>
-  function toggleSidebar() {
-    document.querySelector('.sidebar').classList.toggle('active');
-  }
-</script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Logout Modal -->
+  <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+          <div class="modal-content" style="border-radius: 20px; border: none; background: linear-gradient(180deg, #eef2f6 0%, #ffffff 100%); padding: 15px;">
+              <div class="modal-body text-center p-5">
+                  <div class="mb-4 mx-auto d-flex justify-content-center align-items-center" style="width: 80px; height: 80px; background-color: #e2e8f0; border-radius: 50%;">
+                      <i class="fas fa-sign-out-alt" style="font-size: 32px; color: #0f172a;"></i>
+                  </div>
+                  <h3 class="fw-bold mb-3" style="color: #0f172a; font-size: 28px;">Logout</h3>
+                  <p class="text-muted mb-5" style="font-size: 16px;">Are you sure you want to logout?</p>
+                  <div class="d-flex justify-content-between gap-3">
+                      <button type="button" class="btn fw-bold py-2" style="color: #2563eb; width: 50%; border-radius: 12px; font-size: 18px; background: transparent;" data-bs-dismiss="modal">Cancel</button>
+                      <a href="{{url_for('routes.logout')}}" class="btn fw-bold text-white py-2" style="background-color: #3b82f6; width: 50%; border-radius: 12px; font-size: 18px; border: none;">Logout</a>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function toggleSidebar() {
+      const body = document.body;
+      body.classList.toggle('sidebar-collapsed');
+      
+      if (body.classList.contains('sidebar-collapsed')) {
+        localStorage.setItem('sidebarState', 'collapsed');
+      } else {
+        localStorage.setItem('sidebarState', 'expanded');
+      }
+    }
+  </script>
 </body>
 </html>

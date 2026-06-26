@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <link href="../static/camera.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+  <div class="container-fluid">
+    <div class="row">
+     
+        <div class="camera-wrapper">
+          <div class="camera-box">
+ 
+
+  <form >
+    <h2>PLEASE SHOW YOUR ID: <span id="timer">10</span> seconds</h2>
+
+    <!-- Action buttons -->
+  
+   
+    <div style="margin-top: 20px;" class="form-row">
+      <img src="{{ url_for('image_processing.video_feed') }}" width="100%" height="auto" alt="Camera Feed" />
+
+    </div>
+
+    <!-- Footer buttons -->
+    <div style="margin-top: 20px;" class="form-row">
+  
+    </div>
+
+  </form>
+</div>
+</div>
+</div>
+
+
+
+<script>
+  let timeLeft = 5; // seconds
+  const timerEl = document.getElementById('timer');
+
+  const countdown = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+    
+    if (timeLeft <= 0) {
+      clearInterval(countdown);
+      timerEl.textContent = "Expired";
+      
+    }
+  }, 1000);
+</script>
+  <!-- Highlight the clicked button -->
+<script>
+const buttons = document.querySelectorAll('.btn');
+buttons.forEach(btn => {
+btn.addEventListener('click', function () {
+  buttons.forEach(b => b.classList.remove('active'));
+  this.classList.add('active');
+});
+});
+</script>
+
+
+<script>
+// After 6 seconds (5s capture + 1s buffer), redirect to show captured page
+setTimeout(function() {
+    window.location.href = "{{ url_for('image_processing.show_captured') }}";
+}, 6000);
+</script>
+</body>
+</html>
+
+
+
