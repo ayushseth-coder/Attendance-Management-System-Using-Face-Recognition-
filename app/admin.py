@@ -377,7 +377,7 @@ def delete_all_employees():
 
 @admin.route('/manage_section', methods=['GET'])
 def manage_section():
-    if 'admin_logged_in' in session:
+    if session.get('logged_in'):
         return render_template('manage_section.html')
     else:
         return redirect(url_for('auth.login'))
