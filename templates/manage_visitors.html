@@ -55,24 +55,71 @@
           </td>
         </tr>
         {% else %}
-        {% for name in visitor_names %}
+        {% for vis in visitor_profiles %}
         <tr class="hover:bg-slate-50 transition-colors duration-150">
           <td class="px-3 py-2.5 whitespace-nowrap text-sm font-medium text-slate-600">{{ loop.index }}</td>
           <td class="px-3 py-2.5 whitespace-nowrap">
             <div class="flex items-center gap-3">
               <div class="h-8 w-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-primary font-bold text-xs shrink-0 shadow-sm">
-                {{ name[0] | upper if name else 'V' }}
+                {{ vis.Name[0] | upper if vis.Name else 'V' }}
               </div>
-              <span class="text-sm font-bold text-slate-800">{{ name }}</span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">REGVIS-{{ vis.num_id }}</span>
+                  <span class="text-sm font-bold text-slate-800">{{ vis.Name }}</span>
+                </div>
+                {% if vis.Phone != 'Unknown' or vis.Email != 'Unknown' %}
+                <div class="text-xs text-slate-500 mt-1">
+                  {% if vis.Phone != 'Unknown' %}<i class="fa fa-phone mr-1"></i>{{ vis.Phone }} {% endif %}
+                  {% if vis.Email != 'Unknown' %}<i class="fa fa-envelope ml-2 mr-1"></i>{{ vis.Email }}{% endif %}
+                </div>
+                {% endif %}
+              </div>
             </div>
           </td>
           <td class="px-3 py-2.5 whitespace-nowrap text-center">
+            <!-- Edit Button -->
+            <button type="button" class="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm mr-2" data-bs-toggle="modal" data-bs-target="#editModal{{ loop.index }}">
+              Edit
+            </button>
+            
             <!-- Delete Form -->
-            <form action="{{ url_for('admin.delete_visitor', name=name) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for {{ name }}?');">
+            <form action="{{ url_for('admin.delete_visitor', visitor_id=vis.num_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for REGVIS-{{ vis.num_id }} ({{ vis.Name }})?');">
               <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm">
                 Delete
               </button>
             </form>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-xl shadow-2xl overflow-hidden">
+                  <div class="modal-header bg-slate-50 border-b border-slate-200 px-6 py-4">
+                    <h5 class="text-lg font-bold text-slate-800">Edit Profile: {{ vis.Name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <form action="{{ url_for('admin.update_visitor_details') }}" method="POST">
+                    <div class="modal-body px-6 py-4 text-left">
+                      <input type="hidden" name="visitor_id" value="{{ vis.num_id }}">
+                      <input type="hidden" name="name" value="{{ vis.Name }}">
+                      
+                      <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address</label>
+                        <input type="email" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50" name="email" value="{{ '' if vis.get('Email', 'Unknown') == 'Unknown' else vis.get('Email', '') }}" placeholder="visitor@example.com">
+                      </div>
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Phone Number</label>
+                        <input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50" name="phone" value="{{ '' if vis.get('Phone', 'Unknown') == 'Unknown' else vis.get('Phone', '') }}" placeholder="+1 234 567 8900">
+                      </div>
+                    </div>
+                    <div class="modal-footer bg-slate-50 border-t border-slate-200 px-6 py-3">
+                      <button type="button" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="px-4 py-2 bg-[#0f52ba] rounded-md text-sm font-semibold text-white hover:bg-[#0a387c] transition-colors ml-2">Save Changes</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
           </td>
         </tr>
         {% endfor %}
