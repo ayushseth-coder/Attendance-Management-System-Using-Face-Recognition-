@@ -380,7 +380,7 @@ def manage_section():
     if 'admin_logged_in' in session:
         return render_template('manage_section.html')
     else:
-        return redirect(url_for('auth.admin_login'))
+        return redirect(url_for('auth.login'))
 
 @admin.route('/manage_visitors', methods=['GET'])
 def manage_visitors():
