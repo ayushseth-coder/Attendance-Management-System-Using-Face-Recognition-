@@ -375,6 +375,13 @@ def delete_all_employees():
         
     return redirect(url_for('admin.manage_employees'))
 
+@admin.route('/manage_section', methods=['GET'])
+def manage_section():
+    if 'admin_logged_in' in session:
+        return render_template('manage_section.html')
+    else:
+        return redirect(url_for('auth.admin_login'))
+
 @admin.route('/manage_visitors', methods=['GET'])
 def manage_visitors():
     from models.vector_db import visitor_collection
