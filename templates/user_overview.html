@@ -304,30 +304,32 @@
   <!-- modal -->
 {% endblock body%}
 <script>
-  var password = document.getElementById('password_admin')
-  var flag = 1;  // 1 -> no errors | 0-> error is there.
-  function check(elem) {
-    if (elem.value.length > 0) {
-      if (elem.value != password.value) {
-        document.getElementById('alert').innerText = "Confirm Password does not Matched";
-        flag = 0;
-      }
-      else {
-        document.getElementById('alert').innerText = "Password matched Successfully..!";
-        flag = 1;
-      }
-    } else {
-      document.getElementById('alert').innerText = "Please confirm your Password";
-      flag = 0;
-    }
-
-  }
-
   function validate() {
-    if (flag == 1) {
-      return true;
-    } else {
+    var pwd = document.getElementById('password_admin').value;
+    var pwdConf = document.getElementById('passwordConfirmation_admin').value;
+    
+    if (pwd !== pwdConf) {
+      alert("Please ensure your passwords match before submitting.");
+      document.getElementById('alert').innerText = "Passwords do not match!";
+      document.getElementById('alert').style.color = "darkred";
       return false;
+    }
+    return true;
+  }
+  
+  function check(elem) {
+    var pwd = document.getElementById('password_admin').value;
+    if (elem.value.length > 0) {
+      if (elem.value !== pwd) {
+        document.getElementById('alert').innerText = "Passwords do not match!";
+        document.getElementById('alert').style.color = "darkred";
+      } else {
+        document.getElementById('alert').innerText = "Passwords match!";
+        document.getElementById('alert').style.color = "green";
+      }
+    } else {
+      document.getElementById('alert').innerText = "Please confirm your password";
+      document.getElementById('alert').style.color = "darkred";
     }
   }
 </script>

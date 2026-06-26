@@ -75,29 +75,55 @@ def admindash():
 
 @admin.route('/addadmin', methods=['POST'])
 def add_admin():
-      if request.method == 'POST':
-       
-        if request.form['submit1'] == 'pass':
-            Name= request.form['fullname']
-            Email=request.form['addemail']
-            Phone=request.form['phone']
-            Job=request.form['jobtitle']
-            Password=request.form['password']
-            today = datetime.now()
-            hashed_password = generate_password_hash(Password)
-            # hashed_password = bcrypt.generate_password_hash(Password).decode('utf-8')
-            new_admin = {
-                "Name":Name,
-                "Email":Email,
-                "Phone":Phone,
-                "Date":today,
-                "Job":Job,
-                "Password":hashed_password 
-
-            }
-            collection.insert_one(new_admin)
+    if request.method == 'POST':
+        Name = request.form.get('fullname', '').strip()
+        Email = request.form.get('addemail', '').strip()
+        Phone = request.form.get('phone', '').strip()
+        Job = request.form.get('jobtitle', '').strip()
+        Password = request.form.get('password', '')
+        PasswordConf = request.form.get('passwordConfirmation', '')
+        
+        # 1. Check for empty fields
+        if not Name or not Email or not Phone or not Job or not Password:
+            flash("All fields are required.", "danger")
+            return redirect(request.referrer or url_for('admin.filter_role'))
+            
+        # 2. Check if passwords match
+        if Password != PasswordConf:
+            flash("Passwords do not match.", "danger")
+            return redirect(request.referrer or url_for('admin.filter_role'))
+            
+        # 3. Check for duplicate Email
+        if collection.find_one({"Email": Email}):
+            flash("An account with this Email already exists.", "danger")
+            return redirect(request.referrer or url_for('admin.filter_role'))
+            
+        # 4. Check for duplicate Phone
+        if collection.find_one({"Phone": Phone}):
+            flash("An account with this Phone number already exists.", "danger")
+            return redirect(request.referrer or url_for('admin.filter_role'))
+            
+        # Insert new user if all validations pass
+        today = datetime.now()
+        hashed_password = generate_password_hash(Password)
+        
+        new_admin = {
+            "Name": Name,
+            "Email": Email,
+            "Phone": Phone,
+            "Date": today,
+            "Job": Job,
+            "Password": hashed_password 
+        }
+        
+        collection.insert_one(new_admin)
+        if Job.lower() == 'admin':
             adminlog.insert_one(new_admin)
-        return redirect(url_for('admin.admindash'))
+        elif Job.lower() == 'security':
+            securitylog.insert_one(new_admin)
+            
+        flash(f"Account for {Name} created successfully!", "success")
+        return redirect(request.referrer or url_for('admin.filter_role'))
 @admin.route('/deleteuser/<string:Phone>', methods=['POST', 'GET'])
 def deleteuser(Phone):
     collection.delete_one({"Phone": Phone})

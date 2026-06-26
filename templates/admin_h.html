@@ -30,14 +30,19 @@ crossorigin="anonymous"
     <div>
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-0"><b style="color: black;">Welcome</b> <span style="color: #20c997;">Admin</span></h2>
-            <a href="{{url_for('admin.notification')}}" class="position-relative" style="font-size: 28px; color: #0c2d51; text-decoration: none; transition: transform 0.2s;">
-                <i class="fas fa-bell"></i>
-                {% if pending_count and pending_count > 0 %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 11px;">
-                    {{ pending_count }}
-                </span>
-                {% endif %}
-            </a>
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" class="btn btn-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#addUserModal" style="background-color: #0f52ba; border-color: #0f52ba; border-radius: 0.5rem; font-weight: bold;">
+                    <i class="fas fa-plus me-2"></i> ADD User
+                </button>
+                <a href="{{url_for('admin.notification')}}" class="position-relative" style="font-size: 28px; color: #0c2d51; text-decoration: none; transition: transform 0.2s;">
+                    <i class="fas fa-bell"></i>
+                    {% if pending_count and pending_count > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 11px;">
+                        {{ pending_count }}
+                    </span>
+                    {% endif %}
+                </a>
+            </div>
         </div>
         <div class="row g-3 mt-2">
           <div class="col-md-3"><div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;"><h4 class="fw-bold mb-1" style="color: #ffc107;">{{ active }}</h4><p class="text-muted mb-0">Active Visitors</p></div></div>
@@ -288,4 +293,118 @@ crossorigin="anonymous"
         </script>
         
         
+        <!-- Add User Modal -->
+        <div class="modal fade" id="addUserModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+              <div class="modal-header" style="border-bottom: 1px solid #eef2f6;">
+                <h5 class="modal-title fw-bold text-dark" id="addUserModalLabel" style="font-size: 1.2rem;">Create New User Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body p-4">
+                <form action="/addadmin" method="post" class="admin_popup_form_style" onsubmit="return validate()">
+                  <div class="row g-4">
+                    <!-- First Name -->
+                    <div class="col-md-6">
+                      <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-user"></i></span>
+                        <input id="Name" type="text" name="fullname" placeholder="Full Name" class="form-control border-start-0" required />
+                      </div>
+                    </div>
+                    
+                    <!-- Email Address -->
+                    <div class="col-md-6">
+                      <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-envelope"></i></span>
+                        <input id="email" type="email" name="addemail" placeholder="Email Address" class="form-control border-start-0" required />
+                      </div>
+                    </div>
+                    
+                    <!-- Phone Number -->
+                    <div class="col-md-6">
+                      <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-phone-alt"></i></span>
+                        <input id="country-prefix" type="text" value="+91" class="form-control bg-light border-end-0 text-center" style="max-width: 60px" readonly />
+                        <input id="phoneNumber" type="number" name="phone" placeholder="Phone Number" class="form-control" maxlength="10" required />
+                      </div>
+                    </div>
+                    
+                    <!-- Job -->
+                    <div class="col-md-6">
+                      <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-user-tag"></i></span>
+                        <select id="jobtitle" name="jobtitle" class="form-select border-start-0" required>
+                          <option value="">Select Role</option>
+                          <option value="Security">Security</option>
+                          <option value="Admin">Admin</option>
+                          <option value="Intern">Intern</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="col-md-6">
+                      <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-lock"></i></span>
+                        <input id="password_admin" type="password" name="password" placeholder="Password" class="form-control border-start-0" required>
+                      </div>
+                    </div>
+                    
+                    <!-- Password Confirmation -->
+                    <div class="col-md-6">
+                      <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-lock"></i></span>
+                        <input id="passwordConfirmation_admin" type="password" name="passwordConfirmation" placeholder="Confirm Password" class="form-control border-start-0" onkeyup="check(this)" required>
+                      </div>
+                    </div>
+                    
+                    <div class="col-12 mt-2">
+                      <small id="alert" class="fw-bold" style="color: darkred;"></small>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="col-12 text-end mt-4">
+                      <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" id="submit" name="submit1" value="pass" class="btn btn-primary px-4" style="background-color: #0f52ba; border-color: #0f52ba; font-weight: bold;">
+                        Create Account
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          var password = document.getElementById('password_admin');
+          var flag = 1;  // 1 -> no errors | 0-> error is there.
+          function check(elem) {
+            if (elem.value.length > 0) {
+              if (elem.value != password.value) {
+                document.getElementById('alert').innerText = "Passwords do not match!";
+                document.getElementById('alert').style.color = "darkred";
+                flag = 0;
+              } else {
+                document.getElementById('alert').innerText = "Passwords match!";
+                document.getElementById('alert').style.color = "green";
+                flag = 1;
+              }
+            } else {
+              document.getElementById('alert').innerText = "Please confirm your password.";
+              document.getElementById('alert').style.color = "darkred";
+              flag = 0;
+            }
+          }
+        
+          function validate() {
+            if (flag == 1) {
+              return true;
+            } else {
+              alert("Please ensure your passwords match before submitting.");
+              return false;
+            }
+          }
+        </script>
+
         {% endblock body %}  
