@@ -1,4 +1,4 @@
-from flask import Blueprint, request, redirect, url_for,render_template,flash
+from flask import Blueprint, request, redirect, url_for,render_template,flash, session
 from models.database import collection, securitylog,visitorlogtable,activevisitorstable,rejectedvistable,visitors_status
 from werkzeug.security import generate_password_hash
 from flask_login import login_required
@@ -20,8 +20,13 @@ total=countvis+reject
 
 approvedby = ""
 
-security = Blueprint('security', __name__)
-
+@security.before_request
+def require_security_login():
+    if request.endpoint and 'static' in request.endpoint:
+        return
+    if not session.get('logged_in') or session.get('role') != 'security':
+        flash("You do not have permission to access the security portal.", "danger")
+        return redirect(url_for('routes.login'))
 
 @security.route('/addsec', methods=['POST','GET'])
 

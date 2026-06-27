@@ -74,6 +74,7 @@
             <table id="dataTable" class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-[#0f52ba] border-b-2 border-[#0a387c]">
+                        <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap text-center">S.No</th>
                         <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">ID</th>
                         <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Name</th>
                         <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Role</th>
@@ -85,6 +86,10 @@
                 <tbody class="divide-y divide-slate-100">
                     {% for record in records %}
                     <tr class="hover:bg-slate-50 transition-colors duration-150">
+                        <!-- S.No -->
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-slate-500 font-medium text-center">
+                            {{ loop.index }}
+                        </td>
                         <!-- ID -->
                         <td class="px-3 py-3 whitespace-nowrap">
                             <span class="text-xs font-bold px-2.5 py-1 rounded-md bg-slate-800 text-white shadow-sm">{{ record._id }}</span>

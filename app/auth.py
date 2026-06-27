@@ -14,6 +14,17 @@ users = User
  
 auth = Blueprint('auth', __name__)
   
+@auth.before_request
+def require_login_for_profile():
+    # Public routes that do not require login
+    public_endpoints = ['auth.login', 'auth.cancle']
+    
+    # If the route belongs to this blueprint and is not public, require login
+    if request.endpoint and request.endpoint.startswith('auth.') and request.endpoint not in public_endpoints:
+        if not session.get('logged_in'):
+            flash("Please login to view this page.", "danger")
+            return redirect(url_for('auth.login'))
+
 
 class User(UserMixin):
     def __init__(self, user_id, username, email, password,Job):
@@ -82,14 +93,15 @@ def login():
             print(f"user data role:{role}")
             if role == "admin":
                 session['user_id'] = email
-                  
                 session['logged_in'] = True
+                session['role'] = role
                 
                 return redirect(url_for('admin.admin_h')) 
             elif role == "security":
                 session['user_id'] = email    
                 session['logged_in'] = True
-                return redirect(url_for('security.security_home'))  
+                session['role'] = role
+                return redirect(url_for('security.security_home'))
             else:
                 flash("Invalid role", "danger")
                 return redirect(url_for('auth.login'))

@@ -10,6 +10,17 @@ from flask import json
 admin = Blueprint('admin', __name__)
 bcrypt = Bcrypt()
 
+@admin.before_request
+def require_admin_login():
+    # Allow static files if they are served through this blueprint (usually they aren't, but just in case)
+    if request.endpoint and 'static' in request.endpoint:
+        return
+    # Check if user is logged in and has the admin role
+    if not session.get('logged_in') or session.get('role') != 'admin':
+        flash("You do not have permission to access the admin portal.", "danger")
+        return redirect(url_for('routes.login'))
+
+
 # OLD GLOBAL CODE - Commented out to make Dashboard dynamic
 # visitobj = list(visitorlogtable.find())
 # activeobj = list(activevisitorstable.find())
@@ -31,7 +42,6 @@ def inject_pending_count():
 
 
 @admin.route('/admindash')
-
 def admindash():
     # Dynamically compute stats on every page load
     pending = len(list(reqvistable.find()))

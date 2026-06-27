@@ -1,9 +1,18 @@
-from flask import Blueprint, redirect, url_for, request, render_template, flash
+from flask import Blueprint, redirect, url_for, request, render_template, flash, session
 from models.database import reqvistable, visitorlogtable, activevisitorstable, rejectedvistable,otp_send, visitors_status
 from app.camera_manager import release_camera
 import datetime,os
 
 visitor = Blueprint('visitors', __name__)
+
+@visitor.before_request
+def require_staff_login():
+    if request.endpoint and 'static' in request.endpoint:
+        return
+    role = session.get('role')
+    if not session.get('logged_in') or role not in ['admin', 'security']:
+        flash("You do not have permission to access visitor actions.", "danger")
+        return redirect(url_for('routes.login'))
 
 
 @visitor.route('/visitor1', methods=['GET', 'POST'])
