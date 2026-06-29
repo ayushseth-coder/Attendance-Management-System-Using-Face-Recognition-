@@ -22,17 +22,7 @@
                         the employee's name.
                     </p>
 
-                    <!-- Flash Messages -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                    {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show text-sm" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                    {% endfor %}
-                    {% endif %}
-                    {% endwith %}
+
 
                     <!-- Upload Form -->
                     <form action="{{ url_for('admin.enroll_employees') }}" method="POST" enctype="multipart/form-data">

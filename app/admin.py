@@ -357,7 +357,7 @@ def delete_employee(name):
     try:
         # Delete from ChromaDB
         employee_collection.delete(ids=[name])
-        flash(f"Successfully deleted records for ID {visitor_id}.", "success")
+        flash(f"Successfully deleted records for ID {name}.", "success")
         
         # Cleanup: Delete ALL local photos matching the employee name (ignoring case and extensions)
         import os
@@ -366,14 +366,14 @@ def delete_employee(name):
             for filename in os.listdir(faces_dir):
                 name_without_ext = os.path.splitext(filename)[0]
                 # If the name matches (ignoring capital letters), delete it!
-                if name_without_ext.lower() == visitor_id.lower():
+                if name_without_ext.lower() == name.lower():
                     try:
                         os.remove(os.path.join(faces_dir, filename))
                     except Exception:
                         pass
                 
     except Exception as e:
-        flash(f"Error deleting {visitor_id}: {e}", "danger")
+        flash(f"Error deleting {name}: {e}", "danger")
         
     return redirect(url_for('admin.manage_employees'))
 
