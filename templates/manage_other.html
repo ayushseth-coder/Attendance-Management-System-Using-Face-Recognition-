@@ -2,32 +2,32 @@
 
 {% block title %}Manage External Staff
 <script>
-$(document).ready(function() {
+  $(document).ready(function () {
     var table = $('#dataTable').DataTable({
-        "pageLength": 10,
-        "ordering": false,
-        "language": {
-            "info": "Showing _START_ to _END_ of _TOTAL_ entries",
-            "paginate": {
-                "previous": "<i class='fas fa-chevron-left text-xs'></i>",
-                "next": "<i class='fas fa-chevron-right text-xs'></i>"
-            }
+      "pageLength": 10,
+      "ordering": false,
+      "language": {
+        "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+        "paginate": {
+          "previous": "<i class='fas fa-chevron-left text-xs'></i>",
+          "next": "<i class='fas fa-chevron-right text-xs'></i>"
         }
+      }
     });
 
-    $('#customSearchInput').on('keyup', function() { table.search(this.value).draw(); });
-    $('#customSearchIcon').on('click', function(e) {
-        e.preventDefault();
-        $('#customSearchInput').toggleClass('active');
-        if ($('#customSearchInput').hasClass('active')) {
-            $('#customSearchInput').focus();
-        } else {
-            $('#customSearchInput').val('');
-            table.search('').draw();
-        }
+    $('#customSearchInput').on('keyup', function () { table.search(this.value).draw(); });
+    $('#customSearchIcon').on('click', function (e) {
+      e.preventDefault();
+      $('#customSearchInput').toggleClass('active');
+      if ($('#customSearchInput').hasClass('active')) {
+        $('#customSearchInput').focus();
+      } else {
+        $('#customSearchInput').val('');
+        table.search('').draw();
+      }
     });
-    $('#customLengthMenu').on('change', function() { table.page.len(this.value).draw(); });
-});
+    $('#customLengthMenu').on('change', function () { table.page.len(this.value).draw(); });
+  });
 </script>
 
 {% endblock %}
@@ -40,189 +40,311 @@ $(document).ready(function() {
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <style>
-  .dataTables_filter { display: none !important; }
-  .dataTables_length { display: none !important; }
-  #customSearchInput { width: 0; opacity: 0; padding: 0; transition: all 0.3s ease-in-out; }
-  #customSearchInput.active { width: 250px; opacity: 1; padding: 0.5rem 1rem; }
-  #dataTable_wrapper { margin-top: 0 !important; padding-top: 0 !important; }
-  .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.25rem 0.75rem !important; margin-left: 0.25rem; border-radius: 0.375rem !important; border: 1px solid #e2e8f0 !important; background: white !important; color: #475569 !important; font-size: 0.875rem; }
-  .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #0f52ba !important; color: white !important; border-color: #0f52ba !important; font-weight: 600; }
-  .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: #f1f5f9 !important; color: #0f52ba !important; border-color: #cbd5e1 !important; }
-  .dataTables_wrapper .dataTables_info { font-size: 0.875rem; color: #64748b !important; padding-top: 1rem !important; }
-  .dataTables_wrapper table.dataTable.no-footer { border-bottom: 1px solid #e2e8f0; }
+  .dataTables_filter {
+    display: none !important;
+  }
+
+  .dataTables_length {
+    display: none !important;
+  }
+
+  #customSearchInput {
+    width: 0;
+    opacity: 0;
+    padding: 0;
+    transition: all 0.3s ease-in-out;
+  }
+
+  #customSearchInput.active {
+    width: 250px;
+    opacity: 1;
+    padding: 0.5rem 1rem;
+  }
+
+  #dataTable_wrapper {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0.25rem 0.75rem !important;
+    margin-left: 0.25rem;
+    border-radius: 0.375rem !important;
+    border: 1px solid #e2e8f0 !important;
+    background: white !important;
+    color: #475569 !important;
+    font-size: 0.875rem;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #0f52ba !important;
+    color: white !important;
+    border-color: #0f52ba !important;
+    font-weight: 600;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #f1f5f9 !important;
+    color: #0f52ba !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  .dataTables_wrapper .dataTables_info {
+    font-size: 0.875rem;
+    color: #64748b !important;
+    padding-top: 1rem !important;
+  }
+
+  .dataTables_wrapper table.dataTable.no-footer {
+    border-bottom: 1px solid #e2e8f0;
+  }
 </style>
 
 <div class="container-fluid px-0 mt-4">
-    <div class="row mb-4">
-        <div class="col-md-12 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <a href="{{ url_for('admin.manage_section') }}" class="btn btn-outline-secondary me-3" style="border-radius: 50%; width: 40px; height: 40px; display: inline-flex; justify-content: center; align-items: center;" title="Back to Manage Section">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <h2 class="mb-0">Manage External Staff (Contractors, Vendors)</h2>
-            </div>
-            <div class="d-flex align-items-center">
-                <span class="badge bg-warning text-dark fs-6 me-3">Total Enrolled: {{ total_count }}</span>
-                {% if total_count > 0 %}
-                <form action="{{ url_for('admin.delete_all_other') }}" method="POST" onsubmit="return confirm('WARNING: Are you absolutely sure you want to permanently delete ALL External Staff from the database? This will completely wipe the other_faces ChromaDB collection and delete all physical photos. This action CANNOT be undone!');">
-                    <button type="submit" class="btn btn-danger shadow-sm fw-bold">
-                        <i class="fa fa-exclamation-triangle"></i> Delete All External Staff
-                    </button>
+  <div class="row mb-4">
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <a href="{{ url_for('admin.manage_section') }}" class="btn btn-outline-secondary me-3"
+          style="border-radius: 50%; width: 40px; height: 40px; display: inline-flex; justify-content: center; align-items: center;"
+          title="Back to Manage Section">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <h2 class="mb-0">Manage External Staff</h2>
+      </div>
+      <div class="d-flex align-items-center">
+        <span class="badge bg-warning text-dark fs-6 me-3">Total Enrolled: {{ total_count }}</span>
+        {% if total_count > 0 %}
+        <button type="button" class="btn btn-danger shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+          <i class="fa fa-exclamation-triangle"></i> Delete All External Staff
+        </button>
+
+        <!-- Delete All Modal -->
+        <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-xl shadow-2xl overflow-hidden">
+              <div class="modal-header bg-red-50 border-b border-red-200 px-6 py-4">
+                <h5 class="text-lg font-bold text-red-700"><i class="fa fa-exclamation-triangle mr-2"></i>Critical Warning</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body px-6 py-4 text-left">
+                <p class="text-slate-700 font-medium">Are you absolutely sure you want to permanently delete ALL External Staff from the database?</p>
+                <p class="text-red-600 font-bold mt-2 text-sm bg-red-50 p-2 rounded border border-red-100">This will completely wipe the other_faces collection and delete all physical photos. This action CANNOT be undone!</p>
+              </div>
+              <div class="modal-footer bg-slate-50 border-t border-slate-200 px-6 py-3">
+                <button type="button" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('admin.delete_all_other') }}" method="POST" class="m-0 p-0">
+                  <button type="submit" class="px-4 py-2 bg-red-600 rounded-md text-sm font-semibold text-white hover:bg-red-700 transition-colors ml-2">Yes, Delete All</button>
                 </form>
-                {% endif %}
+              </div>
             </div>
+          </div>
         </div>
+        {% endif %}
+      </div>
     </div>
+  </div>
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    {% for category, message in messages %}
-    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endfor %}
-    {% endif %}
-    {% endwith %}
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
 
 
-<div class="flex flex-wrap items-center justify-end gap-3 mb-4">
-    <select id="customLengthMenu" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary block px-3 py-2 cursor-pointer shadow-sm outline-none transition-all">
-        <option value="" disabled selected hidden>Show Entries</option>
-        <option value="5">5 Entries</option>
-        <option value="10">10 Entries</option>
-        <option value="20">20 Entries</option>
-        <option value="50">50 Entries</option>
-        <option value="-1">All Entries</option>
+  <div class="flex flex-wrap items-center justify-end gap-3 mb-4">
+    <select id="customLengthMenu"
+      class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary block px-3 py-2 cursor-pointer shadow-sm outline-none transition-all">
+      <option value="" disabled selected hidden>Show Entries</option>
+      <option value="5">5 Entries</option>
+      <option value="10">10 Entries</option>
+      <option value="20">20 Entries</option>
+      <option value="50">50 Entries</option>
+      <option value="-1">All Entries</option>
     </select>
     <div class="flex items-center shadow-sm rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <button id="customSearchIcon" class="px-3 py-2 text-slate-400 hover:text-primary bg-white transition-colors focus:outline-none">
-            <i class="fas fa-search text-sm"></i>
-        </button>
-        <input type="text" id="customSearchInput" class="border-none focus:ring-0 text-sm font-medium text-slate-700 bg-white placeholder-slate-400 outline-none" placeholder="Search...">
+      <button id="customSearchIcon"
+        class="px-3 py-2 text-slate-400 hover:text-primary bg-white transition-colors focus:outline-none">
+        <i class="fas fa-search text-sm"></i>
+      </button>
+      <input type="text" id="customSearchInput"
+        class="border-none focus:ring-0 text-sm font-medium text-slate-700 bg-white placeholder-slate-400 outline-none"
+        placeholder="Search...">
     </div>
-</div>
+  </div>
 
-<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6 mt-4">
-  <div class="overflow-x-auto p-4 md:p-6 pt-2">
-    <table id="dataTable" class="w-full text-left border-collapse">
-      <thead>
-        <tr class="bg-[#0f52ba] border-b-2 border-[#0a387c]">
-          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 10%;">#</th>
-          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 40%;">Staff Name</th>
-          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 30%;">Assigned Role</th>
-          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap text-center" style="width: 20%;">Action</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        
-        {% for staff in external_staff %}
-        <tr class="hover:bg-slate-50 transition-colors duration-150">
-          <td class="px-3 py-2.5 whitespace-nowrap text-sm font-medium text-slate-600">{{ loop.index }}</td>
-          <td class="px-3 py-2.5 whitespace-nowrap">
-            <div class="flex items-center gap-3">
-              <div class="h-8 w-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-primary font-bold text-xs shrink-0 shadow-sm">
-                {{ staff.Name[0] | upper if staff.Name else 'S' }}
-              </div>
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">EXTSTF-{{ staff.num_id }}</span>
-                  <span class="text-sm font-bold text-slate-800">{{ staff.Name }}</span>
+  <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6 mt-4">
+    <div class="overflow-x-auto p-4 md:p-6 pt-2">
+      <table id="dataTable" class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-[#0f52ba] border-b-2 border-[#0a387c]">
+            <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap"
+              style="width: 10%;">#</th>
+            <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap"
+              style="width: 40%;">Staff Name</th>
+            <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap"
+              style="width: 30%;">Assigned Role</th>
+            <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap text-center"
+              style="width: 20%;">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+
+          {% for staff in external_staff %}
+          <tr class="hover:bg-slate-50 transition-colors duration-150">
+            <td class="px-3 py-2.5 whitespace-nowrap text-sm font-medium text-slate-600">{{ loop.index }}</td>
+            <td class="px-3 py-2.5 whitespace-nowrap">
+              <div class="flex items-center gap-3">
+                <div
+                  class="h-8 w-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-primary font-bold text-xs shrink-0 shadow-sm">
+                  {{ staff.Name[0] | upper if staff.Name else 'S' }}
                 </div>
-                {% if staff.Phone != 'Unknown' or staff.Email != 'Unknown' %}
-                <div class="text-xs text-slate-500 mt-1">
-                  {% if staff.Phone != 'Unknown' %}<i class="fa fa-phone mr-1"></i>{{ staff.Phone }} {% endif %}
-                  {% if staff.Email != 'Unknown' %}<i class="fa fa-envelope ml-2 mr-1"></i>{{ staff.Email }}{% endif %}
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">EXTSTF-{{
+                      staff.num_id }}</span>
+                    <span class="text-sm font-bold text-slate-800">{{ staff.Name }}</span>
+                  </div>
+                  {% if staff.Phone != 'Unknown' or staff.Email != 'Unknown' %}
+                  <div class="text-xs text-slate-500 mt-1">
+                    {% if staff.Phone != 'Unknown' %}<i class="fa fa-phone mr-1"></i>{{ staff.Phone }} {% endif %}
+                    {% if staff.Email != 'Unknown' %}<i class="fa fa-envelope ml-2 mr-1"></i>{{ staff.Email }}{% endif
+                    %}
+                  </div>
+                  {% endif %}
                 </div>
-                {% endif %}
               </div>
-            </div>
-          </td>
-          <td class="px-3 py-2.5 whitespace-nowrap"><span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 inline-block">{{ staff.Role }}</span></td>
-          <td class="px-3 py-2.5 whitespace-nowrap text-center">
-            <!-- Edit Button -->
-            <button type="button" class="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm mr-2" data-bs-toggle="modal" data-bs-target="#editModal{{ loop.index }}">
-              Edit
-            </button>
-            
-            <!-- Delete Form -->
-            <form action="{{ url_for('admin.delete_other', staff_id=staff.num_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for EXTSTF-{{ staff.num_id }} ({{ staff.Name }})?');">
-              <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm">
+            </td>
+            <td class="px-3 py-2.5 whitespace-nowrap"><span
+                class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 inline-block">{{
+                staff.Role }}</span></td>
+            <td class="px-3 py-2.5 whitespace-nowrap text-center">
+              <!-- Edit Button -->
+              <button type="button"
+                class="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm mr-2"
+                data-bs-toggle="modal" data-bs-target="#editModal{{ loop.index }}">
+                Edit
+              </button>
+
+              <!-- Delete Form -->
+              <!-- Delete Button triggers Modal -->
+              <button type="button"
+                class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm"
+                data-bs-toggle="modal" data-bs-target="#deleteModal{{ loop.index }}">
                 Delete
               </button>
-            </form>
 
-            <!-- Edit Modal -->
-            <div class="modal fade" id="editModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 rounded-xl shadow-2xl overflow-hidden">
-                  <div class="modal-header bg-slate-50 border-b border-slate-200 px-6 py-4">
-                    <h5 class="text-lg font-bold text-slate-800">Edit Profile: {{ staff.Name }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <form action="{{ url_for('admin.update_other_details') }}" method="POST">
+              <!-- Delete Single Modal -->
+              <div class="modal fade" id="deleteModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content border-0 rounded-xl shadow-2xl overflow-hidden">
+                    <div class="modal-header bg-slate-50 border-b border-slate-200 px-6 py-4">
+                      <h5 class="text-lg font-bold text-slate-800">Confirm Deletion</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
                     <div class="modal-body px-6 py-4 text-left">
-                      <input type="hidden" name="staff_id" value="{{ staff.num_id }}">
-                      <input type="hidden" name="name" value="{{ staff.Name }}">
-                      
-                      <div class="mb-4">
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address</label>
-                        <input type="email" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50" name="email" value="{{ '' if staff.get('Email', 'Unknown') == 'Unknown' else staff.get('Email', '') }}" placeholder="staff@example.com">
-                      </div>
-                      <div class="mb-4">
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Phone Number</label>
-                        <input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50" name="phone" value="{{ '' if staff.get('Phone', 'Unknown') == 'Unknown' else staff.get('Phone', '') }}" placeholder="+1 234 567 8900">
-                      </div>
-                      <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Role</label>
-                        <input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50" name="role" value="{{ staff.Role }}">
-                      </div>
+                      <p class="text-slate-700 font-medium">Are you sure you want to permanently delete the biometric vector for <strong class="text-red-600">EXTSTF-{{ staff.num_id }} ({{ staff.Name }})</strong>?</p>
+                      <p class="text-slate-500 text-sm mt-2">This action cannot be undone.</p>
                     </div>
                     <div class="modal-footer bg-slate-50 border-t border-slate-200 px-6 py-3">
                       <button type="button" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors" data-bs-dismiss="modal">Cancel</button>
-                      <button type="submit" class="px-4 py-2 bg-[#0f52ba] rounded-md text-sm font-semibold text-white hover:bg-[#0a387c] transition-colors ml-2">Save Changes</button>
+                      <form action="{{ url_for('admin.delete_other', staff_id=staff.num_id) }}" method="POST" class="m-0 p-0">
+                        <button type="submit" class="px-4 py-2 bg-red-600 rounded-md text-sm font-semibold text-white hover:bg-red-700 transition-colors ml-2">Delete</button>
+                      </form>
                     </div>
-                  </form>
+                  </div>
                 </div>
               </div>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
+
+              <!-- Edit Modal -->
+              <div class="modal fade" id="editModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content border-0 rounded-xl shadow-2xl overflow-hidden">
+                    <div class="modal-header bg-slate-50 border-b border-slate-200 px-6 py-4">
+                      <h5 class="text-lg font-bold text-slate-800">Edit Profile: {{ staff.Name }}</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="{{ url_for('admin.update_other_details') }}" method="POST">
+                      <div class="modal-body px-6 py-4 text-left">
+                        <input type="hidden" name="staff_id" value="{{ staff.num_id }}">
+                        <input type="hidden" name="name" value="{{ staff.Name }}">
+
+                        <div class="mb-4">
+                          <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address</label>
+                          <input type="email"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            name="email"
+                            value="{{ '' if staff.get('Email', 'Unknown') == 'Unknown' else staff.get('Email', '') }}"
+                            placeholder="staff@example.com">
+                        </div>
+                        <div class="mb-4">
+                          <label class="block text-sm font-semibold text-slate-700 mb-1">Phone Number</label>
+                          <input type="text"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            name="phone"
+                            value="{{ '' if staff.get('Phone', 'Unknown') == 'Unknown' else staff.get('Phone', '') }}"
+                            placeholder="+1 234 567 8900">
+                        </div>
+                        <div>
+                          <label class="block text-sm font-semibold text-slate-700 mb-1">Role</label>
+                          <input type="text"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            name="role" value="{{ staff.Role }}">
+                        </div>
+                      </div>
+                      <div class="modal-footer bg-slate-50 border-t border-slate-200 px-6 py-3">
+                        <button type="button"
+                          class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                          data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit"
+                          class="px-4 py-2 bg-[#0f52ba] rounded-md text-sm font-semibold text-white hover:bg-[#0a387c] transition-colors ml-2">Save
+                          Changes</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
         </tbody>
-    </table>
+      </table>
+    </div>
   </div>
-</div>
 </div>
 
 <script>
-$(document).ready(function() {
+  $(document).ready(function () {
     var table = $('#dataTable').DataTable({
-        "pageLength": 10,
-        "ordering": false,
-        "language": {
-            "info": "Showing _START_ to _END_ of _TOTAL_ entries",
-            "paginate": {
-                "previous": "<i class='fas fa-chevron-left text-xs'></i>",
-                "next": "<i class='fas fa-chevron-right text-xs'></i>"
-            }
+      "pageLength": 10,
+      "ordering": false,
+      "language": {
+        "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+        "paginate": {
+          "previous": "<i class='fas fa-chevron-left text-xs'></i>",
+          "next": "<i class='fas fa-chevron-right text-xs'></i>"
         }
+      }
     });
 
-    $('#customSearchInput').on('keyup', function() { table.search(this.value).draw(); });
-    $('#customSearchIcon').on('click', function(e) {
-        e.preventDefault();
-        $('#customSearchInput').toggleClass('active');
-        if ($('#customSearchInput').hasClass('active')) {
-            $('#customSearchInput').focus();
-        } else {
-            $('#customSearchInput').val('');
-            table.search('').draw();
-        }
+    $('#customSearchInput').on('keyup', function () { table.search(this.value).draw(); });
+    $('#customSearchIcon').on('click', function (e) {
+      e.preventDefault();
+      $('#customSearchInput').toggleClass('active');
+      if ($('#customSearchInput').hasClass('active')) {
+        $('#customSearchInput').focus();
+      } else {
+        $('#customSearchInput').val('');
+        table.search('').draw();
+      }
     });
-    $('#customLengthMenu').on('change', function() { table.page.len(this.value).draw(); });
-});
+    $('#customLengthMenu').on('change', function () { table.page.len(this.value).draw(); });
+  });
 </script>
 
 {% endblock %}

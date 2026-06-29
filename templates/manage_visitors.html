@@ -64,11 +64,31 @@ $(document).ready(function() {
             <div class="d-flex align-items-center">
                 <span class="badge bg-primary fs-6 me-3">Total Enrolled: {{ total_count }}</span>
                 {% if total_count > 0 %}
-                <form action="{{ url_for('admin.delete_all_visitors') }}" method="POST" onsubmit="return confirm('WARNING: Are you absolutely sure you want to permanently delete ALL visitors from the database? This will completely wipe ChromaDB and delete all physical photos. This action CANNOT be undone!');">
-                    <button type="submit" class="btn btn-danger shadow-sm fw-bold">
-                        <i class="fa fa-exclamation-triangle"></i> Delete All Visitors
-                    </button>
-                </form>
+                <button type="button" class="btn btn-danger shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#deleteAllVisitorsModal">
+                    <i class="fa fa-exclamation-triangle"></i> Delete All Visitors
+                </button>
+
+                <!-- Delete All Visitors Modal -->
+                <div class="modal fade" id="deleteAllVisitorsModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 rounded-xl shadow-2xl overflow-hidden">
+                            <div class="modal-header bg-red-50 border-b border-red-200 px-6 py-4">
+                                <h5 class="text-lg font-bold text-red-700"><i class="fa fa-exclamation-triangle mr-2"></i>Critical Warning</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body px-6 py-4 text-start text-wrap">
+                                <p class="text-slate-700 font-medium">Are you absolutely sure you want to permanently delete ALL visitors from the database?</p>
+                                <p class="text-red-600 font-bold mt-2 text-sm bg-red-50 p-2 rounded border border-red-100">This will completely wipe ChromaDB and delete all physical photos. This action CANNOT be undone!</p>
+                            </div>
+                            <div class="modal-footer bg-slate-50 border-t border-slate-200 px-6 py-3">
+                                <button type="button" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{{ url_for('admin.delete_all_visitors') }}" method="POST" class="m-0 p-0">
+                                    <button type="submit" class="px-4 py-2 bg-red-600 rounded-md text-sm font-semibold text-white hover:bg-red-700 transition-colors ml-2">Yes, Delete All</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -144,12 +164,32 @@ $(document).ready(function() {
               Edit
             </button>
             
-            <!-- Delete Form -->
-            <form action="{{ url_for('admin.delete_visitor', visitor_id=vis.num_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete the biometric vector for REGVIS-{{ vis.num_id }} ({{ vis.Name }})?');">
-              <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm">
-                Delete
-              </button>
-            </form>
+            <!-- Delete Button triggers Modal -->
+            <button type="button" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm" data-bs-toggle="modal" data-bs-target="#deleteVisitorModal{{ loop.index }}">
+              Delete
+            </button>
+
+            <!-- Delete Single Modal -->
+            <div class="modal fade" id="deleteVisitorModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-xl shadow-2xl overflow-hidden">
+                  <div class="modal-header bg-slate-50 border-b border-slate-200 px-6 py-4">
+                    <h5 class="text-lg font-bold text-slate-800">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body px-6 py-4 text-start text-wrap">
+                    <p class="text-slate-700 font-medium whitespace-normal">Are you sure you want to permanently delete the biometric vector for <strong class="text-red-600">REGVIS-{{ vis.num_id }} ({{ vis.Name }})</strong>?</p>
+                    <p class="text-slate-500 text-sm mt-2 whitespace-normal">This action cannot be undone.</p>
+                  </div>
+                  <div class="modal-footer bg-slate-50 border-t border-slate-200 px-6 py-3 flex-nowrap">
+                    <button type="button" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('admin.delete_visitor', visitor_id=vis.num_id) }}" method="POST" class="m-0 p-0">
+                      <button type="submit" class="px-4 py-2 bg-red-600 rounded-md text-sm font-semibold text-white hover:bg-red-700 transition-colors ml-2">Delete</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>>
 
             <!-- Edit Modal -->
             <div class="modal fade" id="editModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
