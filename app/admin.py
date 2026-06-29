@@ -628,21 +628,21 @@ def delete_other(staff_id):
     
     try:
         other_collection.delete(ids=[staff_id])
-        flash(f"Successfully deleted records for ID {visitor_id}.", "success")
+        flash(f"Successfully deleted records for ID {staff_id}.", "success")
         
         import os
         faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
         if os.path.exists(faces_dir):
             for filename in os.listdir(faces_dir):
                 name_without_ext = os.path.splitext(filename)[0]
-                if name_without_ext.lower() == visitor_id.lower():
+                if name_without_ext.lower() == staff_id.lower():
                     try:
                         os.remove(os.path.join(faces_dir, filename))
                     except Exception:
                         pass
                 
     except Exception as e:
-        flash(f"Error deleting {visitor_id}: {e}", "danger")
+        flash(f"Error deleting {staff_id}: {e}", "danger")
         
     return redirect(url_for('admin.manage_other'))
 
