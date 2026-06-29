@@ -18,7 +18,7 @@ def require_admin_login():
     # Check if user is logged in and has the admin role
     if not session.get('logged_in') or session.get('role') != 'admin':
         flash("You do not have permission to access the admin portal.", "danger")
-        return redirect(url_for('routes.login'))
+        return redirect(url_for('auth.login'))
 
 
 # OLD GLOBAL CODE - Commented out to make Dashboard dynamic

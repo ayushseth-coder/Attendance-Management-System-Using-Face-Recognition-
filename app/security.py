@@ -26,7 +26,7 @@ def require_security_login():
         return
     if not session.get('logged_in') or session.get('role') != 'security':
         flash("You do not have permission to access the security portal.", "danger")
-        return redirect(url_for('routes.login'))
+        return redirect(url_for('auth.login'))
 
 @security.route('/addsec', methods=['POST','GET'])
 
@@ -51,8 +51,7 @@ def add_security():
 
         collection.insert_one(daobject)
         securitylog.insert_one(daobject)
- 
-        return redirect(url_for('routes.login'))  # Redirect to the login page
+        return redirect(url_for('auth.login'))  # Redirect to the login page
 
 
 @security.route('/securitydash',methods=['GET','POST'])

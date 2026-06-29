@@ -36,14 +36,14 @@ def extract():
 
 def logout():
     session.clear()
-    return render_template('login.html')
+    return redirect(url_for('auth.login'))
 
 @routes.route('/logoutsecurity')
 
 def logoutsecurity():
-    # session.pop("emailsecurity", None)
+    session.clear()
     release_camera()     
-    return render_template('login.html',data=[])
+    return redirect(url_for('auth.login'))
 
 
 

@@ -12,7 +12,7 @@ def require_staff_login():
     role = session.get('role')
     if not session.get('logged_in') or role not in ['admin', 'security']:
         flash("You do not have permission to access visitor actions.", "danger")
-        return redirect(url_for('routes.login'))
+        return redirect(url_for('auth.login'))
 
 
 @visitor.route('/visitor1', methods=['GET', 'POST'])
