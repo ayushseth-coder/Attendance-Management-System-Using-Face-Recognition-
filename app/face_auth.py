@@ -121,7 +121,7 @@ def face_result():
             # representations = DeepFace.represent(img_path=imp.captured_image, model_name="Facenet", enforce_detection=True)
             import time
             start_time = time.time()
-            representations = DeepFace.represent(img_path=imp.captured_image, model_name="ArcFace", enforce_detection=True)
+            representations = DeepFace.represent(img_path=imp.captured_image, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
             latency = (time.time() - start_time) * 1000
             print(f"[BENCHMARK] ArcFace Extraction Latency (Employee): {latency:.2f} ms")
             
@@ -233,7 +233,7 @@ def visitor_result():
             # representations = DeepFace.represent(img_path=imp.captured_image, model_name="Facenet", enforce_detection=True)
             import time
             start_time = time.time()
-            representations = DeepFace.represent(img_path=imp.captured_image, model_name="ArcFace", enforce_detection=True)
+            representations = DeepFace.represent(img_path=imp.captured_image, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
             latency = (time.time() - start_time) * 1000
             print(f"[BENCHMARK] ArcFace Extraction Latency (Visitor): {latency:.2f} ms")
             
@@ -249,7 +249,7 @@ def visitor_result():
                     
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
-                        if distance < 0.68: 
+                        if distance < 0.50: 
                             visitor_id = results['ids'][0][0]
                             visitor_name = results['documents'][0][0].capitalize() if results.get('documents') and results['documents'][0] else visitor_id
                             now = datetime.datetime.now()
@@ -352,7 +352,7 @@ def other_result():
             # representations = DeepFace.represent(img_path=img_path, model_name="Facenet", enforce_detection=True)
             import time
             start_time = time.time()
-            representations = DeepFace.represent(img_path=img_path, model_name="ArcFace", enforce_detection=True)
+            representations = DeepFace.represent(img_path=img_path, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
             latency = (time.time() - start_time) * 1000
             print(f"[BENCHMARK] ArcFace Extraction Latency (External): {latency:.2f} ms")
             
@@ -368,7 +368,7 @@ def other_result():
                     
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
-                        if distance < 0.68:
+                        if distance < 0.50:
                             external_id = results['ids'][0][0]
                             external_name = results['documents'][0][0] if results.get('documents') and results['documents'][0] else external_id
                             metadata = results['metadatas'][0][0] or {}
