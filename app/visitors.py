@@ -190,12 +190,16 @@ def enroll_employee(uid):
                             clean_name = employee_name.capitalize()
                             extracted_id = ""
                             
-                        chroma_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+                        base_hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+                        
+                        import uuid
+                        variant_suffix = str(uuid.uuid4())[:6].upper()
+                        chroma_id = f"{base_hr_id}-{variant_suffix}"
                         
                         employee_collection.upsert(
                             embeddings=[embedding],
                             ids=[chroma_id],
-                            metadatas=[{"path": permanent_img_path, "Name": clean_name}]
+                            metadatas=[{"path": permanent_img_path, "Name": clean_name, "HR_ID": base_hr_id}]
                         )
                         print(f"[SUCCESS] Employee {employee_name} permanently enrolled in ChromaDB!")
         except Exception as e:

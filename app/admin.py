@@ -293,7 +293,11 @@ def enroll_employees():
                     employee_name = raw_name.capitalize()
                     extracted_id = ""
                     
-                chroma_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{employee_name.upper()}"
+                base_hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{employee_name.upper()}"
+                
+                import uuid
+                variant_suffix = str(uuid.uuid4())[:6].upper()
+                chroma_id = f"{base_hr_id}-{variant_suffix}"
                 
                 try:
                     # Run AI Extraction
@@ -303,11 +307,11 @@ def enroll_employees():
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]
                         
-                        # Save to Vector DB using unique chroma_id, preserving real Name in metadata
+                        # Save to Vector DB using unique chroma_id, preserving real Name and HR_ID in metadata
                         employee_collection.upsert(
                             ids=[chroma_id],
                             embeddings=[embedding],
-                            metadatas=[{"path": filepath, "Name": employee_name}]
+                            metadatas=[{"path": filepath, "Name": employee_name, "HR_ID": base_hr_id}]
                         )
                         success_count += 1
                     else:
