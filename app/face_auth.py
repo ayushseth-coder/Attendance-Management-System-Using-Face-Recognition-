@@ -5,7 +5,6 @@ import os
 import time
 from app.camera_manager import get_camera, release_camera
 from models.database import attendance_log
-from app.image_processing import captured_data, captured_image  # Import global to share state with OCR fallback
 from app.extensions import limiter
 
 face_auth = Blueprint('face_auth', __name__)

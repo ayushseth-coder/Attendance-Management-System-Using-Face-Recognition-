@@ -62,7 +62,7 @@ $(document).ready(function() {
                 <h2 class="mb-0">Manage Enrolled Employees</h2>
             </div>
             <div class="d-flex align-items-center">
-                <span class="badge bg-primary fs-6 me-3">Total Enrolled: {{ total_count }}</span>
+                <span class="badge bg-primary fs-6 me-3">Total Employees: {{ unique_count }} (Photos: {{ total_count }})</span>
                 {% if total_count > 0 %}
                 <button type="button" class="btn btn-danger shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#deleteAllEmployeesModal">
                     <i class="fa fa-exclamation-triangle"></i> Delete All Employees
@@ -120,9 +120,10 @@ $(document).ready(function() {
       <thead>
         <tr class="bg-[#0f52ba] border-b-2 border-[#0a387c]">
           <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 10%;">#</th>
-          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 30%;">Employee Name</th>
-          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 25%;">Email</th>
-          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 20%;">Role</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 25%;">Employee Name</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 20%;">Email</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap" style="width: 15%;">Role</th>
+          <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap text-center" style="width: 15%;">Photos Enrolled</th>
           <th class="px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap text-center" style="width: 15%;">Action</th>
         </tr>
       </thead>
@@ -146,6 +147,11 @@ $(document).ready(function() {
           </td>
           <td class="px-3 py-2.5 whitespace-nowrap text-sm font-medium text-slate-600">{{ emp.Email }}</td>
           <td class="px-3 py-2.5 whitespace-nowrap text-sm font-bold text-primary bg-blue-50 rounded-md px-2 py-1 inline-block mt-2">{{ emp.Job }}</td>
+          <td class="px-3 py-2.5 whitespace-nowrap text-center">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
+              {{ emp.Photo_Count }}
+            </span>
+          </td>
           <td class="px-3 py-2.5 whitespace-nowrap">
             <div class="flex justify-center items-center gap-2">
               <!-- Edit Button -->
