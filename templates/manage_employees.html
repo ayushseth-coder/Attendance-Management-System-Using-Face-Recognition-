@@ -195,6 +195,7 @@ $(document).ready(function() {
                                                 <div class="mb-4">
                                                     <label class="form-label text-secondary fw-bold mb-1">Employee Name (ID)</label>
                                                     <input type="text" class="form-control bg-light border-0 fs-5" name="name" value="{{ emp.Name }}" readonly>
+                                                    <input type="hidden" name="hr_id" value="{{ emp.HR_ID }}">
                                                     <small class="text-muted"><i class="fa fa-lock me-1"></i>Locked to biometric signature</small>
                                                 </div>
                                                 <div class="mb-3">

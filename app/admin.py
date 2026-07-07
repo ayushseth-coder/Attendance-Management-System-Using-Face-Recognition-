@@ -354,10 +354,13 @@ def manage_employees():
             chroma_id = employee_ids[i]
             real_name = metadatas[i].get("Name", chroma_id) if metadatas and i < len(metadatas) and metadatas[i] else chroma_id
             
+            hr_id = metadatas[i].get("HR_ID", chroma_id) if metadatas and i < len(metadatas) and metadatas[i] else chroma_id
+            
             user_info = user_lookup.get(real_name, {"Email": "Unknown", "Job": "Unknown"})
             employees_data.append({
                 "emp_id": chroma_id,
                 "Name": real_name,
+                "HR_ID": hr_id,
                 "Email": user_info["Email"],
                 "Job": user_info["Job"]
             })
@@ -897,6 +900,7 @@ def update_employee_details():
     phone = request.form.get('phone', 'Unknown')
     address = request.form.get('address', 'Unknown')
     leave_status = request.form.get('leave_status', 'Active')
+    hr_id = request.form.get('hr_id')
     
     if name:
         # 1. Update Old Architecture
@@ -920,15 +924,7 @@ def update_employee_details():
         
         # 2. Update Shadow Architecture
         try:
-            match = re.match(r"([A-Za-z]+)(\d*)", name)
-            if match:
-                clean_name = match.group(1).capitalize()
-                extracted_id = match.group(2) if match.group(2) else None
-            else:
-                clean_name = name.capitalize()
-                extracted_id = None
-                
-            smart_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+            smart_id = hr_id if hr_id else f"EMP-{name.upper()}"
             
             universal_registry.update_one(
                 {"_id": smart_id},

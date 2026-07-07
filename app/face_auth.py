@@ -144,6 +144,8 @@ def face_result():
                         if distance < 0.68:  # ArcFace Default Threshold
                             chroma_id = results['ids'][0][0]
                             employee_name = results['metadatas'][0][0].get('Name', chroma_id).capitalize() if results.get('metadatas') and results['metadatas'][0] else chroma_id.capitalize()
+                            hr_id = results['metadatas'][0][0].get('HR_ID') if results.get('metadatas') and results['metadatas'][0] else None
+                            
                             now = datetime.datetime.now()
                             today_str = now.strftime('%Y-%m-%d')
                             time_str = now.strftime('%H:%M:%S')
@@ -165,7 +167,7 @@ def face_result():
                                 
                                 # SHADOW DB INJECTION
                                 from models.universal_db_helper import log_to_universal_registry
-                                log_to_universal_registry(employee_name, "Employee", existing_log.get("Date").split(" ")[1], time_str)
+                                log_to_universal_registry(employee_name, "Employee", existing_log.get("Date").split(" ")[1], time_str, hr_id=hr_id)
                             else:
                                 # First time scanning today (ENTRY)
                                 face_match_data = {
@@ -178,7 +180,7 @@ def face_result():
                                 
                                 # SHADOW DB INJECTION
                                 from models.universal_db_helper import log_to_universal_registry
-                                log_to_universal_registry(employee_name, "Employee", time_str, None)
+                                log_to_universal_registry(employee_name, "Employee", time_str, None, hr_id=hr_id)
                                 
                             match_found = True
                             print(f"[SUCCESS] Face matched with {employee_name} (Distance: {distance})")

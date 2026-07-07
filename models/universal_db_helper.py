@@ -16,7 +16,7 @@ def generate_smart_id(role, name_or_phone):
         random_suffix = random.randint(1000, 9999)
         return f"OTH-{date_str}-{random_suffix}"
 
-def log_to_universal_registry(raw_name, role, entry_time_str, exit_time_str=None, visitor_id=None):
+def log_to_universal_registry(raw_name, role, entry_time_str, exit_time_str=None, visitor_id=None, hr_id=None):
     """
     Safely injects or updates a person in the Universal Registry.
     Wrapped in try/except to guarantee it never breaks the old architecture.
@@ -25,15 +25,20 @@ def log_to_universal_registry(raw_name, role, entry_time_str, exit_time_str=None
         visitor_type = "Regular" if role.lower() == 'employee' else "One-Time"
         
         if role.lower() == 'employee':
-            match = re.match(r"([A-Za-z]+)(\d*)", raw_name)
-            if match:
-                clean_name = match.group(1).capitalize()
-                extracted_id = match.group(2) if match.group(2) else None
+            if hr_id:
+                smart_id = hr_id
+                clean_name = raw_name
             else:
-                clean_name = raw_name.capitalize()
-                extracted_id = None
-                
-            smart_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+                match = re.match(r"([A-Za-z]+)(\d*)", raw_name)
+                if match:
+                    clean_name = match.group(1).capitalize()
+                    extracted_id = match.group(2) if match.group(2) else None
+                else:
+                    clean_name = raw_name.capitalize()
+                    extracted_id = None
+                    
+                smart_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+            
             today_str = datetime.datetime.now().strftime('%Y-%m-%d')
             
             # The State vs Ledger Architecture: OVERWRITE the current state for registered employees!
