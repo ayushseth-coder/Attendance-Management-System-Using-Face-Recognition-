@@ -3,9 +3,7 @@ from werkzeug.security import generate_password_hash
 from models.database import collection, adminlog, securitylog,visitorlogtable,activevisitorstable,reqvistable,rejectedvistable,visitors_status
 from datetime import datetime
 from flask_bcrypt import Bcrypt
-from bson import ObjectId
 from collections import defaultdict
-from flask import json
 
 admin = Blueprint('admin', __name__)
 bcrypt = Bcrypt()
@@ -172,7 +170,7 @@ def edituser():
     phone = request.args.get('Phone')
     user = collection.find_one({"Phone": phone})
 
-    return render_template('user_overview.html')
+    return render_template('user_overview.html', user=user)
 
 @admin.route("/notification",methods=['POst','GET'])
 def notification():
@@ -302,7 +300,7 @@ def enroll_employees():
                 try:
                     # Run AI Extraction
                     # representations = DeepFace.represent(img_path=filepath, model_name="Facenet", enforce_detection=False)
-                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=False)
+                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
                     
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]
@@ -346,32 +344,48 @@ def manage_employees():
             if name:
                 user_lookup[name] = {
                     "Email": user.get("Email", "Unknown"),
-                    "Job": user.get("Job", "Unknown")
+                    "Job": user.get("Job", "Unknown"),
+                    "Phone": user.get("Phone", "Unknown"),
+                    "Address": user.get("Address", "Unknown"),
+                    "Leave_Status": user.get("Leave_Status", "Active")
                 }
                 
-        employees_data = []
+        unique_employees = {}
         for i in range(total_count):
             chroma_id = employee_ids[i]
-            real_name = metadatas[i].get("Name", chroma_id) if metadatas and i < len(metadatas) and metadatas[i] else chroma_id
             
             hr_id = metadatas[i].get("HR_ID", chroma_id) if metadatas and i < len(metadatas) and metadatas[i] else chroma_id
             
-            user_info = user_lookup.get(real_name, {"Email": "Unknown", "Job": "Unknown"})
-            employees_data.append({
-                "emp_id": chroma_id,
-                "Name": real_name,
-                "HR_ID": hr_id,
-                "Email": user_info["Email"],
-                "Job": user_info["Job"]
-            })
+            real_name = metadatas[i].get("Name", hr_id) if metadatas and i < len(metadatas) and metadatas[i] else hr_id
             
+            if real_name not in unique_employees:
+                user_info = user_lookup.get(real_name, {"Email": "Unknown", "Job": "Unknown", "Phone": "Unknown", "Address": "Unknown", "Leave_Status": "Active"})
+                unique_employees[real_name] = {
+                    "emp_id": hr_id,
+                    "HR_ID": hr_id,
+                    "Name": real_name,
+                    "Email": user_info.get("Email", "Unknown"),
+                    "Job": user_info.get("Job", "Unknown"),
+                    "Phone": user_info.get("Phone", "Unknown"),
+                    "Address": user_info.get("Address", "Unknown"),
+                    "Leave_Status": user_info.get("Leave_Status", "Active"),
+                    "Photo_Count": 1,
+                    "chroma_ids": [chroma_id]  # Keep track of all vectors for deletion
+                }
+            else:
+                unique_employees[real_name]["Photo_Count"] += 1
+                unique_employees[real_name]["chroma_ids"].append(chroma_id)
+                
+        employees_data = list(unique_employees.values())
+        total_unique_count = len(employees_data)
     except Exception as e:
         print(f"[ERROR] Could not fetch employees: {e}")
         employees_data = []
+        total_unique_count = 0
         total_count = 0
         flash("Failed to load employees from database.", "danger")
         
-    return render_template('manage_employees.html', employees_data=employees_data, total_count=total_count)
+    return render_template('manage_employees.html', employees_data=employees_data, total_count=total_count, unique_count=total_unique_count)
 
 @admin.route('/delete_employee/<emp_id>', methods=['POST'])
 def delete_employee(emp_id):
@@ -379,21 +393,29 @@ def delete_employee(emp_id):
     
     try:
         import os
-        # 1. Get metadata to find the physical file path
-        results = employee_collection.get(ids=[emp_id], include=["metadatas"])
-        if results and results.get('metadatas') and len(results['metadatas']) > 0:
-            metadata = results['metadatas'][0]
-            if metadata and 'path' in metadata:
-                filepath = metadata['path']
-                if os.path.exists(filepath):
-                    try:
-                        os.remove(filepath)
-                    except Exception:
-                        pass
-                        
+        # 1. Get all IDs to find variants
+        results = employee_collection.get(include=["metadatas"])
+        all_ids = results.get('ids', [])
+        metadatas = results.get('metadatas', [])
+        
+        ids_to_delete = []
+        for i, cid in enumerate(all_ids):
+            if cid == emp_id or cid.startswith(f"{emp_id}-"):
+                ids_to_delete.append(cid)
+                if metadatas and i < len(metadatas) and metadatas[i]:
+                    filepath = metadatas[i].get('path')
+                    if filepath and os.path.exists(filepath):
+                        try:
+                            os.remove(filepath)
+                        except Exception:
+                            pass
+                            
         # 2. Delete from ChromaDB
-        employee_collection.delete(ids=[emp_id])
-        flash(f"Successfully deleted records for ID {emp_id}.", "success")
+        if ids_to_delete:
+            employee_collection.delete(ids=ids_to_delete)
+            flash(f"Successfully deleted {len(ids_to_delete)} record(s) for {emp_id}.", "success")
+        else:
+            flash(f"No records found for {emp_id}.", "warning")
                 
     except Exception as e:
         flash(f"Error deleting {emp_id}: {e}", "danger")
@@ -726,7 +748,7 @@ def attendance_employee():
 @admin.route('/employee_image/<name>')
 def employee_image(name):
     import os
-    from flask import send_from_directory, abort
+    from flask import send_from_directory
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
     
@@ -734,7 +756,7 @@ def employee_image(name):
     if os.path.exists(faces_dir):
         for filename in os.listdir(faces_dir):
             name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == visitor_id.lower():
+            if name_without_ext.lower() == name.lower():
                 return send_from_directory(faces_dir, filename)
                 
     # If physical image was deleted, serve a clean SVG placeholder instead of a broken image
@@ -764,14 +786,14 @@ def attendance_visitor():
 @admin.route('/visitor_image/<name>')
 def visitor_image(name):
     import os
-    from flask import send_from_directory, abort
+    from flask import send_from_directory
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
     
     if os.path.exists(faces_dir):
         for filename in os.listdir(faces_dir):
             name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == visitor_id.lower():
+            if name_without_ext.lower() == name.lower():
                 return send_from_directory(faces_dir, filename)
                 
     svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
@@ -800,14 +822,14 @@ def attendance_other():
 @admin.route('/other_image/<name>')
 def other_image(name):
     import os
-    from flask import send_from_directory, abort
+    from flask import send_from_directory
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
     
     if os.path.exists(faces_dir):
         for filename in os.listdir(faces_dir):
             name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == visitor_id.lower():
+            if name_without_ext.lower() == name.lower():
                 return send_from_directory(faces_dir, filename)
                 
     svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
