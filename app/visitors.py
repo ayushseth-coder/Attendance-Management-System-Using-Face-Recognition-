@@ -180,10 +180,22 @@ def enroll_employee(uid):
                     embedding = representations[0]["embedding"]
                     
                     if employee_collection is not None:
+                        # Extract Name and Number from employee_name (e.g. "Anshuman123" -> "Anshuman", "123")
+                        import re
+                        match = re.match(r"([A-Za-z]+)[_-]?(\d*)", employee_name)
+                        if match:
+                            clean_name = match.group(1).capitalize()
+                            extracted_id = match.group(2)
+                        else:
+                            clean_name = employee_name.capitalize()
+                            extracted_id = ""
+                            
+                        chroma_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+                        
                         employee_collection.upsert(
                             embeddings=[embedding],
-                            documents=[employee_name],
-                            ids=[employee_name]
+                            ids=[chroma_id],
+                            metadatas=[{"path": permanent_img_path, "Name": clean_name}]
                         )
                         print(f"[SUCCESS] Employee {employee_name} permanently enrolled in ChromaDB!")
         except Exception as e:

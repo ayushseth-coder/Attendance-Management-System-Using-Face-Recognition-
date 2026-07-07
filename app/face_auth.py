@@ -132,7 +132,8 @@ def face_result():
                 if employee_collection is not None and employee_collection.count() > 0:
                     results = employee_collection.query(
                         query_embeddings=[embedding],
-                        n_results=1
+                        n_results=1,
+                        include=["distances", "metadatas", "documents"]
                     )
                     
                     # 3. Check distance (cosine threshold for Facenet)
@@ -141,7 +142,8 @@ def face_result():
                         # SECURITY UPDATE: Tightened threshold from 0.40 to 0.30 for Enterprise Scalability
                         # This prevents False Positives when the database contains hundreds of faces.
                         if distance < 0.68:  # ArcFace Default Threshold
-                            employee_name = results['ids'][0][0].capitalize()
+                            chroma_id = results['ids'][0][0]
+                            employee_name = results['metadatas'][0][0].get('Name', chroma_id).capitalize() if results.get('metadatas') and results['metadatas'][0] else chroma_id.capitalize()
                             now = datetime.datetime.now()
                             today_str = now.strftime('%Y-%m-%d')
                             time_str = now.strftime('%H:%M:%S')

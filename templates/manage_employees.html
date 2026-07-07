@@ -136,7 +136,12 @@ $(document).ready(function() {
               <div class="h-8 w-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-primary font-bold text-xs shrink-0 shadow-sm">
                 {{ emp.Name[0] | upper if emp.Name else 'E' }}
               </div>
-              <span class="text-sm font-bold text-slate-800">{{ emp.Name }}</span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">{{ emp.emp_id }}</span>
+                  <span class="text-sm font-bold text-slate-800">{{ emp.Name }}</span>
+                </div>
+              </div>
             </div>
           </td>
           <td class="px-3 py-2.5 whitespace-nowrap text-sm font-medium text-slate-600">{{ emp.Email }}</td>
@@ -161,12 +166,12 @@ $(document).ready(function() {
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body px-6 py-4 text-start text-wrap">
-                      <p class="text-slate-700 font-medium whitespace-normal">Are you sure you want to permanently delete the biometric vector for <strong class="text-red-600">{{ emp.Name }}</strong>?</p>
+                      <p class="text-slate-700 font-medium whitespace-normal">Are you sure you want to permanently delete the biometric vector for <strong class="text-red-600">{{ emp.emp_id }} ({{ emp.Name }})</strong>?</p>
                       <p class="text-slate-500 text-sm mt-2 whitespace-normal">This action cannot be undone.</p>
                     </div>
                     <div class="modal-footer bg-slate-50 border-t border-slate-200 px-6 py-3 flex-nowrap">
                       <button type="button" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors" data-bs-dismiss="modal">Cancel</button>
-                      <form action="{{ url_for('admin.delete_employee', name=emp.Name) }}" method="POST" class="m-0 p-0">
+                      <form action="{{ url_for('admin.delete_employee', emp_id=emp.emp_id) }}" method="POST" class="m-0 p-0">
                         <button type="submit" class="px-4 py-2 bg-red-600 rounded-md text-sm font-semibold text-white hover:bg-red-700 transition-colors ml-2">Delete</button>
                       </form>
                     </div>

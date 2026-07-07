@@ -281,8 +281,19 @@ def enroll_employees():
                 filepath = os.path.join(faces_dir, filename)
                 file.save(filepath)
                 
-                # Extract Name from filename (e.g. "Anshuman.jpg" -> "Anshuman")
-                employee_name = os.path.splitext(filename)[0].capitalize()
+                # Extract Name and Number from filename (e.g. "Anshuman123.jpg" -> "Anshuman", "123")
+                raw_name = os.path.splitext(filename)[0]
+                import re
+                match = re.match(r"([A-Za-z]+)[_-]?(\d*)", raw_name)
+                
+                if match:
+                    employee_name = match.group(1).capitalize()
+                    extracted_id = match.group(2)
+                else:
+                    employee_name = raw_name.capitalize()
+                    extracted_id = ""
+                    
+                chroma_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{employee_name.upper()}"
                 
                 try:
                     # Run AI Extraction
@@ -292,11 +303,11 @@ def enroll_employees():
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]
                         
-                        # Save to Vector DB
+                        # Save to Vector DB using unique chroma_id, preserving real Name in metadata
                         employee_collection.upsert(
-                            ids=[employee_name],
+                            ids=[chroma_id],
                             embeddings=[embedding],
-                            metadatas=[{"path": filepath}]
+                            metadatas=[{"path": filepath, "Name": employee_name}]
                         )
                         success_count += 1
                     else:
@@ -318,9 +329,10 @@ def manage_employees():
     from models.database import collection
     
     try:
-        results = employee_collection.get()
-        employee_names = results.get('ids', [])
-        total_count = len(employee_names)
+        results = employee_collection.get(include=["metadatas"])
+        employee_ids = results.get('ids', [])
+        metadatas = results.get('metadatas', [])
+        total_count = len(employee_ids)
         
         # Cross-reference with the users collection
         all_users = list(collection.find())
@@ -334,10 +346,14 @@ def manage_employees():
                 }
                 
         employees_data = []
-        for name in employee_names:
-            user_info = user_lookup.get(name, {"Email": "Unknown", "Job": "Unknown"})
+        for i in range(total_count):
+            chroma_id = employee_ids[i]
+            real_name = metadatas[i].get("Name", chroma_id) if metadatas and i < len(metadatas) and metadatas[i] else chroma_id
+            
+            user_info = user_lookup.get(real_name, {"Email": "Unknown", "Job": "Unknown"})
             employees_data.append({
-                "Name": name,
+                "emp_id": chroma_id,
+                "Name": real_name,
                 "Email": user_info["Email"],
                 "Job": user_info["Job"]
             })
@@ -350,30 +366,30 @@ def manage_employees():
         
     return render_template('manage_employees.html', employees_data=employees_data, total_count=total_count)
 
-@admin.route('/delete_employee/<name>', methods=['POST'])
-def delete_employee(name):
+@admin.route('/delete_employee/<emp_id>', methods=['POST'])
+def delete_employee(emp_id):
     from models.vector_db import employee_collection
     
     try:
-        # Delete from ChromaDB
-        employee_collection.delete(ids=[name])
-        flash(f"Successfully deleted records for ID {name}.", "success")
-        
-        # Cleanup: Delete ALL local photos matching the employee name (ignoring case and extensions)
         import os
-        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
-        if os.path.exists(faces_dir):
-            for filename in os.listdir(faces_dir):
-                name_without_ext = os.path.splitext(filename)[0]
-                # If the name matches (ignoring capital letters), delete it!
-                if name_without_ext.lower() == name.lower():
+        # 1. Get metadata to find the physical file path
+        results = employee_collection.get(ids=[emp_id], include=["metadatas"])
+        if results and results.get('metadatas') and len(results['metadatas']) > 0:
+            metadata = results['metadatas'][0]
+            if metadata and 'path' in metadata:
+                filepath = metadata['path']
+                if os.path.exists(filepath):
                     try:
-                        os.remove(os.path.join(faces_dir, filename))
+                        os.remove(filepath)
                     except Exception:
                         pass
+                        
+        # 2. Delete from ChromaDB
+        employee_collection.delete(ids=[emp_id])
+        flash(f"Successfully deleted records for ID {emp_id}.", "success")
                 
     except Exception as e:
-        flash(f"Error deleting {name}: {e}", "danger")
+        flash(f"Error deleting {emp_id}: {e}", "danger")
         
     return redirect(url_for('admin.manage_employees'))
 
