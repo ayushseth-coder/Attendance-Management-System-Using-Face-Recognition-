@@ -45,7 +45,7 @@ def visitor1():
                 "Date": date,
                 "Purpose": purpose,
                 "Email": email,
-                "phone": phone,
+                "Phone": phone,
                 "Approvedby": apprv,
                 "Exittime": "",
                 "status":"",
@@ -134,7 +134,15 @@ def accept_regular(uid):
 
     # 2. Standard Accept Logic
     reqvistable.delete_one({"UID": uid})
+    
+    # Strip _id to avoid DuplicateKeyError across collections
+    if "_id" in element1:
+        del element1["_id"]
     visitorlogtable.insert_one(element1)
+    
+    # Strip newly added _id before next insert
+    if "_id" in element1:
+        del element1["_id"]
     activevisitorstable.insert_one(element1)
     status = 'accepted' 
     myquery = visitors_status.find_one({"UID": uid})
@@ -147,41 +155,54 @@ def accept_regular(uid):
 def enroll_employee(uid):
     element1 = reqvistable.find_one({"UID": uid})
     if not element1:
+        flash("Pending request not found.", "danger")
         return redirect(url_for('admin.admindash'))
+        
+    return render_template('review_employee_enrollment.html', req=element1)
 
+@visitor.route('/process_employee_enrollment/<uid>', methods=['POST'])
+def process_employee_enrollment(uid):
+    element1 = reqvistable.find_one({"UID": uid})
+    if not element1:
+        flash("Pending request not found.", "danger")
+        return redirect(url_for('admin.admindash'))
+        
+    name = request.form.get('name')
+    email = request.form.get('email', 'Unknown')
+    phone = request.form.get('phone', 'Unknown')
+    gender = request.form.get('gender', 'Unknown')
+    job = request.form.get('role', 'Unknown')
+    
     shot_filename = element1.get('shot_filename')
     if shot_filename:
         try:
             from deepface import DeepFace
             from models.vector_db import employee_collection
+            from models.database import collection, universal_registry
             import os
             import shutil
+            import datetime
+            import re
             
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             img_path = os.path.join(base_dir, 'static', 'shots', shot_filename)
             
-            # Create permanent folder for employee faces if it doesn't exist
             employee_faces_dir = os.path.join(base_dir, 'employee_faces')
             os.makedirs(employee_faces_dir, exist_ok=True)
             
             if os.path.exists(img_path):
-                # Standardize employee names (often lowercase or capitalized consistently)
-                employee_name = element1['Name'].strip().capitalize() 
+                employee_name = name.strip().capitalize() 
                 permanent_img_path = os.path.join(employee_faces_dir, f"{employee_name}.png")
                 
-                # Copy the temporary shot to the permanent database folder
                 shutil.copy2(img_path, permanent_img_path)
                 
                 print(f"[INFO] Extracting vector for New Employee: {employee_name}")
-                # representations = DeepFace.represent(img_path=permanent_img_path, model_name="Facenet", enforce_detection=False)
                 representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
                 
                 if representations and len(representations) > 0:
                     embedding = representations[0]["embedding"]
                     
                     if employee_collection is not None:
-                        # Extract Name and Number from employee_name (e.g. "Anshuman123" -> "Anshuman", "123")
-                        import re
                         match = re.match(r"([A-Za-z]+)[_-]?(\d*)", employee_name)
                         if match:
                             clean_name = match.group(1).capitalize()
@@ -196,26 +217,63 @@ def enroll_employee(uid):
                         variant_suffix = str(uuid.uuid4())[:6].upper()
                         chroma_id = f"{base_hr_id}-{variant_suffix}"
                         
+                        # Save Vector
                         employee_collection.upsert(
                             embeddings=[embedding],
                             ids=[chroma_id],
                             metadatas=[{"path": permanent_img_path, "Name": clean_name, "HR_ID": base_hr_id}]
                         )
-                        print(f"[SUCCESS] Employee {employee_name} permanently enrolled in ChromaDB!")
+                        
+                        # Save Data to MongoDB Collection
+                        collection.insert_one({
+                            "Name": name,
+                            "Email": email,
+                            "Phone": phone,
+                            "Gender": gender,
+                            "Job": job,
+                            "Address": "Unknown",
+                            "Leave_Status": "Active",
+                            "Password": "",
+                            "Date": datetime.datetime.now()
+                        })
+                        
+                        # Save Data to Universal Registry (Shadow DB)
+                        universal_registry.update_one(
+                            {"_id": base_hr_id},
+                            {
+                                "$set": {
+                                    "Date": datetime.datetime.now().strftime('%Y-%m-%d'),
+                                    "Email": email,
+                                    "Phone": phone,
+                                    "Gender": gender,
+                                    "Job": job,
+                                    "Address": "Unknown",
+                                    "Leave_Status": "Active"
+                                },
+                                "$setOnInsert": {
+                                    "Name": clean_name,
+                                    "Role": "Employee",
+                                    "Visitor_Type": "Regular"
+                                }
+                            },
+                            upsert=True
+                        )
+                        
+                        print(f"[SUCCESS] Employee {employee_name} fully onboarded via Admin Review!")
+                        flash(f"Successfully onboarded employee {name}.", "success")
         except Exception as e:
-            print(f"[ERROR] Failed to enroll Employee in ChromaDB: {e}")
+            print(f"[ERROR] Failed to enroll Employee: {e}")
+            flash(f"Failed to onboard employee: {e}", "danger")
 
     # Remove from pending requests
     reqvistable.delete_one({"UID": uid})
-
-    # Note: We do not add employees to visitorlogtable or activevisitorstable, 
-    # because they are employees, not visitors.
+    
     status = 'Enrolled as Employee' 
     myquery = visitors_status.find_one({"UID": uid})
     if myquery:
         visitors_status.update_one(myquery, {"$set": {"status": status}})
 
-    return redirect(url_for('admin.admindash'))
+    return redirect(url_for('admin.manage_employees'))
 
 @visitor.route('/enroll_external/<uid>', methods=['GET'])
 def enroll_external(uid):
@@ -280,7 +338,12 @@ def acceptvis(uid):
     element1 = reqvistable.find_one({"UID": uid})
     reqvistable.delete_one({"UID": uid})
   
+    if "_id" in element1:
+        del element1["_id"]
     visitorlogtable.insert_one(element1)
+    
+    if "_id" in element1:
+        del element1["_id"]
     activevisitorstable.insert_one(element1)
     status = 'accepted' 
     myquery = visitors_status.find_one({"UID": uid})
@@ -295,6 +358,8 @@ def acceptvis(uid):
 def rejectvis(uid):
     element2 = reqvistable.find_one({"UID": uid})
     reqvistable.delete_one({"UID": uid})
+    if "_id" in element2:
+        del element2["_id"]
     rejectedvistable.insert_one(element2)
     
     visitors_status.update_one({"UID": uid}, {"$set": {"status": "rejected"}})

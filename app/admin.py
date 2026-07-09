@@ -3,7 +3,9 @@ from werkzeug.security import generate_password_hash
 from models.database import collection, adminlog, securitylog,visitorlogtable,activevisitorstable,reqvistable,rejectedvistable,visitors_status
 from datetime import datetime
 from flask_bcrypt import Bcrypt
+from bson import ObjectId
 from collections import defaultdict
+from flask import json
 
 admin = Blueprint('admin', __name__)
 bcrypt = Bcrypt()
@@ -170,7 +172,7 @@ def edituser():
     phone = request.args.get('Phone')
     user = collection.find_one({"Phone": phone})
 
-    return render_template('user_overview.html', user=user)
+    return render_template('user_overview.html')
 
 @admin.route("/notification",methods=['POst','GET'])
 def notification():
@@ -279,37 +281,22 @@ def enroll_employees():
                 filepath = os.path.join(faces_dir, filename)
                 file.save(filepath)
                 
-                # Extract Name and Number from filename (e.g. "Anshuman123.jpg" -> "Anshuman", "123")
-                raw_name = os.path.splitext(filename)[0]
-                import re
-                match = re.match(r"([A-Za-z]+)[_-]?(\d*)", raw_name)
-                
-                if match:
-                    employee_name = match.group(1).capitalize()
-                    extracted_id = match.group(2)
-                else:
-                    employee_name = raw_name.capitalize()
-                    extracted_id = ""
-                    
-                base_hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{employee_name.upper()}"
-                
-                import uuid
-                variant_suffix = str(uuid.uuid4())[:6].upper()
-                chroma_id = f"{base_hr_id}-{variant_suffix}"
+                # Extract Name from filename (e.g. "Anshuman.jpg" -> "Anshuman")
+                employee_name = os.path.splitext(filename)[0].capitalize()
                 
                 try:
                     # Run AI Extraction
                     # representations = DeepFace.represent(img_path=filepath, model_name="Facenet", enforce_detection=False)
-                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
+                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=False)
                     
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]
                         
-                        # Save to Vector DB using unique chroma_id, preserving real Name and HR_ID in metadata
+                        # Save to Vector DB
                         employee_collection.upsert(
-                            ids=[chroma_id],
+                            ids=[employee_name],
                             embeddings=[embedding],
-                            metadatas=[{"path": filepath, "Name": employee_name, "HR_ID": base_hr_id}]
+                            metadatas=[{"path": filepath}]
                         )
                         success_count += 1
                     else:
@@ -370,7 +357,7 @@ def manage_employees():
                     "Address": user_info.get("Address", "Unknown"),
                     "Leave_Status": user_info.get("Leave_Status", "Active"),
                     "Photo_Count": 1,
-                    "chroma_ids": [chroma_id]  # Keep track of all vectors for deletion
+                    "chroma_ids": [chroma_id]
                 }
             else:
                 unique_employees[real_name]["Photo_Count"] += 1
@@ -387,38 +374,30 @@ def manage_employees():
         
     return render_template('manage_employees.html', employees_data=employees_data, total_count=total_count, unique_count=total_unique_count)
 
-@admin.route('/delete_employee/<emp_id>', methods=['POST'])
-def delete_employee(emp_id):
+@admin.route('/delete_employee/<name>', methods=['POST'])
+def delete_employee(name):
     from models.vector_db import employee_collection
     
     try:
-        import os
-        # 1. Get all IDs to find variants
-        results = employee_collection.get(include=["metadatas"])
-        all_ids = results.get('ids', [])
-        metadatas = results.get('metadatas', [])
+        # Delete from ChromaDB
+        employee_collection.delete(ids=[name])
+        flash(f"Successfully deleted records for ID {name}.", "success")
         
-        ids_to_delete = []
-        for i, cid in enumerate(all_ids):
-            if cid == emp_id or cid.startswith(f"{emp_id}-"):
-                ids_to_delete.append(cid)
-                if metadatas and i < len(metadatas) and metadatas[i]:
-                    filepath = metadatas[i].get('path')
-                    if filepath and os.path.exists(filepath):
-                        try:
-                            os.remove(filepath)
-                        except Exception:
-                            pass
-                            
-        # 2. Delete from ChromaDB
-        if ids_to_delete:
-            employee_collection.delete(ids=ids_to_delete)
-            flash(f"Successfully deleted {len(ids_to_delete)} record(s) for {emp_id}.", "success")
-        else:
-            flash(f"No records found for {emp_id}.", "warning")
+        # Cleanup: Delete ALL local photos matching the employee name (ignoring case and extensions)
+        import os
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
+        if os.path.exists(faces_dir):
+            for filename in os.listdir(faces_dir):
+                name_without_ext = os.path.splitext(filename)[0]
+                # If the name matches (ignoring capital letters), delete it!
+                if name_without_ext.lower() == name.lower():
+                    try:
+                        os.remove(os.path.join(faces_dir, filename))
+                    except Exception:
+                        pass
                 
     except Exception as e:
-        flash(f"Error deleting {emp_id}: {e}", "danger")
+        flash(f"Error deleting {name}: {e}", "danger")
         
     return redirect(url_for('admin.manage_employees'))
 
@@ -748,7 +727,7 @@ def attendance_employee():
 @admin.route('/employee_image/<name>')
 def employee_image(name):
     import os
-    from flask import send_from_directory
+    from flask import send_from_directory, abort
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
     
@@ -786,7 +765,7 @@ def attendance_visitor():
 @admin.route('/visitor_image/<name>')
 def visitor_image(name):
     import os
-    from flask import send_from_directory
+    from flask import send_from_directory, abort
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
     
@@ -822,7 +801,7 @@ def attendance_other():
 @admin.route('/other_image/<name>')
 def other_image(name):
     import os
-    from flask import send_from_directory
+    from flask import send_from_directory, abort
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
     
@@ -922,7 +901,6 @@ def update_employee_details():
     phone = request.form.get('phone', 'Unknown')
     address = request.form.get('address', 'Unknown')
     leave_status = request.form.get('leave_status', 'Active')
-    hr_id = request.form.get('hr_id')
     
     if name:
         # 1. Update Old Architecture
@@ -946,7 +924,15 @@ def update_employee_details():
         
         # 2. Update Shadow Architecture
         try:
-            smart_id = hr_id if hr_id else f"EMP-{name.upper()}"
+            match = re.match(r"([A-Za-z]+)(\d*)", name)
+            if match:
+                clean_name = match.group(1).capitalize()
+                extracted_id = match.group(2) if match.group(2) else None
+            else:
+                clean_name = name.capitalize()
+                extracted_id = None
+                
+            smart_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
             
             universal_registry.update_one(
                 {"_id": smart_id},

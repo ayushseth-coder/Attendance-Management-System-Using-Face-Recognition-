@@ -1,0 +1,171 @@
+{% extends 'security_base.html' %}
+
+{% block title %}Employee Onboarding Form{% endblock %}
+
+{% block body %}
+<div class="col-sm-8 mx-auto mt-4">
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6">
+
+        <div class="bg-emerald-600 p-4 md:px-6 py-4 flex items-center justify-between">
+            <h5 class="m-0 font-bold text-white text-lg flex items-center gap-2">
+                <i class="fas fa-id-badge text-white"></i> New Employee Registration
+            </h5>
+        </div>
+
+        <form action="{{ url_for('visitors.visitor1') }}" method="post" class="p-4 md:p-6">
+            <input type="hidden" name="Registration_Role" value="Employee">
+            <input type="hidden" name="role_type" value="{{ role_type }}">
+            <input type="hidden" name="Purpose" value="Employment Registration">
+
+            <div class="row g-4">
+                <!-- Photo Preview Column -->
+                <div class="col-md-4 text-center border-e border-slate-200 pe-md-4">
+                    <h6 class="font-bold text-slate-700 mb-3 text-start"><i
+                            class="fas fa-camera text-emerald-600 me-2"></i>Captured Face</h6>
+
+                    {% if shot_filename %}
+                    <div class="bg-slate-100 rounded-xl p-2 mb-3 shadow-sm border border-slate-200 d-inline-block">
+                        <img src="{{ url_for('static', filename='shots/' + shot_filename) }}" alt="Captured Face"
+                            class="img-fluid rounded-lg" style="max-height: 250px; object-fit: cover;">
+                        <input type="hidden" name="shot_filename" value="{{ shot_filename }}">
+                    </div>
+                    {% else %}
+                    <div
+                        class="alert alert-warning py-2 px-3 text-start bg-amber-50 border border-amber-200 rounded-lg">
+                        <small class="text-amber-800 fw-bold"><i class="fas fa-exclamation-triangle me-1"></i> No image
+                            captured!</small>
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-info py-2 px-3 text-start bg-blue-50 border border-blue-100 rounded-lg">
+                        <small class="text-blue-800 fw-medium">
+                            <i class="fas fa-info-circle me-1"></i> Fill out the basic details below. The Admin will
+                            verify and finalize this profile.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- HR Details Column -->
+                <div class="col-md-8 ps-md-4">
+                    <h6 class="font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100">
+                        <i class="fas fa-address-card text-emerald-600 me-2"></i>Basic Information
+                    </h6>
+
+                    <div class="row g-3">
+                        <!-- Employee Name -->
+                        <div class="col-md-12">
+                            <label class="form-label font-bold text-slate-600 text-sm">Employee Name & ID <span
+                                    class="text-red-500">*</span></label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white text-emerald-600 border-e-0"><i
+                                        class="fas fa-user"></i></span>
+                                <input type="text"
+                                    class="form-control border-s-0 font-medium text-slate-800 focus:ring-emerald-500"
+                                    name="name" required placeholder="eg. : Ayush_001">
+                            </div>
+                            <small class="text-slate-400 mt-1 d-block"><i class="fas fa-lightbulb text-amber-400"></i>
+                                Tip: Fill the employee id if available.</small>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="col-md-6">
+                            <label class="form-label font-bold text-slate-600 text-sm">Mobile Number <span
+                                    class="text-red-500">*</span></label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white text-emerald-600 border-e-0"><i
+                                        class="fas fa-phone-alt"></i></span>
+                                <input type="text" value="+91"
+                                    class="form-control bg-slate-100 text-center text-slate-500 px-0 border-x-0"
+                                    style="max-width: 50px;" readonly>
+                                <input type="text" name="phone" pattern="[0-9]{10}" maxlength="10" minlength="10"
+                                    class="form-control font-medium text-slate-800 focus:ring-emerald-500"
+                                    placeholder="Enter 10-digit Mobile Number" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <label class="form-label font-bold text-slate-600 text-sm">Email Address</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white text-emerald-600 border-e-0"><i
+                                        class="fas fa-envelope"></i></span>
+                                <input type="email" name="Email"
+                                    class="form-control border-s-0 font-medium text-slate-800 focus:ring-emerald-500"
+                                    placeholder="Enter Email Address">
+                            </div>
+                        </div>
+
+                        <!-- Gender Radio -->
+                        <div class="col-md-6">
+                            <label class="form-label font-bold text-slate-600 text-sm">Gender <span
+                                    class="text-red-500">*</span></label>
+                            <div class="d-flex flex-wrap gap-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                                <div class="form-check">
+                                    <input class="form-check-input text-emerald-600 focus:ring-emerald-500" type="radio"
+                                        name="gender" id="genderMale" value="Male" required>
+                                    <label class="form-check-label fw-medium text-slate-700"
+                                        for="genderMale">Male</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input text-emerald-600 focus:ring-emerald-500" type="radio"
+                                        name="gender" id="genderFemale" value="Female">
+                                    <label class="form-check-label fw-medium text-slate-700"
+                                        for="genderFemale">Female</label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input class="form-check-input text-emerald-600 focus:ring-emerald-500" type="radio"
+                                        name="gender" id="genderOther" value="Other">
+                                    <label class="form-check-label fw-medium text-slate-700"
+                                        for="genderOther">Other</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Approved By -->
+                        <div class="col-md-6">
+                            <label class="form-label font-bold text-slate-600 text-sm">Approved By</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white text-emerald-600 border-e-0"><i
+                                        class="fas fa-user-shield"></i></span>
+                                <input type="text" name="Approvedby"
+                                    class="form-control border-s-0 font-medium text-slate-800 focus:ring-emerald-500"
+                                    placeholder="Enter Approver's Name">
+                            </div>
+                            <small class="text-slate-400 mt-1 d-block"><i class="fas fa-info-circle text-blue-400"></i>
+                                Name of person authorizing this request.</small>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 text-slate-200">
+
+                    <!-- Hidden fields to satisfy the backend DB requirements temporarily -->
+                    <input type="hidden" name="Date" id="currentDateHidden" value="">
+                    <input type="hidden" name="card" value="N/A">
+                    <input type="hidden" name="father" value="N/A">
+                    <input type="hidden" name="dob" value="N/A">
+                    <input type="hidden" name="uid" id="generateUid" value="">
+
+                    <div class="d-flex gap-3 justify-content-end">
+                        <button type="button" onclick="history.back()"
+                            class="btn btn-light border-slate-300 font-bold px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
+                        <button type="submit" name="submit" value="pass"
+                            class="btn bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-sm d-flex align-items-center gap-2 transition-all">
+                            <i class="fas fa-paper-plane"></i> Submit to Admin
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Set current date for backend requirement
+    const d = new Date();
+    document.getElementById('currentDateHidden').value = d.toISOString().split('T')[0];
+
+    // Generate a temporary UID for the pending request
+    document.getElementById('generateUid').value = "PEND-" + Math.floor(100000 + Math.random() * 900000);
+</script>
+{% endblock %}

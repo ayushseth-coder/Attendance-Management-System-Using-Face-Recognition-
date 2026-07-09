@@ -1,0 +1,206 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Review Employee Enrollment{% endblock %}
+
+{% block body %}
+<div class="d-flex align-items-center mb-4">
+    <h2 class="mb-0" style="font-size: 32px;"><b style="color: black;">Review</b> <span style="color: #20c997;">Employee
+            Registration</span></h2>
+</div>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6">
+
+                <div class="bg-[#0f52ba] p-4 md:px-6 py-4 flex items-center justify-between">
+                    <h5 class="m-0 font-bold text-white text-lg flex items-center gap-2">
+                        <i class="fas fa-user-check text-white"></i> Finalize Employee Details
+                    </h5>
+                    <span class="badge bg-white text-[#0f52ba] px-3 py-2 rounded-lg font-bold shadow-sm">UID: {{ req.UID
+                        }}</span>
+                </div>
+
+                <div class="p-4 md:p-6">
+                    <form action="{{ url_for('visitors.process_employee_enrollment', uid=req.UID) }}" method="POST">
+                        <div class="row g-4">
+                            <!-- Left Column: Photo Preview -->
+                            <div class="col-md-4 text-center border-e border-slate-200 pe-md-4">
+                                <h6 class="font-bold text-slate-700 mb-3 text-start"><i
+                                        class="fas fa-camera text-[#0f52ba] me-2"></i>Captured Biometric</h6>
+                                <div
+                                    class="bg-slate-100 rounded-xl p-2 mb-3 shadow-sm border border-slate-200 d-inline-block">
+                                    <img src="{{ url_for('static', filename='shots/' + req.shot_filename) if req.shot_filename else 'https://ui-avatars.com/api/?name=New+Employee' }}"
+                                        alt="Captured Face" class="img-fluid rounded-lg"
+                                        style="max-height: 250px; object-fit: cover;">
+                                </div>
+                                <div
+                                    class="alert alert-info py-2 px-3 text-start bg-blue-50 border border-blue-100 rounded-lg">
+                                    <small class="text-blue-800 fw-medium"><i class="fas fa-info-circle me-1"></i> This
+                                        image will be saved in database.</small>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: HR Details Form -->
+                            <div class="col-md-8 ps-md-4">
+                                <h6 class="font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100"><i
+                                        class="fas fa-address-card text-[#0f52ba] me-2"></i>HR Profile Data</h6>
+
+                                <div class="row g-3">
+                                    <!-- Name Field -->
+                                    <div class="col-md-6">
+                                        <label class="form-label font-bold text-slate-600 text-sm">Employee Name & ID
+                                            <span class="text-red-500">*</span></label>
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-white text-[#0f52ba] border-e-0"><i
+                                                    class="fas fa-user"></i></span>
+                                            <input type="text"
+                                                class="form-control border-s-0 font-medium text-slate-800 focus:ring-[#0f52ba]"
+                                                name="name" value="{{ req.Name }}" required
+                                                placeholder="e.g. Anshuman123">
+                                        </div>
+                                        <small class="text-slate-400 mt-1 d-block"><i
+                                                class="fas fa-lightbulb text-amber-400"></i> Add ID number after
+                                            name</small>
+                                    </div>
+
+                                    <!-- Role Dropdown -->
+                                    <div class="col-md-6">
+                                        <label class="form-label font-bold text-slate-600 text-sm">Job Role /
+                                            Designation <span class="text-red-500">*</span></label>
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-white text-[#0f52ba] border-e-0"><i
+                                                    class="fas fa-briefcase"></i></span>
+                                            <select name="role"
+                                                class="form-select border-s-0 font-medium text-slate-800 focus:ring-[#0f52ba]"
+                                                required>
+                                                <option value="" disabled selected>Select a Role...</option>
+                                                <option value="Software Engineer">Software Engineer</option>
+                                                <option value="Full Stack Developer">Full Stack Developer</option>
+                                                <option value="Data Scientist">Data Scientist</option>
+                                                <option value="HR Manager">HR Manager</option>
+                                                <option value="Security">Security Guard</option>
+                                                <option value="Admin">System Admin</option>
+                                                <option value="Intern">Intern</option>
+                                                <option value="Contractor">Contractor</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Phone Number -->
+                                    <div class="col-md-6">
+                                        <label class="form-label font-bold text-slate-600 text-sm">Mobile Number <span
+                                                class="text-red-500">*</span></label>
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-white text-[#0f52ba] border-e-0"><i
+                                                    class="fas fa-phone-alt"></i></span>
+                                            <input type="text" value="+91"
+                                                class="form-control bg-slate-100 text-center text-slate-500 px-0 border-x-0"
+                                                style="max-width: 50px;" readonly>
+                                            <input type="number" name="phone"
+                                                value="{{ req.Phone if req.Phone else '' }}"
+                                                class="form-control font-medium text-slate-800 focus:ring-[#0f52ba]"
+                                                placeholder="9876543210" required>
+                                        </div>
+                                    </div>
+
+                                    <!-- Email -->
+                                    <div class="col-md-6">
+                                        <label class="form-label font-bold text-slate-600 text-sm">Email Address</label>
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-white text-[#0f52ba] border-e-0"><i
+                                                    class="fas fa-envelope"></i></span>
+                                            <input type="email" name="email"
+                                                value="{{ req.Email if req.Email else '' }}"
+                                                class="form-control border-s-0 font-medium text-slate-800 focus:ring-[#0f52ba]"
+                                                placeholder="Enter Email Address">
+                                        </div>
+                                    </div>
+
+                                    <!-- Gender Radio -->
+                                    <div class="col-md-6">
+                                        <label class="form-label font-bold text-slate-600 text-sm">Gender <span
+                                                class="text-red-500">*</span></label>
+                                        <div class="d-flex gap-4 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="form-check">
+                                                <input class="form-check-input text-[#0f52ba] focus:ring-[#0f52ba]"
+                                                    type="radio" name="gender" id="genderMale" value="Male" required {%
+                                                    if req.Gender=='Male' %}checked{% endif %}>
+                                                <label class="form-check-label fw-medium text-slate-700"
+                                                    for="genderMale">Male</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input text-[#0f52ba] focus:ring-[#0f52ba]"
+                                                    type="radio" name="gender" id="genderFemale" value="Female" {% if
+                                                    req.Gender=='Female' %}checked{% endif %}>
+                                                <label class="form-check-label fw-medium text-slate-700"
+                                                    for="genderFemale">Female</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input text-[#0f52ba] focus:ring-[#0f52ba]"
+                                                    type="radio" name="gender" id="genderOther" value="Other" {% if
+                                                    req.Gender=='Other' %}checked{% endif %}>
+                                                <label class="form-check-label fw-medium text-slate-700"
+                                                    for="genderOther">Other</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Admin / Date -->
+                                    <div class="col-md-6">
+                                        <label class="form-label font-bold text-slate-600 text-sm">System
+                                            Metadata</label>
+                                        <div
+                                            class="d-flex flex-column gap-2 text-sm text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                            <div class="d-flex justify-content-between">
+                                                <span class="fw-bold"><i class="fas fa-user-shield me-1"></i> Approved
+                                                    By:</span>
+                                                <span class="text-slate-800 fw-bold">{{ session.get('name', 'Admin')
+                                                    }}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <span class="fw-bold"><i class="fas fa-calendar-alt me-1"></i>
+                                                    Date:</span>
+                                                <span class="text-slate-800" id="currentDate"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4 text-slate-200">
+
+                                <div class="d-flex gap-3 justify-content-end">
+                                    <a href="{{ url_for('admin.admindash') }}"
+                                        class="btn btn-light border-slate-300 font-bold px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Cancel</a>
+                                    <button type="submit"
+                                        class="btn bg-[#20c997] hover:bg-[#1ba87e] text-white font-bold px-4 py-2 rounded-lg shadow-sm d-flex align-items-center gap-2 transition-all"
+                                        id="submitBtn">
+                                        <i class="fas fa-check-circle" id="btnIcon"></i>
+                                        <span id="btnText">Approve & Enroll Employee</span>
+                                        <i id="btnSpinner" class="fas fa-circle-notch fa-spin d-none"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Set current date
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', options);
+
+    // Show loading spinner when form is submitted
+    document.querySelector('form').addEventListener('submit', function () {
+        document.getElementById('btnText').textContent = 'Extracting Biometrics & Saving...';
+        document.getElementById('btnIcon').classList.add('d-none');
+        document.getElementById('btnSpinner').classList.remove('d-none');
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').style.opacity = '0.8';
+    });
+</script>
+{% endblock %}

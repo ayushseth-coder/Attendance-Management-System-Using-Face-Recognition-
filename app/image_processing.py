@@ -73,14 +73,21 @@ def show_captured():
     # Check for strict role routing
     role_type = request.args.get('role_type', 'visitor')
     
+    shot_filename = os.path.basename(captured_image) if captured_image else None
+
+    # Skip OCR completely if it is an Employee Registration!
+    if role_type == 'employee':
+        return render_template('kiosk_employee_form.html', shot_filename=shot_filename, role_type=role_type)
+        
     if captured_image:
         print("[INFO] Processing captured image for OCR...")
-        captured_data = extract_card_details(captured_image)
+        # OCR is temporarily disabled by user request
+        # captured_data = extract_card_details(captured_image)
+        captured_data = {}
     
     if captured_data is None:
         captured_data = {}
 
     approvedby = ""  
-    shot_filename = os.path.basename(captured_image) if captured_image else None
     return render_template('extract.html', data=captured_data, approvedby=approvedby, shot_filename=shot_filename, role_type=role_type)
  
