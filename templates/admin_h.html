@@ -45,15 +45,94 @@ crossorigin="anonymous"
             </div>
         </div>
         <div class="row g-3 mt-2">
-          <div class="col-md-3"><div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;"><h4 class="fw-bold mb-1" style="color: #ffc107;">{{ active }}</h4><p class="text-muted mb-0">Active Visitors</p></div></div>
+          <div class="col-md-3 dropdown" style="z-index: 1050;">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: white; border-radius: 10px; cursor: pointer;" title="Click to view all employee names">
+              <h4 class="fw-bold mb-1" style="color: #6f42c1;">{{ total_employees }}</h4>
+              <p class="text-muted mb-0">Total Employees</p>
+            </div>
+            
+            <!-- Floatable Vertical List for Employee Names (Dropdown) -->
+            <ul class="dropdown-menu w-100 shadow-lg border p-0 mt-2" style="max-height: 250px; overflow-y: auto; border-radius: 10px;">
+              <li class="bg-light border-bottom d-flex justify-content-between align-items-center sticky-top" style="padding: 10px 15px; z-index: 1060;">
+                <h6 class="mb-0 fw-bold text-dark" style="font-size: 14px;"><i class="fas fa-users text-primary me-1"></i> Employees</h6>
+              </li>
+              {% for name in employee_names %}
+                <li class="dropdown-item text-dark" style="font-size: 14px; font-weight: 500; padding: 10px 15px;">
+                  <i class="fas fa-user-circle text-secondary me-2"></i> {{ name }}
+                </li>
+              {% else %}
+                <li class="dropdown-item text-muted" style="font-size: 14px; padding: 10px 15px;">No employees found.</li>
+              {% endfor %}
+            </ul>
+          </div>
 
-          <div class="col-md-3"><div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;"><h4 class="fw-bold mb-1" style="color: #dc3545;">{{ rejectobj }}</h4><p class="text-muted mb-0">Rejected Visitors</p></div></div>
+          <div class="col-md-3 dropdown" style="z-index: 1040;">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: white; border-radius: 10px; cursor: pointer;" title="Click to view all regular visitors">
+              <h4 class="fw-bold mb-1" style="color: #20c997;">{{ total_regular_visitors }}</h4>
+              <p class="text-muted mb-0">Total Regular Visitors</p>
+            </div>
+            
+            <!-- Floatable Vertical List for Regular Visitors (Dropdown) -->
+            <ul class="dropdown-menu w-100 shadow-lg border p-0 mt-2" style="max-height: 250px; overflow-y: auto; border-radius: 10px;">
+              <li class="bg-light border-bottom d-flex justify-content-between align-items-center sticky-top" style="padding: 10px 15px; z-index: 1050;">
+                <h6 class="mb-0 fw-bold text-dark" style="font-size: 14px;"><i class="fas fa-users text-primary me-1"></i> Regular Visitors</h6>
+              </li>
+              {% for name in regular_visitor_names %}
+                <li class="dropdown-item text-dark" style="font-size: 14px; font-weight: 500; padding: 10px 15px;">
+                  <i class="fas fa-user-circle text-secondary me-2"></i> {{ name }}
+                </li>
+              {% else %}
+                <li class="dropdown-item text-muted" style="font-size: 14px; padding: 10px 15px;">No regular visitors found.</li>
+              {% endfor %}
+            </ul>
+          </div>
 
-          <div class="col-md-3"><div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;"><h4 class="fw-bold mb-1" style="color: #20c997;">{{ pending }}</h4><p class="text-muted mb-0">Pending Visitors</p></div></div>
+          <div class="col-md-3 dropdown" style="z-index: 1030;">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: white; border-radius: 10px; cursor: pointer;" title="Click to view all external staff">
+              <h4 class="fw-bold mb-1" style="color: #ffc107;">{{ total_external_staff }}</h4>
+              <p class="text-muted mb-0">Total External Staff</p>
+            </div>
+            
+            <!-- Floatable Vertical List for External Staff (Dropdown) -->
+            <ul class="dropdown-menu w-100 shadow-lg border p-0 mt-2" style="max-height: 250px; overflow-y: auto; border-radius: 10px;">
+              <li class="bg-light border-bottom d-flex justify-content-between align-items-center sticky-top" style="padding: 10px 15px; z-index: 1040;">
+                <h6 class="mb-0 fw-bold text-dark" style="font-size: 14px;"><i class="fas fa-users text-primary me-1"></i> External Staff</h6>
+              </li>
+              {% for name in external_staff_names %}
+                <li class="dropdown-item text-dark" style="font-size: 14px; font-weight: 500; padding: 10px 15px;">
+                  <i class="fas fa-user-circle text-secondary me-2"></i> {{ name }}
+                </li>
+              {% else %}
+                <li class="dropdown-item text-muted" style="font-size: 14px; padding: 10px 15px;">No external staff found.</li>
+              {% endfor %}
+            </ul>
+          </div>
 
-          <div class="col-md-3"><div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;"><h4 class="fw-bold mb-1" style="color: #0d6efd;">{{ total }}</h4><p class="text-muted mb-0">Total Visitors</p></div></div>
+          <div class="col-md-3 dropdown" style="z-index: 1020;">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: white; border-radius: 10px; cursor: pointer;" title="Click to view all pending requests">
+              <h4 class="fw-bold mb-1" style="color: #0d6efd;">{{ pending }}</h4>
+              <p class="text-muted mb-0">Pending Requests</p>
+            </div>
+            
+            <!-- Floatable Vertical List for Pending Requests (Dropdown) -->
+            <ul class="dropdown-menu w-100 shadow-lg border p-0 mt-2" style="max-height: 250px; overflow-y: auto; border-radius: 10px;">
+              <li class="bg-light border-bottom d-flex justify-content-between align-items-center sticky-top" style="padding: 10px 15px; z-index: 1030;">
+                <h6 class="mb-0 fw-bold text-dark" style="font-size: 14px;"><i class="fas fa-users text-primary me-1"></i> Pending Requests</h6>
+              </li>
+              {% for name in pending_request_names %}
+                <li class="dropdown-item text-dark" style="font-size: 14px; font-weight: 500; padding: 10px 15px;">
+                  <i class="fas fa-user-circle text-secondary me-2"></i> {{ name }}
+                </li>
+              {% else %}
+                <li class="dropdown-item text-muted" style="font-size: 14px; padding: 10px 15px;">No pending requests.</li>
+              {% endfor %}
+            </ul>
+          </div>
         
         </div>
+
+
+
       </div>
         </div>
         <div class="container mt-2">
