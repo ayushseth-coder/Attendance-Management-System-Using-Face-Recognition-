@@ -25,7 +25,8 @@
 
                     {% if shot_filename %}
                     <div class="bg-slate-100 rounded-xl p-2 mb-3 shadow-sm border border-slate-200 d-inline-block">
-                        <img src="{{ url_for('static', filename='shots/' + shot_filename) }}" alt="Captured Face"
+                        {% set first_shot = shot_filename.split(',')[0] %}
+                        <img src="{{ url_for('static', filename='shots/' + first_shot) }}" alt="Captured Face"
                             class="img-fluid rounded-lg" style="max-height: 250px; object-fit: cover;">
                         <input type="hidden" name="shot_filename" value="{{ shot_filename }}">
                     </div>
