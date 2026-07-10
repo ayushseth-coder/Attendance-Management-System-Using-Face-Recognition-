@@ -15,7 +15,8 @@
                 <div class="card-body">
                     {% if shot_filename %}
                     <div class="text-center mb-4" style="margin-bottom: 20px;">
-                        <img src="{{ url_for('static', filename='shots/' + shot_filename) }}" alt="Captured Image" class="img-thumbnail" style="max-height: 250px; border-radius: 10px;">
+                        {% set first_shot = shot_filename.split(',')[0] %}
+                        <img src="{{ url_for('static', filename='shots/' + first_shot) }}" alt="Captured Image" class="img-thumbnail" style="max-height: 250px; border-radius: 10px;">
                         <input type="hidden" name="shot_filename" value="{{ shot_filename }}">
                     </div>
                     {% endif %}

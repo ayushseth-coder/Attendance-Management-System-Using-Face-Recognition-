@@ -88,47 +88,54 @@ def accept_regular(uid):
         return redirect(url_for('admin.admindash'))
 
     # 1. Save Vector to ChromaDB
-    shot_filename = element1.get('shot_filename')
-    if shot_filename:
+    shot_filenames = element1.get('shot_filename')
+    if shot_filenames:
         try:
             from deepface import DeepFace
             from models.vector_db import visitor_collection
             import os
             import shutil
+            import uuid
+            import cv2
             
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            img_path = os.path.join(base_dir, 'static', 'shots', shot_filename)
-            
-            # Create the permanent physical folder for visitor faces
             visitor_faces_dir = os.path.join(base_dir, 'visitor_faces')
             os.makedirs(visitor_faces_dir, exist_ok=True)
             
-            if os.path.exists(img_path):
-                visitor_name = element1['Name']
-                permanent_img_path = os.path.join(visitor_faces_dir, f"{visitor_name}.png")
+            for shot_filename in shot_filenames.split(','):
+                shot_filename = shot_filename.strip()
+                if not shot_filename: continue
+                img_path = os.path.join(base_dir, 'static', 'shots', shot_filename)
                 
-                # Copy the temporary shot to the permanent database folder
-                shutil.copy2(img_path, permanent_img_path)
-                
-                print(f"[INFO] Extracting vector for Regular Visitor: {visitor_name}")
-                # enforce_detection=False here because we already captured it via OCR fallback where they might not be perfectly centered.
-                # representations = DeepFace.represent(img_path=permanent_img_path, model_name="Facenet", enforce_detection=False)
-                representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
-                
-                if representations and len(representations) > 0:
-                    embedding = representations[0]["embedding"]
+                if os.path.exists(img_path):
+                    visitor_name = element1['Name']
+                    random_suffix = str(uuid.uuid4())[:6]
+                    permanent_img_path = os.path.join(visitor_faces_dir, f"{visitor_name}_{random_suffix}.png")
+                    shutil.copy2(img_path, permanent_img_path)
                     
-                    if visitor_collection is not None:
-                        # Generate a random 6-digit numerical ID to prevent duplicates
-                        import random
-                        num_id = str(random.randint(100000, 999999))
+                    # Apply CLAHE
+                    img = cv2.imread(permanent_img_path)
+                    if img is not None:
+                        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+                        enhanced_gray = clahe.apply(gray)
+                        enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
+                        cv2.imwrite(permanent_img_path, enhanced_img)
                         
-                        visitor_collection.upsert(
-                            embeddings=[embedding],
-                            documents=[visitor_name],
-                            ids=[num_id]
-                        )
-                        print(f"[SUCCESS] Regular Visitor {visitor_name} permanently enrolled in ChromaDB with Numerical ID {num_id}!")
+                    print(f"[INFO] Extracting vector for Regular Visitor (Multi-Shot): {visitor_name}")
+                    representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
+                    
+                    if representations and len(representations) > 0:
+                        embedding = representations[0]["embedding"]
+                        if visitor_collection is not None:
+                            import random
+                            num_id = str(random.randint(100000, 999999))
+                            visitor_collection.upsert(
+                                embeddings=[embedding],
+                                documents=[visitor_name],
+                                ids=[num_id]
+                            )
+            print(f"[SUCCESS] Regular Visitor {element1['Name']} permanently enrolled (Multi-Shot) in ChromaDB!")
         except Exception as e:
             print(f"[ERROR] Failed to enroll Regular Visitor in ChromaDB: {e}")
 
@@ -149,59 +156,64 @@ def enroll_employee(uid):
     if not element1:
         return redirect(url_for('admin.admindash'))
 
-    shot_filename = element1.get('shot_filename')
-    if shot_filename:
+    shot_filenames = element1.get('shot_filename')
+    if shot_filenames:
         try:
             from deepface import DeepFace
             from models.vector_db import employee_collection
             import os
             import shutil
+            import uuid
+            import re
+            import cv2
             
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            img_path = os.path.join(base_dir, 'static', 'shots', shot_filename)
-            
-            # Create permanent folder for employee faces if it doesn't exist
             employee_faces_dir = os.path.join(base_dir, 'employee_faces')
             os.makedirs(employee_faces_dir, exist_ok=True)
             
-            if os.path.exists(img_path):
-                # Standardize employee names (often lowercase or capitalized consistently)
-                employee_name = element1['Name'].strip().capitalize() 
-                permanent_img_path = os.path.join(employee_faces_dir, f"{employee_name}.png")
+            for shot_filename in shot_filenames.split(','):
+                shot_filename = shot_filename.strip()
+                if not shot_filename: continue
+                img_path = os.path.join(base_dir, 'static', 'shots', shot_filename)
                 
-                # Copy the temporary shot to the permanent database folder
-                shutil.copy2(img_path, permanent_img_path)
-                
-                print(f"[INFO] Extracting vector for New Employee: {employee_name}")
-                # representations = DeepFace.represent(img_path=permanent_img_path, model_name="Facenet", enforce_detection=False)
-                representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
-                
-                if representations and len(representations) > 0:
-                    embedding = representations[0]["embedding"]
+                if os.path.exists(img_path):
+                    employee_name = element1['Name'].strip().capitalize()
+                    random_suffix = str(uuid.uuid4())[:6]
+                    permanent_img_path = os.path.join(employee_faces_dir, f"{employee_name}_{random_suffix}.png")
+                    shutil.copy2(img_path, permanent_img_path)
                     
-                    if employee_collection is not None:
-                        # Extract Name and Number from employee_name (e.g. "Anshuman123" -> "Anshuman", "123")
-                        import re
-                        match = re.match(r"([A-Za-z]+)[_-]?(\d*)", employee_name)
-                        if match:
-                            clean_name = match.group(1).capitalize()
-                            extracted_id = match.group(2)
-                        else:
-                            clean_name = employee_name.capitalize()
-                            extracted_id = ""
+                    # Apply CLAHE
+                    img = cv2.imread(permanent_img_path)
+                    if img is not None:
+                        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+                        enhanced_gray = clahe.apply(gray)
+                        enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
+                        cv2.imwrite(permanent_img_path, enhanced_img)
+                        
+                    print(f"[INFO] Extracting vector for Employee Burst Image: {employee_name}")
+                    representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
+                    
+                    if representations and len(representations) > 0:
+                        embedding = representations[0]["embedding"]
+                        if employee_collection is not None:
+                            match = re.match(r"([A-Za-z]+)[_-]?(\d*)", employee_name)
+                            if match:
+                                clean_name = match.group(1).capitalize()
+                                extracted_id = match.group(2)
+                            else:
+                                clean_name = employee_name.capitalize()
+                                extracted_id = ""
+                                
+                            base_hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+                            chroma_id = f"{base_hr_id}-{str(uuid.uuid4())[:6].upper()}"
                             
-                        base_hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
-                        
-                        import uuid
-                        variant_suffix = str(uuid.uuid4())[:6].upper()
-                        chroma_id = f"{base_hr_id}-{variant_suffix}"
-                        
-                        employee_collection.upsert(
-                            embeddings=[embedding],
-                            ids=[chroma_id],
-                            metadatas=[{"path": permanent_img_path, "Name": clean_name, "HR_ID": base_hr_id}]
-                        )
-                        print(f"[SUCCESS] Employee {employee_name} permanently enrolled in ChromaDB!")
+                            employee_collection.upsert(
+                                embeddings=[embedding],
+                                ids=[chroma_id],
+                                metadatas=[{"path": permanent_img_path, "Name": clean_name, "HR_ID": base_hr_id}]
+                            )
+            print(f"[SUCCESS] Employee {element1['Name']} permanently enrolled (Multi-Shot) in ChromaDB!")
         except Exception as e:
             print(f"[ERROR] Failed to enroll Employee in ChromaDB: {e}")
 
@@ -223,46 +235,57 @@ def enroll_external(uid):
     if not element1:
         return redirect(url_for('admin.admindash'))
 
-    shot_filename = element1.get('shot_filename')
+    shot_filenames = element1.get('shot_filename')
     role = element1.get('Registration_Role', 'External Staff')
     
-    if shot_filename:
+    if shot_filenames:
         try:
             from deepface import DeepFace
             from models.vector_db import other_collection
             import os
             import shutil
+            import uuid
+            import cv2
             
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            img_path = os.path.join(base_dir, 'static', 'shots', shot_filename)
-            
-            # Create permanent folder for external faces if it doesn't exist
             external_faces_dir = os.path.join(base_dir, 'external_faces')
             os.makedirs(external_faces_dir, exist_ok=True)
             
-            if os.path.exists(img_path):
-                external_name = element1['Name'].strip().title() 
-                permanent_img_path = os.path.join(external_faces_dir, f"{external_name}.png")
+            for shot_filename in shot_filenames.split(','):
+                shot_filename = shot_filename.strip()
+                if not shot_filename: continue
+                img_path = os.path.join(base_dir, 'static', 'shots', shot_filename)
                 
-                shutil.copy2(img_path, permanent_img_path)
-                
-                print(f"[INFO] Extracting vector for External Staff: {external_name} ({role})")
-                # representations = DeepFace.represent(img_path=permanent_img_path, model_name="Facenet", enforce_detection=False)
-                representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
-                
-                if representations and len(representations) > 0:
-                    embedding = representations[0]["embedding"]
+                if os.path.exists(img_path):
+                    external_name = element1['Name'].strip().title()
+                    random_suffix = str(uuid.uuid4())[:6]
+                    permanent_img_path = os.path.join(external_faces_dir, f"{external_name}_{random_suffix}.png")
+                    shutil.copy2(img_path, permanent_img_path)
                     
-                    if other_collection is not None:
-                        import random
-                        num_id = str(random.randint(100000, 999999))
-                        other_collection.upsert(
-                            embeddings=[embedding],
-                            documents=[external_name],
-                            metadatas=[{"Role": role}],
-                            ids=[num_id]
-                        )
-                        print(f"[SUCCESS] {role} {external_name} permanently enrolled in ChromaDB with Numerical ID {num_id}!")
+                    # Apply CLAHE
+                    img = cv2.imread(permanent_img_path)
+                    if img is not None:
+                        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+                        enhanced_gray = clahe.apply(gray)
+                        enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
+                        cv2.imwrite(permanent_img_path, enhanced_img)
+                        
+                    print(f"[INFO] Extracting vector for External Staff (Multi-Shot): {external_name} ({role})")
+                    representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
+                    
+                    if representations and len(representations) > 0:
+                        embedding = representations[0]["embedding"]
+                        if other_collection is not None:
+                            import random
+                            num_id = str(random.randint(100000, 999999))
+                            other_collection.upsert(
+                                embeddings=[embedding],
+                                documents=[external_name],
+                                metadatas=[{"Role": role}],
+                                ids=[num_id]
+                            )
+            print(f"[SUCCESS] {role} {element1['Name']} permanently enrolled (Multi-Shot) in ChromaDB!")
         except Exception as e:
             print(f"[ERROR] Failed to enroll External Staff in ChromaDB: {e}")
 

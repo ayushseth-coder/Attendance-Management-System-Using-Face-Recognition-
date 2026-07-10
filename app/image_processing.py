@@ -16,12 +16,13 @@ def record(out):
    
 image_processing = Blueprint('image_processing', __name__)
 
-global pan_data, frame, captured_data, captured_image
+global pan_data, frame, captured_data, captured_image, captured_images
 pan_data=None
 frame=None
 capture = 0
 captured_data = None
 captured_image = None
+captured_images = []
 
 def gen_frames():
     global captured_image, captured_data
@@ -68,7 +69,7 @@ def video_feed():
 @image_processing.route('/show_captured')
 def show_captured():
     from flask import request
-    global captured_data, captured_image
+    global captured_data, captured_image, captured_images
     
     # Check for strict role routing
     role_type = request.args.get('role_type', 'visitor')
@@ -81,6 +82,12 @@ def show_captured():
         captured_data = {}
 
     approvedby = ""  
-    shot_filename = os.path.basename(captured_image) if captured_image else None
+    
+    # --- MULTI-SHOT CAPTURE LOGIC ---
+    if captured_images:
+        shot_filename = ",".join([os.path.basename(path) for path in captured_images])
+    else:
+        shot_filename = os.path.basename(captured_image) if captured_image else None
+        
     return render_template('extract.html', data=captured_data, approvedby=approvedby, shot_filename=shot_filename, role_type=role_type)
  
