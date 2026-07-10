@@ -3,7 +3,9 @@ from werkzeug.security import generate_password_hash
 from models.database import collection, adminlog, securitylog,visitorlogtable,activevisitorstable,reqvistable,rejectedvistable,visitors_status
 from datetime import datetime
 from flask_bcrypt import Bcrypt
+from bson import ObjectId
 from collections import defaultdict
+from flask import json
 
 admin = Blueprint('admin', __name__)
 bcrypt = Bcrypt()
@@ -41,95 +43,109 @@ def inject_pending_count():
 
 @admin.route('/admindash')
 def admindash():
+    from datetime import timedelta
+    from models.database import attendance_log
+    
     # Dynamically compute stats on every page load
     pending = len(list(reqvistable.find()))
-    pending_request_names = [req.get('Name', 'Unknown') for req in reqvistable.find()]
     reject = len(list(rejectedvistable.find()))
     countvis = len(list(visitorlogtable.find()))
     active = len(list(activevisitorstable.find()))
     total = reject + countvis
 
-    global months,accept_data,total_data
-    all_visitors = list(visitors_status.find({}))  
+    # ---------------------------------------------------------
+    # NEW: Day-wise Present Employee Attendance Time Series
+    # ---------------------------------------------------------
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
 
-    monthly_stats = defaultdict(lambda: {"accept": 0, "total": 0})
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    else:
+        end_date = datetime.today().date()
 
-    for visitor in all_visitors:
-        if 'Date' in visitor:
-            dt = visitor['Date']
-           
-            if isinstance(dt, str):
-                try:
-                      dt = datetime.fromisoformat(dt)
-                except ValueError:
-                    continue  
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+    else:
+        # Default to exactly 5 days before end_date to make a 6-day window
+        start_date = end_date - timedelta(days=5)
 
-            month = dt.strftime("%b")  
-            monthly_stats[month]["total"] += 1
-            if visitor.get("status") == "accept":
-                monthly_stats[month]["accept"] += 1
-
+    # Generate the list of dates for the labels
+    date_labels = []
+    daily_attendance = {}
     
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    accept_data = [monthly_stats[m]["accept"] for m in months]
-    total_data = [monthly_stats[m]["total"] for m in months]
-    
-    # Get total employees and regular visitors using unique grouping logic
-    try:
-        from models.vector_db import employee_collection, visitor_collection
-        
-        # Employees
-        results = employee_collection.get(include=["metadatas"])
-        employee_ids = results.get('ids', [])
-        metadatas = results.get('metadatas', [])
-        
-        unique_employees = set()
-        for i in range(len(employee_ids)):
-            hr_id = metadatas[i].get("HR_ID", employee_ids[i]) if metadatas and i < len(metadatas) and metadatas[i] else employee_ids[i]
-            real_name = metadatas[i].get("Name", hr_id) if metadatas and i < len(metadatas) and metadatas[i] else hr_id
-            unique_employees.add(real_name)
-            
-        employee_names = list(unique_employees)
-        total_employees = len(employee_names)
-        
-        # Regular Visitors
-        vis_results = visitor_collection.get(include=["documents"])
-        visitor_ids = vis_results.get('ids', [])
-        documents = vis_results.get('documents', [])
-        unique_visitors = set()
-        for i, vis_id in enumerate(visitor_ids):
-            name = documents[i] if documents and i < len(documents) and documents[i] else vis_id
-            unique_visitors.add(name)
-        regular_visitor_names = list(unique_visitors)
-        total_regular_visitors = len(regular_visitor_names)
-        
-        # External Staff
-        from models.vector_db import other_collection
-        other_results = other_collection.get(include=["documents"])
-        other_ids = other_results.get('ids', [])
-        other_docs = other_results.get('documents', [])
-        unique_other = set()
-        for i, stf_id in enumerate(other_ids):
-            name = other_docs[i] if other_docs and i < len(other_docs) and other_docs[i] else stf_id
-            unique_other.add(name)
-        external_staff_names = list(unique_other)
-        total_external_staff = len(external_staff_names)
-        
-    except Exception as e:
-        employee_names = []
-        total_employees = 0
-        regular_visitor_names = []
-        total_regular_visitors = 0
-        external_staff_names = []
-        total_external_staff = 0
+    current_dt = start_date
+    while current_dt <= end_date:
+        label = current_dt.strftime("%b %d")
+        date_labels.append(label)
+        daily_attendance[current_dt.strftime("%Y-%m-%d")] = set()
+        current_dt += timedelta(days=1)
 
-    return render_template('admin_h.html',pending=pending ,total=total,countvis=countvis, active=active,rejectobj=reject,
-                           months=months, accept_data=accept_data, total_data=total_data,
-                           total_employees=total_employees, employee_names=employee_names,
-                           total_regular_visitors=total_regular_visitors, regular_visitor_names=regular_visitor_names,
-                           total_external_staff=total_external_staff, external_staff_names=external_staff_names,
-                           pending_request_names=pending_request_names)
+    # Query attendance_log between start_date and end_date
+    query = {
+        "Date": {
+            "$gte": start_date.strftime("%Y-%m-%d"),
+            "$lt": (end_date + timedelta(days=1)).strftime("%Y-%m-%d")
+        }
+    }
+    
+    logs = list(attendance_log.find(query))
+    
+    for log in logs:
+        log_date_full = log.get("Date", "")
+        # Extract just the YYYY-MM-DD from YYYY-MM-DD HH:MM:SS
+        log_date = log_date_full.split(" ")[0] if " " in log_date_full else log_date_full
+        
+        name = log.get("Name")
+        if log_date in daily_attendance and name:
+            daily_attendance[log_date].add(name)
+
+    # Extract the counts in the same order as date_labels
+    employee_counts = []
+    current_dt = start_date
+    while current_dt <= end_date:
+        date_str = current_dt.strftime("%Y-%m-%d")
+        employee_counts.append(len(daily_attendance[date_str]))
+        current_dt += timedelta(days=1)
+
+    # ---------------------------------------------------------
+    # NEW: Date-Specific Total Attendance Pie Chart
+    # ---------------------------------------------------------
+    pie_date_str = request.args.get('pie_date')
+    if not pie_date_str:
+        pie_date_str = datetime.today().strftime("%Y-%m-%d")
+    
+    # 1. Present Employees (Checked in on pie_date)
+    present_employees_query = attendance_log.find({"Date": {"$regex": f"^{pie_date_str}"}})
+    present_employee_names = set()
+    for log in present_employees_query:
+        if log.get("Name"):
+            present_employee_names.add(log.get("Name"))
+    present_employees_list = list(present_employee_names)
+    present_emp_count = len(present_employees_list)
+
+    # 2. Present Visitors (Historically present on pie_date, Registration_Role == "Visitor")
+    active_visitors_query = visitorlogtable.find({"Date": pie_date_str, "Registration_Role": "Visitor"})
+    present_visitors_list = list(set([v.get("Name", "Unknown") for v in active_visitors_query]))
+    present_vis_count = len(present_visitors_list)
+
+    # 3. Present External Staff (Historically present on pie_date, Registration_Role != "Visitor" and != "Employee")
+    active_external_query = visitorlogtable.find({"Date": pie_date_str, "Registration_Role": {"$nin": ["Visitor", "Employee"]}})
+    present_external_list = list(set([v.get("Name", "Unknown") for v in active_external_query]))
+    present_ext_count = len(present_external_list)
+
+    return render_template('admin_h.html',
+                           pending=pending, total=total, countvis=countvis, active=active, rejectobj=reject,
+                           chart_labels=date_labels, chart_data=employee_counts,
+                           start_date=start_date.strftime("%Y-%m-%d"),
+                           end_date=end_date.strftime("%Y-%m-%d"),
+                           pie_date=pie_date_str,
+                           present_emp_count=present_emp_count,
+                           present_vis_count=present_vis_count,
+                           present_ext_count=present_ext_count,
+                           present_employees_list=present_employees_list,
+                           present_visitors_list=present_visitors_list,
+                           present_external_list=present_external_list)
 
 
 @admin.route('/addadmin', methods=['POST'])
@@ -221,7 +237,7 @@ def edituser():
     phone = request.args.get('Phone')
     user = collection.find_one({"Phone": phone})
 
-    return render_template('user_overview.html', user=user)
+    return render_template('user_overview.html')
 
 @admin.route("/notification",methods=['POst','GET'])
 def notification():
@@ -263,95 +279,8 @@ def visitor_over():
 
 @admin.route("/admin_h",methods=['POst','GET'])
 def admin_h():
-    # Dynamically compute stats on every page load
-    pending = len(list(reqvistable.find()))
-    pending_request_names = [req.get('Name', 'Unknown') for req in reqvistable.find()]
-    reject = len(list(rejectedvistable.find()))
-    countvis = len(list(visitorlogtable.find()))
-    active = len(list(activevisitorstable.find()))
-    total = reject + countvis
+    return redirect(url_for('admin.admindash'))
 
-    global months,accept_data,total_data
-    all_visitors = list(visitors_status.find({}))  
-
-    monthly_stats = defaultdict(lambda: {"accept": 0, "total": 0})
-
-    for visitor in all_visitors:
-        if 'Date' in visitor:
-            dt = visitor['Date']
-            # Convert string to datetime if needed
-            if isinstance(dt, str):
-                try:
-                      dt = datetime.fromisoformat(dt)
-                except ValueError:
-                    continue  
-
-            month = dt.strftime("%b")  
-            monthly_stats[month]["total"] += 1
-            if visitor.get("status") == "accept":
-                monthly_stats[month]["accept"] += 1
-
-    #  month order for the chart
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    accept_data = [monthly_stats[m]["accept"] for m in months]
-    total_data = [monthly_stats[m]["total"] for m in months]
-    
-    # Get total employees and regular visitors using unique grouping logic
-    try:
-        from models.vector_db import employee_collection, visitor_collection
-        
-        # Employees
-        results = employee_collection.get(include=["metadatas"])
-        employee_ids = results.get('ids', [])
-        metadatas = results.get('metadatas', [])
-        
-        unique_employees = set()
-        for i in range(len(employee_ids)):
-            hr_id = metadatas[i].get("HR_ID", employee_ids[i]) if metadatas and i < len(metadatas) and metadatas[i] else employee_ids[i]
-            real_name = metadatas[i].get("Name", hr_id) if metadatas and i < len(metadatas) and metadatas[i] else hr_id
-            unique_employees.add(real_name)
-            
-        employee_names = list(unique_employees)
-        total_employees = len(employee_names)
-        
-        # Regular Visitors
-        vis_results = visitor_collection.get(include=["documents"])
-        visitor_ids = vis_results.get('ids', [])
-        documents = vis_results.get('documents', [])
-        unique_visitors = set()
-        for i, vis_id in enumerate(visitor_ids):
-            name = documents[i] if documents and i < len(documents) and documents[i] else vis_id
-            unique_visitors.add(name)
-        regular_visitor_names = list(unique_visitors)
-        total_regular_visitors = len(regular_visitor_names)
-        
-        # External Staff
-        from models.vector_db import other_collection
-        other_results = other_collection.get(include=["documents"])
-        other_ids = other_results.get('ids', [])
-        other_docs = other_results.get('documents', [])
-        unique_other = set()
-        for i, stf_id in enumerate(other_ids):
-            name = other_docs[i] if other_docs and i < len(other_docs) and other_docs[i] else stf_id
-            unique_other.add(name)
-        external_staff_names = list(unique_other)
-        total_external_staff = len(external_staff_names)
-        
-    except Exception as e:
-        employee_names = []
-        total_employees = 0
-        regular_visitor_names = []
-        total_regular_visitors = 0
-        external_staff_names = []
-        total_external_staff = 0
-        
-    return render_template ("admin_h.html",  pending=pending ,total=total,countvis=countvis, active=active,rejectobj=reject,
-                           months=months, accept_data=accept_data, total_data=total_data,
-                           total_employees=total_employees, employee_names=employee_names,
-                           total_regular_visitors=total_regular_visitors, regular_visitor_names=regular_visitor_names,
-                           total_external_staff=total_external_staff, external_staff_names=external_staff_names,
-                           pending_request_names=pending_request_names)
 
 @admin.route('/enroll_employees', methods=['GET', 'POST'])
 def enroll_employees():
@@ -385,37 +314,22 @@ def enroll_employees():
                 filepath = os.path.join(faces_dir, filename)
                 file.save(filepath)
                 
-                # Extract Name and Number from filename (e.g. "Anshuman123.jpg" -> "Anshuman", "123")
-                raw_name = os.path.splitext(filename)[0]
-                import re
-                match = re.match(r"([A-Za-z]+)[_-]?(\d*)", raw_name)
-                
-                if match:
-                    employee_name = match.group(1).capitalize()
-                    extracted_id = match.group(2)
-                else:
-                    employee_name = raw_name.capitalize()
-                    extracted_id = ""
-                    
-                base_hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{employee_name.upper()}"
-                
-                import uuid
-                variant_suffix = str(uuid.uuid4())[:6].upper()
-                chroma_id = f"{base_hr_id}-{variant_suffix}"
+                # Extract Name from filename (e.g. "Anshuman.jpg" -> "Anshuman")
+                employee_name = os.path.splitext(filename)[0].capitalize()
                 
                 try:
                     # Run AI Extraction
                     # representations = DeepFace.represent(img_path=filepath, model_name="Facenet", enforce_detection=False)
-                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
+                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=False)
                     
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]
                         
-                        # Save to Vector DB using unique chroma_id, preserving real Name and HR_ID in metadata
+                        # Save to Vector DB
                         employee_collection.upsert(
-                            ids=[chroma_id],
+                            ids=[employee_name],
                             embeddings=[embedding],
-                            metadatas=[{"path": filepath, "Name": employee_name, "HR_ID": base_hr_id}]
+                            metadatas=[{"path": filepath}]
                         )
                         success_count += 1
                     else:
@@ -476,7 +390,7 @@ def manage_employees():
                     "Address": user_info.get("Address", "Unknown"),
                     "Leave_Status": user_info.get("Leave_Status", "Active"),
                     "Photo_Count": 1,
-                    "chroma_ids": [chroma_id]  # Keep track of all vectors for deletion
+                    "chroma_ids": [chroma_id]
                 }
             else:
                 unique_employees[real_name]["Photo_Count"] += 1
@@ -493,38 +407,30 @@ def manage_employees():
         
     return render_template('manage_employees.html', employees_data=employees_data, total_count=total_count, unique_count=total_unique_count)
 
-@admin.route('/delete_employee/<emp_id>', methods=['POST'])
-def delete_employee(emp_id):
+@admin.route('/delete_employee/<name>', methods=['POST'])
+def delete_employee(name):
     from models.vector_db import employee_collection
     
     try:
-        import os
-        # 1. Get all IDs to find variants
-        results = employee_collection.get(include=["metadatas"])
-        all_ids = results.get('ids', [])
-        metadatas = results.get('metadatas', [])
+        # Delete from ChromaDB
+        employee_collection.delete(ids=[name])
+        flash(f"Successfully deleted records for ID {name}.", "success")
         
-        ids_to_delete = []
-        for i, cid in enumerate(all_ids):
-            if cid == emp_id or cid.startswith(f"{emp_id}-"):
-                ids_to_delete.append(cid)
-                if metadatas and i < len(metadatas) and metadatas[i]:
-                    filepath = metadatas[i].get('path')
-                    if filepath and os.path.exists(filepath):
-                        try:
-                            os.remove(filepath)
-                        except Exception:
-                            pass
-                            
-        # 2. Delete from ChromaDB
-        if ids_to_delete:
-            employee_collection.delete(ids=ids_to_delete)
-            flash(f"Successfully deleted {len(ids_to_delete)} record(s) for {emp_id}.", "success")
-        else:
-            flash(f"No records found for {emp_id}.", "warning")
+        # Cleanup: Delete ALL local photos matching the employee name (ignoring case and extensions)
+        import os
+        faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
+        if os.path.exists(faces_dir):
+            for filename in os.listdir(faces_dir):
+                name_without_ext = os.path.splitext(filename)[0]
+                # If the name matches (ignoring capital letters), delete it!
+                if name_without_ext.lower() == name.lower():
+                    try:
+                        os.remove(os.path.join(faces_dir, filename))
+                    except Exception:
+                        pass
                 
     except Exception as e:
-        flash(f"Error deleting {emp_id}: {e}", "danger")
+        flash(f"Error deleting {name}: {e}", "danger")
         
     return redirect(url_for('admin.manage_employees'))
 
@@ -854,7 +760,7 @@ def attendance_employee():
 @admin.route('/employee_image/<name>')
 def employee_image(name):
     import os
-    from flask import send_from_directory
+    from flask import send_from_directory, abort
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
     
@@ -892,7 +798,7 @@ def attendance_visitor():
 @admin.route('/visitor_image/<name>')
 def visitor_image(name):
     import os
-    from flask import send_from_directory
+    from flask import send_from_directory, abort
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
     
@@ -928,7 +834,7 @@ def attendance_other():
 @admin.route('/other_image/<name>')
 def other_image(name):
     import os
-    from flask import send_from_directory
+    from flask import send_from_directory, abort
     
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
     
@@ -1028,7 +934,6 @@ def update_employee_details():
     phone = request.form.get('phone', 'Unknown')
     address = request.form.get('address', 'Unknown')
     leave_status = request.form.get('leave_status', 'Active')
-    hr_id = request.form.get('hr_id')
     
     if name:
         # 1. Update Old Architecture
@@ -1052,7 +957,15 @@ def update_employee_details():
         
         # 2. Update Shadow Architecture
         try:
-            smart_id = hr_id if hr_id else f"EMP-{name.upper()}"
+            match = re.match(r"([A-Za-z]+)(\d*)", name)
+            if match:
+                clean_name = match.group(1).capitalize()
+                extracted_id = match.group(2) if match.group(2) else None
+            else:
+                clean_name = name.capitalize()
+                extracted_id = None
+                
+            smart_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
             
             universal_registry.update_one(
                 {"_id": smart_id},

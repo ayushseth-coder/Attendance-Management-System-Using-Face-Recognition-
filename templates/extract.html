@@ -1,116 +1,233 @@
 {% extends 'security_base.html' %}
 
-{% block title %}Extract{% endblock %}
+{% block title %}Visitor Pass Registration{% endblock %}
 
 {% block body %}
-<link href="{{ url_for('static', filename='extract.css') }}" rel="stylesheet" />
-<div class="col-sm-6 mx-auto">
-    <div class="card">
-        <div class="card-header">
-            Set Information
+<div class="col-sm-10 mx-auto mt-4">
+  <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6">
+
+    <div class="bg-green-600 p-4 md:px-6 py-2 flex items-center justify-between">
+      <h5 class="m-0 font-bold text-white text-lg flex items-center gap-2">
+        <i class="fas fa-id-badge text-white"></i> Guest & External Registration
+      </h5>
+    </div>
+
+    <form action="{{ url_for('visitors.visitor1') }}" method="post" class="p-4 md:p-6">
+      <div class="row g-4">
+        <!-- Photo Preview Column -->
+        <div class="col-md-4 text-center border-e border-slate-200 pe-md-4">
+          <h6 class="font-bold text-slate-700 mb-3 text-start"><i class="fas fa-camera text-blue-600 me-2"></i>Captured
+            Face</h6>
+
+          {% if shot_filename %}
+          <div class="bg-slate-100 rounded-xl p-2 mb-3 shadow-sm border border-slate-200 d-inline-block">
+            {% set first_shot = shot_filename.split(',')[0] %}
+            <img src="{{ url_for('static', filename='shots/' + first_shot) }}" alt="Captured Face"
+              class="img-fluid rounded-lg" style="max-height: 250px; object-fit: cover;">
+            <input type="hidden" name="shot_filename" value="{{ shot_filename }}">
+          </div>
+          {% else %}
+          <div class="alert alert-warning py-2 px-3 text-start bg-amber-50 border border-amber-200 rounded-lg">
+            <small class="text-amber-800 fw-bold"><i class="fas fa-exclamation-triangle me-1"></i> No image
+              captured!</small>
+          </div>
+          {% endif %}
+
+          <div class="alert alert-info py-2 px-3 text-start bg-blue-50 border border-blue-100 rounded-lg">
+            <small class="text-blue-800 fw-medium">
+              <i class="fas fa-info-circle me-1"></i> Please verify or enter the guest details accurately before
+              generating the pass.
+            </small>
+          </div>
         </div>
-        <form action="{{ url_for('visitors.visitor1') }}" method="post">
-           
 
-                <div class="card-body">
-                    {% if shot_filename %}
-                    <div class="text-center mb-4" style="margin-bottom: 20px;">
-                        {% set first_shot = shot_filename.split(',')[0] %}
-                        <img src="{{ url_for('static', filename='shots/' + first_shot) }}" alt="Captured Image" class="img-thumbnail" style="max-height: 250px; border-radius: 10px;">
-                        <input type="hidden" name="shot_filename" value="{{ shot_filename }}">
-                    </div>
-                    {% endif %}
-                    <div class="row">
-                      <!-- Left Column -->
-                      <div class="col-md-6">
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="name" placeholder="Candidate's Name"
-                            value="{{ data['Name'] if data and 'Name' in data else '' }}" required>
-                          <label>Candidate's Name</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="dob" placeholder="Date of Birth"
-                            value="{{ data['dob'] if data and 'dob' in data else '' }}" required>
-                          <label>Date of Birth</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="card" placeholder="Card"
-                            value="{{ data['card'] if data and 'card' in data else '' }}" required>
-                          <label>Card</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="Date" placeholder="Date"
-                            value="{{ data['Date'] if data and 'Date' in data else '' }}" required>
-                          <label>Date</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="email" class="form-control" name="Email" placeholder="Email">
-                          <label>Email</label>
-                        </div>
-                      </div>
-                  
-                      <!-- Right Column -->
-                      <div class="col-md-6">
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="father" placeholder="Father's Name"
-                            value="{{ data['Father_Name'] if data and 'Father_Name' in data else '' }}">
-                          <label>Father's Name</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="gender" placeholder="Gender"
-                            value="{{ data['sex'] if data and 'sex' in data else '' }}" required>
-                          <label>Gender</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="uid" placeholder="UID No"
-                            value="{{ data['UID'] if data and 'UID' in data else '' }}" required>
-                          <label>UID</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="Purpose" placeholder="Purpose" required>
-                          <label>Purpose</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="phone" placeholder="Phone"
-                            value="{{ data['phone'] if data and 'phone' in data else '' }}" required>
-                          <label>Phone</label>
-                        </div>
-                  
-                        <div class="form-floating mb-3">
-                          <input type="text" class="form-control" name="Approvedby" placeholder="Approvedby"
-                            value="{{ approvedby }}" required>
-                          <label>Approvedby</label>
-                        </div>
-                       
-                        {% if role_type == 'employee' %}
-                            <input type="hidden" name="Registration_Role" value="Employee">
-                        {% elif role_type == 'visitor' %}
-                            <input type="hidden" name="Registration_Role" value="Visitor">
-                        {% else %}
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="Registration_Role" id="Registration_Role" value="" placeholder="e.g. Plumber, Food Delivery, Auditor" required>
-                                <label for="Registration_Role">Registration Role</label>
+        <!-- HR Details Column -->
+        <div class="col-md-8 ps-md-4">
+          <h6 class="font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100">
+            <i class="fas fa-address-card text-blue-600 me-2"></i>Personal Information
+          </h6>
+
+          <div class="row g-3">
+            <!-- Name -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Full Name <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-user"></i></span>
+                <input type="text" class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                  name="name" value="{{ data['Name'] if data and 'Name' in data else '' }}" required
+                  placeholder="Enter Full Name">
+              </div>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Mobile Number <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-phone-alt"></i></span>
+                <input type="text" value="+91"
+                  class="form-control bg-slate-100 text-center text-slate-500 px-0 border-x-0" style="max-width: 50px;"
+                  readonly>
+                <input type="text" name="phone" pattern="[0-9]{10}" maxlength="10" minlength="10"
+                  class="form-control font-medium text-slate-800 focus:ring-blue-500"
+                  value="{{ data['phone'] if data and 'phone' in data else '' }}"
+                  placeholder="Enter 10-digit Mobile Number" required
+                  oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+              </div>
+            </div>
+
+            <!-- Father's Name
+                        <div class="col-md-6">
+                            <label class="form-label font-bold text-slate-600 text-sm">Father's Name</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-male"></i></span>
+                                <input type="text" class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                                    name="father" value="{{ data['Father_Name'] if data and 'Father_Name' in data else '' }}" placeholder="Enter Father's Name">
+
                             </div>
-                        {% endif %}
-                        
-                        <!-- Hidden flags from the strict role router -->
-                        <input type="hidden" name="role_type" value="{{ role_type }}">
+                        </div> -->
 
-                      </div>
-                      <div class="card-footer d-flex justify-content-center">
-                        <button type="submit" name="submit" value="pass" class="btn btn-primary">
-                            Request for Pass
-                        </button>
-                    </div>
-                    </div>
-                 
-                  
+            <!-- Date of Birth
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Date of Birth <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i
+                    class="fas fa-calendar-alt"></i></span>
+                <input type="date" class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                  name="dob" value="{{ data['dob'] if data and 'dob' in data else '' }}" required>
+              </div>
+            </div> -->
+
+            <!-- Gender Radio -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Gender <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i
+                    class="fas fa-venus-mars"></i></span>
+                <select class="form-select border-s-0 font-medium text-slate-800 focus:ring-blue-500" name="gender"
+                  required>
+                  <option value="" disabled selected>Select Gender</option>
+                  <option value="Male" {% if data and data.get('sex')=='Male' %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if data and data.get('sex')=='Female' %}selected{% endif %}>Female</option>
+                  <option value="Other" {% if data and data.get('sex')=='Other' %}selected{% endif %}>Other</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Email Address</label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-envelope"></i></span>
+                <input type="email" name="Email"
+                  class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                  placeholder="Enter Email Address">
+              </div>
+            </div>
+
+            <!-- Card Type -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">ID Card Type <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i
+                    class="fas fa-id-card-alt"></i></span>
+                <input type="text" class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                  name="card" value="{{ data['card'] if data and 'card' in data else '' }}" required
+                  placeholder="e.g. Aadhaar, PAN">
+              </div>
+            </div>
+
+            <!-- UID -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">ID Card Number <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-hashtag"></i></span>
+                <input type="text" class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                  name="uid" value="{{ data['UID'] if data and 'UID' in data else '' }}" required
+                  placeholder="Enter ID Number">
+              </div>
+            </div>
+
+            <!-- Purpose -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Purpose of Visit <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-briefcase"></i></span>
+                <input type="text" class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                  name="Purpose" required placeholder="e.g. Meeting, Interview">
+              </div>
+            </div>
+
+            <!-- Approved By -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Approved By <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i
+                    class="fas fa-user-shield"></i></span>
+                <input type="text" name="Approvedby"
+                  class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                  value="{{ approvedby }}" required placeholder="Enter Approver's Name">
+              </div>
+            </div>
+
+            <!-- Hidden/Dynamic Fields -->
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Date of Entry</label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-clock"></i></span>
+                <input type="text" class="form-control bg-slate-50 border-s-0 font-medium text-slate-500" name="Date"
+                  id="currentDate" value="{{ data['Date'] if data and 'Date' in data else '' }}" required readonly>
+              </div>
+            </div>
+
+            {% if role_type == 'employee' %}
+            <input type="hidden" name="Registration_Role" value="Employee">
+            {% elif role_type == 'visitor' %}
+            <input type="hidden" name="Registration_Role" value="Visitor">
+            {% else %}
+            <div class="col-md-6">
+              <label class="form-label font-bold text-slate-600 text-sm">Registration Role <span
+                  class="text-red-500">*</span></label>
+              <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-user-tag"></i></span>
+                <input type="text" class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
+                  name="Registration_Role" id="Registration_Role" value="" placeholder="e.g. Plumber, Food Delivery"
+                  required>
+              </div>
+            </div>
+            {% endif %}
+            <input type="hidden" name="role_type" value="{{ role_type }}">
+
+          </div>
+
+          <hr class="my-4 text-slate-200">
+
+          <div class="d-flex gap-3 justify-content-end">
+            <button type="button" onclick="history.back()"
+              class="btn btn-light border-slate-300 font-bold px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
+            <button type="submit" name="submit" value="pass"
+              class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg shadow-sm d-flex align-items-center gap-2 transition-all">
+              <i class="fas fa-ticket-alt"></i> Generate Pass
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Auto-fill current date if not set
+  if (!document.getElementById('currentDate').value) {
+    const today = new Date();
+    document.getElementById('currentDate').value = today.toISOString().split('T')[0];
+  }
+</script>
 {% endblock %}
