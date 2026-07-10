@@ -43,6 +43,9 @@ def inject_pending_count():
 
 @admin.route('/admindash')
 def admindash():
+    from datetime import timedelta
+    from models.database import attendance_log
+    
     # Dynamically compute stats on every page load
     pending = len(list(reqvistable.find()))
     reject = len(list(rejectedvistable.find()))
@@ -50,37 +53,99 @@ def admindash():
     active = len(list(activevisitorstable.find()))
     total = reject + countvis
 
-    global months,accept_data,total_data
-    all_visitors = list(visitors_status.find({}))  
+    # ---------------------------------------------------------
+    # NEW: Day-wise Present Employee Attendance Time Series
+    # ---------------------------------------------------------
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
 
-    monthly_stats = defaultdict(lambda: {"accept": 0, "total": 0})
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    else:
+        end_date = datetime.today().date()
 
-    for visitor in all_visitors:
-        if 'Date' in visitor:
-            dt = visitor['Date']
-           
-            if isinstance(dt, str):
-                try:
-                      dt = datetime.fromisoformat(dt)
-                except ValueError:
-                    continue  
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+    else:
+        # Default to exactly 5 days before end_date to make a 6-day window
+        start_date = end_date - timedelta(days=5)
 
-            month = dt.strftime("%b")  
-            monthly_stats[month]["total"] += 1
-            if visitor.get("status") == "accept":
-                monthly_stats[month]["accept"] += 1
-
+    # Generate the list of dates for the labels
+    date_labels = []
+    daily_attendance = {}
     
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    accept_data = [monthly_stats[m]["accept"] for m in months]
-    total_data = [monthly_stats[m]["total"] for m in months]
+    current_dt = start_date
+    while current_dt <= end_date:
+        label = current_dt.strftime("%b %d")
+        date_labels.append(label)
+        daily_attendance[current_dt.strftime("%Y-%m-%d")] = set()
+        current_dt += timedelta(days=1)
+
+    # Query attendance_log between start_date and end_date
+    query = {
+        "Date": {
+            "$gte": start_date.strftime("%Y-%m-%d"),
+            "$lt": (end_date + timedelta(days=1)).strftime("%Y-%m-%d")
+        }
+    }
     
+    logs = list(attendance_log.find(query))
+    
+    for log in logs:
+        log_date_full = log.get("Date", "")
+        # Extract just the YYYY-MM-DD from YYYY-MM-DD HH:MM:SS
+        log_date = log_date_full.split(" ")[0] if " " in log_date_full else log_date_full
+        
+        name = log.get("Name")
+        if log_date in daily_attendance and name:
+            daily_attendance[log_date].add(name)
 
+    # Extract the counts in the same order as date_labels
+    employee_counts = []
+    current_dt = start_date
+    while current_dt <= end_date:
+        date_str = current_dt.strftime("%Y-%m-%d")
+        employee_counts.append(len(daily_attendance[date_str]))
+        current_dt += timedelta(days=1)
 
+    # ---------------------------------------------------------
+    # NEW: Date-Specific Total Attendance Pie Chart
+    # ---------------------------------------------------------
+    pie_date_str = request.args.get('pie_date')
+    if not pie_date_str:
+        pie_date_str = datetime.today().strftime("%Y-%m-%d")
+    
+    # 1. Present Employees (Checked in on pie_date)
+    present_employees_query = attendance_log.find({"Date": {"$regex": f"^{pie_date_str}"}})
+    present_employee_names = set()
+    for log in present_employees_query:
+        if log.get("Name"):
+            present_employee_names.add(log.get("Name"))
+    present_employees_list = list(present_employee_names)
+    present_emp_count = len(present_employees_list)
 
-    return render_template('admin_h.html',pending=pending ,total=total,countvis=countvis, active=active,rejectobj=reject,
-                           months=months, accept_data=accept_data, total_data=total_data)
+    # 2. Present Visitors (Historically present on pie_date, Registration_Role == "Visitor")
+    active_visitors_query = visitorlogtable.find({"Date": pie_date_str, "Registration_Role": "Visitor"})
+    present_visitors_list = list(set([v.get("Name", "Unknown") for v in active_visitors_query]))
+    present_vis_count = len(present_visitors_list)
+
+    # 3. Present External Staff (Historically present on pie_date, Registration_Role != "Visitor" and != "Employee")
+    active_external_query = visitorlogtable.find({"Date": pie_date_str, "Registration_Role": {"$nin": ["Visitor", "Employee"]}})
+    present_external_list = list(set([v.get("Name", "Unknown") for v in active_external_query]))
+    present_ext_count = len(present_external_list)
+
+    return render_template('admin_h.html',
+                           pending=pending, total=total, countvis=countvis, active=active, rejectobj=reject,
+                           chart_labels=date_labels, chart_data=employee_counts,
+                           start_date=start_date.strftime("%Y-%m-%d"),
+                           end_date=end_date.strftime("%Y-%m-%d"),
+                           pie_date=pie_date_str,
+                           present_emp_count=present_emp_count,
+                           present_vis_count=present_vis_count,
+                           present_ext_count=present_ext_count,
+                           present_employees_list=present_employees_list,
+                           present_visitors_list=present_visitors_list,
+                           present_external_list=present_external_list)
 
 
 @admin.route('/addadmin', methods=['POST'])
@@ -214,40 +279,8 @@ def visitor_over():
 
 @admin.route("/admin_h",methods=['POst','GET'])
 def admin_h():
-    # Dynamically compute stats on every page load
-    pending = len(list(reqvistable.find()))
-    reject = len(list(rejectedvistable.find()))
-    countvis = len(list(visitorlogtable.find()))
-    active = len(list(activevisitorstable.find()))
-    total = reject + countvis
+    return redirect(url_for('admin.admindash'))
 
-    global months,accept_data,total_data
-    all_visitors = list(visitors_status.find({}))  
-
-    monthly_stats = defaultdict(lambda: {"accept": 0, "total": 0})
-
-    for visitor in all_visitors:
-        if 'Date' in visitor:
-            dt = visitor['Date']
-            # Convert string to datetime if needed
-            if isinstance(dt, str):
-                try:
-                      dt = datetime.fromisoformat(dt)
-                except ValueError:
-                    continue  
-
-            month = dt.strftime("%b")  
-            monthly_stats[month]["total"] += 1
-            if visitor.get("status") == "accept":
-                monthly_stats[month]["accept"] += 1
-
-    #  month order for the chart
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    accept_data = [monthly_stats[m]["accept"] for m in months]
-    total_data = [monthly_stats[m]["total"] for m in months]
-    return render_template ("admin_h.html",  pending=pending ,total=total,countvis=countvis, active=active,rejectobj=reject,
-                           months=months, accept_data=accept_data, total_data=total_data)  
 
 @admin.route('/enroll_employees', methods=['GET', 'POST'])
 def enroll_employees():

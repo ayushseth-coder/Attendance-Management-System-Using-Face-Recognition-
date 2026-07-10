@@ -63,11 +63,19 @@ crossorigin="anonymous"
                 <!-- Left Column: Line Chart Card -->
                 <div class="col-md-6">
                   <div class="card draggable shadow-sm border-0 h-100" style="border-radius: 16px;">
-                    <div class="card-header pb-0 bg-transparent border-0 pt-4 px-4">
-                      <h6 class="mb-0 fw-bold text-dark" style="font-size: 1.1rem;">Visitors Overview</h6>
-                      <p class="text-sm text-muted mt-1">
-                        <i class="fa fa-arrow-up text-success" aria-hidden="true"></i> Monthly trends
-                      </p>
+                    <div class="card-header pb-0 bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="mb-0 fw-bold text-dark" style="font-size: 1.1rem;">Employee Attendance</h6>
+                        <p class="text-sm text-muted mt-1 mb-0">
+                          <i class="fa fa-calendar-check text-primary" aria-hidden="true"></i> Day-wise Presence
+                        </p>
+                      </div>
+                      <!-- Date Pickers Form -->
+                      <form method="GET" action="{{ url_for('admin.admindash') }}" class="d-flex gap-2">
+                        <input type="hidden" name="pie_date" value="{{ pie_date }}">
+                        <input type="date" name="start_date" class="form-control form-control-sm border-slate-200" value="{{ start_date }}" onchange="this.form.submit()">
+                        <input type="date" name="end_date" class="form-control form-control-sm border-slate-200" value="{{ end_date }}" onchange="this.form.submit()">
+                      </form>
                     </div>
                     <div class="card-body p-4">
                       <div class="chart">
@@ -80,8 +88,16 @@ crossorigin="anonymous"
                 <!-- Right Column: Pie Chart + Table Card -->
                 <div class="col-md-6">
                   <div class="card flex-fill w-100 draggable shadow-sm border-0 h-100" style="border-radius: 16px;">
-                    <div class="card-header bg-transparent border-0 pt-4 px-4">
-                      <h5 class="card-title mb-0 fw-bold text-dark" style="font-size: 1.1rem;">Visitor Summary</h5>
+                    <div class="card-header pb-0 bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                      <div>
+                        <h5 class="card-title mb-0 fw-bold text-dark" style="font-size: 1.1rem;">Total Attendance</h5>
+                        <p class="text-sm text-muted mt-1 mb-0">Daily Distribution</p>
+                      </div>
+                      <form method="GET" action="{{ url_for('admin.admindash') }}" class="d-flex gap-2">
+                        <input type="hidden" name="start_date" value="{{ start_date }}">
+                        <input type="hidden" name="end_date" value="{{ end_date }}">
+                        <input type="date" name="pie_date" class="form-control form-control-sm border-slate-200" value="{{ pie_date }}" onchange="this.form.submit()">
+                      </form>
                     </div>
                     <div class="card-body d-flex flex-column px-4 pb-4 pt-2">
                       <div class="align-self-center w-100 mb-4" style="max-height: 180px; display: flex; justify-content: center;">
@@ -95,24 +111,24 @@ crossorigin="anonymous"
                           <tbody>
                             <tr>
                               <td class="text-secondary fw-semibold py-2 px-0 border-0 d-flex align-items-center">
-                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#0d6efd; margin-right:10px;"></span>
-                                Total Visitors
+                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#4f46e5; margin-right:10px;"></span>
+                                Present Employees
                               </td>
-                              <td class="text-end fw-bold text-dark py-2 px-0 border-0">{{ total }}</td>
+                              <td class="text-end fw-bold text-dark py-2 px-0 border-0">{{ present_emp_count }}</td>
                             </tr>
                             <tr>
                               <td class="text-secondary fw-semibold py-2 px-0 border-0 d-flex align-items-center">
-                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#ffc107; margin-right:10px;"></span>
-                                Active Visitors
+                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#10b981; margin-right:10px;"></span>
+                                Present Visitors
                               </td>
-                              <td class="text-end fw-bold text-dark py-2 px-0 border-0">{{ active }}</td>
+                              <td class="text-end fw-bold text-dark py-2 px-0 border-0">{{ present_vis_count }}</td>
                             </tr>
                             <tr>
                               <td class="text-secondary fw-semibold py-2 px-0 border-0 d-flex align-items-center">
-                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#dc3545; margin-right:10px;"></span>
-                                Reject Visitors
+                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#f59e0b; margin-right:10px;"></span>
+                                Present External Staff
                               </td>
-                              <td class="text-end fw-bold text-dark py-2 px-0 border-0">{{ rejectobj }}</td>
+                              <td class="text-end fw-bold text-dark py-2 px-0 border-0">{{ present_ext_count }}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -128,9 +144,8 @@ crossorigin="anonymous"
 
         <script>
           const chartData = {
-    months: JSON.parse('{{ months | tojson | safe }}'),
-    acceptData: JSON.parse('{{ accept_data | tojson | safe }}'),
-    totalData: JSON.parse('{{ total_data | tojson | safe }}')
+    labels: JSON.parse('{{ chart_labels | tojson | safe }}'),
+    empData: JSON.parse('{{ chart_data | tojson | safe }}')
   };
 
           if (document.querySelector(".chart-line")) {
@@ -140,36 +155,31 @@ crossorigin="anonymous"
               var ctx = chart.getContext("2d");
         
               var gradientStroke1 = ctx.createLinearGradient(0, 230, 0, 50);
-              gradientStroke1.addColorStop(1, "rgba(32, 201, 151, 0.2)");
-              gradientStroke1.addColorStop(0.2, "rgba(32, 201, 151, 0.0)");
-              gradientStroke1.addColorStop(0, "rgba(32, 201, 151, 0)");
-        
-              var gradientStroke2 = ctx.createLinearGradient(0, 230, 0, 50);
-              gradientStroke2.addColorStop(1, "rgba(12, 45, 81, 0.2)");
-              gradientStroke2.addColorStop(0.2, "rgba(12, 45, 81, 0.0)");
-              gradientStroke2.addColorStop(0, "rgba(12, 45, 81, 0)");
+              gradientStroke1.addColorStop(1, "rgba(99, 102, 241, 0.2)"); // Indigo
+              gradientStroke1.addColorStop(0.2, "rgba(99, 102, 241, 0.0)");
+              gradientStroke1.addColorStop(0, "rgba(99, 102, 241, 0)");
         
               if (!chart.getAttribute('data-chart-initialized')) {
                 new Chart(ctx, {
                   type: "line",
                   data: {
-                    labels: chartData.months,
+                    labels: chartData.labels,
                     datasets: [{
-                      label: "Accept Visitors",
+                      label: "Present Employees",
                       tension: 0.4,
-                      borderColor: "#20c997",
-                      borderWidth: 3,
+                      borderColor: "#4f46e5", // Indigo color for employee line
+                      borderWidth: 4,
                       backgroundColor: gradientStroke1,
                       fill: true,
-                      data: chartData.acceptData,
-                    }, {
-                      label: "Total Visitors",
-                      tension: 0.4,
-                      borderColor: "#0c2d51",
-                      borderWidth: 3,
-                      backgroundColor: gradientStroke2,
-                      fill: true,
-                      data: chartData.totalData,
+                      data: chartData.empData,
+                      pointBackgroundColor: "#ffffff",
+                      pointBorderColor: "#4f46e5",
+                      pointBorderWidth: 3,
+                      pointRadius: 5,
+                      pointHoverRadius: 7,
+                      pointHoverBackgroundColor: "#4f46e5",
+                      pointHoverBorderColor: "#ffffff",
+                      pointHoverBorderWidth: 3
                     }],
                   },
                   options: {
@@ -178,20 +188,30 @@ crossorigin="anonymous"
                     plugins: { 
                       legend: { display: false },
                       tooltip: {
-                        backgroundColor: '#fff',
-                        titleColor: '#333',
-                        bodyColor: '#666',
-                        borderColor: '#e2e8f0',
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        titleColor: '#1f2937',
+                        bodyColor: '#4b5563',
+                        borderColor: '#e5e7eb',
                         borderWidth: 1,
-                        padding: 10,
-                        boxPadding: 4,
-                        usePointStyle: true
+                        padding: 12,
+                        boxPadding: 6,
+                        usePointStyle: true,
+                        titleFont: { size: 14, family: "'Inter', sans-serif", weight: 'bold' },
+                        bodyFont: { size: 13, family: "'Inter', sans-serif" },
+                        cornerRadius: 8,
+                        displayColors: true
                       }
                     },
                     interaction: { intersect: false, mode: "index" },
                     scales: {
                       y: {
-                        ticks: { color: "#9ca3af", font: { size: 12, family: "'Inter', sans-serif" } },
+                        beginAtZero: true,
+                        suggestedMax: 10,
+                        ticks: { 
+                          stepSize: 10,
+                          precision: 0,
+                          color: "#9ca3af", font: { size: 12, family: "'Inter', sans-serif", weight: '500' } 
+                        },
                         grid: { drawBorder: false, borderDash: [5, 5], color: '#f3f4f6' }
                       },
                       x: {
@@ -211,7 +231,12 @@ crossorigin="anonymous"
          
          <!-- SAFELY inject Flask values into JS -->
         <script>
-        const pieData = JSON.parse('{{ [total, active, rejectobj] | tojson | safe }}');
+        const pieData = JSON.parse('{{ [present_emp_count, present_vis_count, present_ext_count] | tojson | safe }}');
+        const listData = {
+            "Present Employees": JSON.parse('{{ present_employees_list | tojson | safe }}'),
+            "Present Visitors": JSON.parse('{{ present_visitors_list | tojson | safe }}'),
+            "Present External Staff": JSON.parse('{{ present_external_list | tojson | safe }}')
+        };
         </script>
         
         <script>
@@ -222,28 +247,56 @@ crossorigin="anonymous"
         new Chart(chart, {
         type: "doughnut",
         data: {
-          labels: ["Total", "Active", "Rejected"],
+          labels: ["Present Employees", "Present Visitors", "Present External Staff"],
           datasets: [{
             data: pieData,
             backgroundColor: [
-              "#0d6efd", // Blue
-              "#ffc107", // Yellow
-              "#dc3545"  // Red
+              "#4f46e5", // Indigo
+              "#10b981", // Emerald
+              "#f59e0b"  // Amber
             ],
             borderWidth: 0,
-            hoverOffset: 4
+            hoverOffset: 6
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          onClick: function(evt, elements) {
+            if (elements && elements.length > 0) {
+              const clickedIndex = elements[0].index;
+              const label = this.data.labels[clickedIndex];
+              const namesList = listData[label];
+              
+              document.getElementById('attendanceListModalLabel').innerText = label;
+              const listContainer = document.getElementById('attendanceListContainer');
+              listContainer.innerHTML = '';
+              
+              if (namesList && namesList.length > 0) {
+                namesList.forEach(name => {
+                  const li = document.createElement('li');
+                  li.className = 'list-group-item px-4 py-3 d-flex align-items-center';
+                  li.innerHTML = `<i class="fas fa-user-circle fs-4 text-slate-400 me-3"></i> <span class="fw-medium text-slate-700">${name}</span>`;
+                  listContainer.appendChild(li);
+                });
+              } else {
+                const li = document.createElement('li');
+                li.className = 'list-group-item px-4 py-4 text-center text-muted';
+                li.innerHTML = `<em>No one is currently in this category.</em>`;
+                listContainer.appendChild(li);
+              }
+              
+              var attendanceModal = new bootstrap.Modal(document.getElementById('attendanceListModal'));
+              attendanceModal.show();
+            }
+          },
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#fff',
-              titleColor: '#333',
-              bodyColor: '#666',
-              borderColor: '#e2e8f0',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              titleColor: '#1f2937',
+              bodyColor: '#4b5563',
+              borderColor: '#e5e7eb',
               borderWidth: 1,
               padding: 12,
               usePointStyle: true,
@@ -293,6 +346,23 @@ crossorigin="anonymous"
         </script>
         
         
+        <!-- Attendance List Modal -->
+        <div class="modal fade" id="attendanceListModal" tabindex="-1" aria-labelledby="attendanceListModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+              <div class="modal-header" style="border-bottom: 1px solid #eef2f6; background-color: #f8fafc;">
+                <h5 class="modal-title fw-bold text-dark" id="attendanceListModalLabel" style="font-size: 1.2rem;">Attendance List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body p-0">
+                <ul class="list-group list-group-flush" id="attendanceListContainer">
+                  <!-- Javascript will populate this -->
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Add User Modal -->
         <div class="modal fade" id="addUserModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered modal-lg">
