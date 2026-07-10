@@ -177,7 +177,7 @@ $(document).ready(function() {
                     </div>
                     <div class="modal-footer bg-slate-50 border-t border-slate-200 px-6 py-3 flex-nowrap">
                       <button type="button" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors" data-bs-dismiss="modal">Cancel</button>
-                      <form action="{{ url_for('admin.delete_employee', emp_id=emp.emp_id) }}" method="POST" class="m-0 p-0">
+                      <form action="{{ url_for('admin.delete_employee', name=emp.emp_id) }}" method="POST" class="m-0 p-0">
                         <button type="submit" class="px-4 py-2 bg-red-600 rounded-md text-sm font-semibold text-white hover:bg-red-700 transition-colors ml-2">Delete</button>
                       </form>
                     </div>
