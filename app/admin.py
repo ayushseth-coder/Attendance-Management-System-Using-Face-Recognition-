@@ -43,6 +43,7 @@ def inject_pending_count():
 def admindash():
     # Dynamically compute stats on every page load
     pending = len(list(reqvistable.find()))
+    pending_request_names = [req.get('Name', 'Unknown') for req in reqvistable.find()]
     reject = len(list(rejectedvistable.find()))
     countvis = len(list(visitorlogtable.find()))
     active = len(list(activevisitorstable.find()))
@@ -74,11 +75,61 @@ def admindash():
     accept_data = [monthly_stats[m]["accept"] for m in months]
     total_data = [monthly_stats[m]["total"] for m in months]
     
-
-
+    # Get total employees and regular visitors using unique grouping logic
+    try:
+        from models.vector_db import employee_collection, visitor_collection
+        
+        # Employees
+        results = employee_collection.get(include=["metadatas"])
+        employee_ids = results.get('ids', [])
+        metadatas = results.get('metadatas', [])
+        
+        unique_employees = set()
+        for i in range(len(employee_ids)):
+            hr_id = metadatas[i].get("HR_ID", employee_ids[i]) if metadatas and i < len(metadatas) and metadatas[i] else employee_ids[i]
+            real_name = metadatas[i].get("Name", hr_id) if metadatas and i < len(metadatas) and metadatas[i] else hr_id
+            unique_employees.add(real_name)
+            
+        employee_names = list(unique_employees)
+        total_employees = len(employee_names)
+        
+        # Regular Visitors
+        vis_results = visitor_collection.get(include=["documents"])
+        visitor_ids = vis_results.get('ids', [])
+        documents = vis_results.get('documents', [])
+        unique_visitors = set()
+        for i, vis_id in enumerate(visitor_ids):
+            name = documents[i] if documents and i < len(documents) and documents[i] else vis_id
+            unique_visitors.add(name)
+        regular_visitor_names = list(unique_visitors)
+        total_regular_visitors = len(regular_visitor_names)
+        
+        # External Staff
+        from models.vector_db import other_collection
+        other_results = other_collection.get(include=["documents"])
+        other_ids = other_results.get('ids', [])
+        other_docs = other_results.get('documents', [])
+        unique_other = set()
+        for i, stf_id in enumerate(other_ids):
+            name = other_docs[i] if other_docs and i < len(other_docs) and other_docs[i] else stf_id
+            unique_other.add(name)
+        external_staff_names = list(unique_other)
+        total_external_staff = len(external_staff_names)
+        
+    except Exception as e:
+        employee_names = []
+        total_employees = 0
+        regular_visitor_names = []
+        total_regular_visitors = 0
+        external_staff_names = []
+        total_external_staff = 0
 
     return render_template('admin_h.html',pending=pending ,total=total,countvis=countvis, active=active,rejectobj=reject,
-                           months=months, accept_data=accept_data, total_data=total_data)
+                           months=months, accept_data=accept_data, total_data=total_data,
+                           total_employees=total_employees, employee_names=employee_names,
+                           total_regular_visitors=total_regular_visitors, regular_visitor_names=regular_visitor_names,
+                           total_external_staff=total_external_staff, external_staff_names=external_staff_names,
+                           pending_request_names=pending_request_names)
 
 
 @admin.route('/addadmin', methods=['POST'])
@@ -214,6 +265,7 @@ def visitor_over():
 def admin_h():
     # Dynamically compute stats on every page load
     pending = len(list(reqvistable.find()))
+    pending_request_names = [req.get('Name', 'Unknown') for req in reqvistable.find()]
     reject = len(list(rejectedvistable.find()))
     countvis = len(list(visitorlogtable.find()))
     active = len(list(activevisitorstable.find()))
@@ -244,8 +296,62 @@ def admin_h():
               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     accept_data = [monthly_stats[m]["accept"] for m in months]
     total_data = [monthly_stats[m]["total"] for m in months]
+    
+    # Get total employees and regular visitors using unique grouping logic
+    try:
+        from models.vector_db import employee_collection, visitor_collection
+        
+        # Employees
+        results = employee_collection.get(include=["metadatas"])
+        employee_ids = results.get('ids', [])
+        metadatas = results.get('metadatas', [])
+        
+        unique_employees = set()
+        for i in range(len(employee_ids)):
+            hr_id = metadatas[i].get("HR_ID", employee_ids[i]) if metadatas and i < len(metadatas) and metadatas[i] else employee_ids[i]
+            real_name = metadatas[i].get("Name", hr_id) if metadatas and i < len(metadatas) and metadatas[i] else hr_id
+            unique_employees.add(real_name)
+            
+        employee_names = list(unique_employees)
+        total_employees = len(employee_names)
+        
+        # Regular Visitors
+        vis_results = visitor_collection.get(include=["documents"])
+        visitor_ids = vis_results.get('ids', [])
+        documents = vis_results.get('documents', [])
+        unique_visitors = set()
+        for i, vis_id in enumerate(visitor_ids):
+            name = documents[i] if documents and i < len(documents) and documents[i] else vis_id
+            unique_visitors.add(name)
+        regular_visitor_names = list(unique_visitors)
+        total_regular_visitors = len(regular_visitor_names)
+        
+        # External Staff
+        from models.vector_db import other_collection
+        other_results = other_collection.get(include=["documents"])
+        other_ids = other_results.get('ids', [])
+        other_docs = other_results.get('documents', [])
+        unique_other = set()
+        for i, stf_id in enumerate(other_ids):
+            name = other_docs[i] if other_docs and i < len(other_docs) and other_docs[i] else stf_id
+            unique_other.add(name)
+        external_staff_names = list(unique_other)
+        total_external_staff = len(external_staff_names)
+        
+    except Exception as e:
+        employee_names = []
+        total_employees = 0
+        regular_visitor_names = []
+        total_regular_visitors = 0
+        external_staff_names = []
+        total_external_staff = 0
+        
     return render_template ("admin_h.html",  pending=pending ,total=total,countvis=countvis, active=active,rejectobj=reject,
-                           months=months, accept_data=accept_data, total_data=total_data)  
+                           months=months, accept_data=accept_data, total_data=total_data,
+                           total_employees=total_employees, employee_names=employee_names,
+                           total_regular_visitors=total_regular_visitors, regular_visitor_names=regular_visitor_names,
+                           total_external_staff=total_external_staff, external_staff_names=external_staff_names,
+                           pending_request_names=pending_request_names)
 
 @admin.route('/enroll_employees', methods=['GET', 'POST'])
 def enroll_employees():

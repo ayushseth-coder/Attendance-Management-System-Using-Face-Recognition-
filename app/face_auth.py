@@ -138,9 +138,9 @@ def face_result():
                     # 3. Check distance (cosine threshold for Facenet)
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
-                        # SECURITY UPDATE: Tightened threshold from 0.40 to 0.30 for Enterprise Scalability
-                        # This prevents False Positives when the database contains hundreds of faces.
-                        if distance < 0.68:  # ArcFace Default Threshold
+                        # SECURITY UPDATE: Adjusted ArcFace threshold to 0.55 based on user testing
+                        # This balances security with correct matching in varying lighting conditions.
+                        if distance < 0.55:  # Standard Threshold
                             chroma_id = results['ids'][0][0]
                             employee_name = results['metadatas'][0][0].get('Name', chroma_id).capitalize() if results.get('metadatas') and results['metadatas'][0] else chroma_id.capitalize()
                             hr_id = results['metadatas'][0][0].get('HR_ID') if results.get('metadatas') and results['metadatas'][0] else None
@@ -194,6 +194,21 @@ def face_result():
 
     if match_found:
         shot_filename = os.path.basename(imp.captured_image) if imp.captured_image else None
+        
+        # AUTO-DELETE LOGIC: Delete the file after 5 seconds to free up storage
+        # 5 seconds gives the frontend HTML enough time to download and render the image!
+        if imp.captured_image:
+            import threading
+            def delete_file_later(filepath, delay=5):
+                import time, os
+                time.sleep(delay)
+                try:
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                except Exception:
+                    pass
+            threading.Thread(target=delete_file_later, args=(imp.captured_image,)).start()
+            
         return render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)
     else:
         print("[INFO] Face not recognized. Falling back to Employee OCR pipeline.")
@@ -250,7 +265,7 @@ def visitor_result():
                     
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
-                        if distance < 0.50: 
+                        if distance < 0.55: 
                             visitor_id = results['ids'][0][0]
                             visitor_name = results['documents'][0][0].capitalize() if results.get('documents') and results['documents'][0] else visitor_id
                             now = datetime.datetime.now()
@@ -369,7 +384,7 @@ def other_result():
                     
                     if results['ids'] and len(results['ids'][0]) > 0:
                         distance = results['distances'][0][0]
-                        if distance < 0.50:
+                        if distance < 0.55:
                             external_id = results['ids'][0][0]
                             external_name = results['documents'][0][0] if results.get('documents') and results['documents'][0] else external_id
                             metadata = results['metadatas'][0][0] or {}
