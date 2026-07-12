@@ -134,6 +134,28 @@ def admindash():
     present_external_list = list(set([v.get("Name", "Unknown") for v in active_external_query]))
     present_ext_count = len(present_external_list)
 
+    # 4. Calculate overall totals for dashboard cards
+    from models.database import collection, visitors_status
+    # Employees (from collection)
+    employees_query = list(collection.find())
+    employee_names = [emp.get("Name", "Unknown") for emp in employees_query]
+    total_employees = len(employee_names)
+
+    # Regular Visitors (from visitors_status)
+    regular_visitors_query = list(visitors_status.find({"Registration_Role": "Visitor"}))
+    regular_visitor_names = [vis.get("Name", "Unknown") for vis in regular_visitors_query]
+    total_regular_visitors = len(regular_visitor_names)
+
+    # External Staff (from visitors_status, neither Visitor nor Employee)
+    external_staff_query = list(visitors_status.find({"Registration_Role": {"$nin": ["Visitor", "Employee"]}}))
+    external_staff_names = [ext.get("Name", "Unknown") for ext in external_staff_query]
+    total_external_staff = len(external_staff_names)
+
+    # Pending Requests (from reqvistable)
+    pending_query = list(reqvistable.find())
+    pending_request_names = [req.get("Name", "Unknown") for req in pending_query]
+    # 'pending' is already calculated as len(pending_query) at line 50
+
     return render_template('admin_h.html',
                            pending=pending, total=total, countvis=countvis, active=active, rejectobj=reject,
                            chart_labels=date_labels, chart_data=employee_counts,
@@ -145,7 +167,14 @@ def admindash():
                            present_ext_count=present_ext_count,
                            present_employees_list=present_employees_list,
                            present_visitors_list=present_visitors_list,
-                           present_external_list=present_external_list)
+                           present_external_list=present_external_list,
+                           total_employees=total_employees,
+                           employee_names=employee_names,
+                           total_regular_visitors=total_regular_visitors,
+                           regular_visitor_names=regular_visitor_names,
+                           total_external_staff=total_external_staff,
+                           external_staff_names=external_staff_names,
+                           pending_request_names=pending_request_names)
 
 
 @admin.route('/addadmin', methods=['POST'])
@@ -360,9 +389,16 @@ def manage_employees():
         all_users = list(collection.find())
         user_lookup = {}
         for user in all_users:
-            name = user.get("Name", "")
-            if name:
-                user_lookup[name] = {
+            raw_name = user.get("Name", "")
+            if raw_name:
+                import re
+                match = re.match(r"([A-Za-z]+)[_-]?(\d*)", raw_name.strip().capitalize())
+                if match:
+                    clean_name = match.group(1).capitalize()
+                else:
+                    clean_name = raw_name.strip().capitalize()
+                    
+                user_lookup[clean_name] = {
                     "Email": user.get("Email", "Unknown"),
                     "Job": user.get("Job", "Unknown"),
                     "Phone": user.get("Phone", "Unknown"),
@@ -410,24 +446,43 @@ def manage_employees():
 @admin.route('/delete_employee/<name>', methods=['POST'])
 def delete_employee(name):
     from models.vector_db import employee_collection
+    import os
     
     try:
-        # Delete from ChromaDB
-        employee_collection.delete(ids=[name])
-        flash(f"Successfully deleted records for ID {name}.", "success")
+        results = employee_collection.get(include=["metadatas"])
+        all_ids = results.get('ids', [])
+        metadatas = results.get('metadatas', [])
         
-        # Cleanup: Delete ALL local photos matching the employee name (ignoring case and extensions)
-        import os
+        ids_to_delete = []
+        names_to_delete = []
+        
+        for i in range(len(all_ids)):
+            chroma_id = all_ids[i]
+            meta = metadatas[i] if metadatas and i < len(metadatas) and metadatas[i] else {}
+            hr_id = meta.get("HR_ID", chroma_id)
+            real_name = meta.get("Name", hr_id)
+            
+            if hr_id == name or chroma_id == name:
+                ids_to_delete.append(chroma_id)
+                if real_name not in names_to_delete:
+                    names_to_delete.append(real_name)
+                    
+        if ids_to_delete:
+            employee_collection.delete(ids=ids_to_delete)
+            flash(f"Successfully deleted records for ID {name}.", "success")
+        
+        # Cleanup: Delete local photos
         faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
         if os.path.exists(faces_dir):
             for filename in os.listdir(faces_dir):
                 name_without_ext = os.path.splitext(filename)[0]
-                # If the name matches (ignoring capital letters), delete it!
-                if name_without_ext.lower() == name.lower():
-                    try:
-                        os.remove(os.path.join(faces_dir, filename))
-                    except Exception:
-                        pass
+                lower_filename = name_without_ext.lower()
+                for real_name in names_to_delete:
+                    if lower_filename.startswith(f"{real_name.lower()}_") or lower_filename == real_name.lower():
+                        try:
+                            os.remove(os.path.join(faces_dir, filename))
+                        except Exception:
+                            pass
                 
     except Exception as e:
         flash(f"Error deleting {name}: {e}", "danger")
@@ -548,19 +603,25 @@ def update_visitor_details():
 @admin.route('/delete_visitor/<visitor_id>', methods=['POST'])
 def delete_visitor(visitor_id):
     from models.vector_db import visitor_collection
+    import os
     
     try:
+        # Get the name first before deleting
+        results = visitor_collection.get(ids=[visitor_id])
+        docs = results.get("documents", [])
+        visitor_name = docs[0] if docs and len(docs) > 0 and docs[0] else visitor_id
+        
         # Delete from ChromaDB
         visitor_collection.delete(ids=[visitor_id])
         flash(f"Successfully deleted records for ID {visitor_id}.", "success")
         
         # Cleanup: Delete local photo
-        import os
         faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
         if os.path.exists(faces_dir):
             for filename in os.listdir(faces_dir):
                 name_without_ext = os.path.splitext(filename)[0]
-                if name_without_ext.lower() == visitor_id.lower():
+                lower_filename = name_without_ext.lower()
+                if lower_filename.startswith(f"{visitor_name.lower()}_") or lower_filename == visitor_name.lower():
                     try:
                         os.remove(os.path.join(faces_dir, filename))
                     except Exception:
@@ -682,17 +743,23 @@ def update_other_details():
 @admin.route('/delete_other/<staff_id>', methods=['POST'])
 def delete_other(staff_id):
     from models.vector_db import other_collection
+    import os
     
     try:
+        # Get the name first before deleting
+        results = other_collection.get(ids=[staff_id])
+        docs = results.get("documents", [])
+        staff_name = docs[0] if docs and len(docs) > 0 and docs[0] else staff_id
+        
         other_collection.delete(ids=[staff_id])
         flash(f"Successfully deleted records for ID {staff_id}.", "success")
         
-        import os
         faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
         if os.path.exists(faces_dir):
             for filename in os.listdir(faces_dir):
                 name_without_ext = os.path.splitext(filename)[0]
-                if name_without_ext.lower() == staff_id.lower():
+                lower_filename = name_without_ext.lower()
+                if lower_filename.startswith(f"{staff_name.lower()}_") or lower_filename == staff_name.lower():
                     try:
                         os.remove(os.path.join(faces_dir, filename))
                     except Exception:
