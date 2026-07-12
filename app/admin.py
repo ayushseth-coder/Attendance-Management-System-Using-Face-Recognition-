@@ -455,8 +455,8 @@ def manage_employees():
                     "chroma_ids": [chroma_id]
                 }
             else:
-                unique_employees[real_name]["Photo_Count"] += 1
-                unique_employees[real_name]["chroma_ids"].append(chroma_id)
+                unique_employees[hr_id]["Photo_Count"] += 1
+                unique_employees[hr_id]["chroma_ids"].append(chroma_id)
                 
         employees_data = list(unique_employees.values())
         total_unique_count = len(employees_data)
