@@ -69,10 +69,10 @@ btn.addEventListener('click', function () {
 
 
 <script>
-// After 6 seconds (5s capture + 1s buffer), redirect to show captured page
+// After 8 seconds (5s capture + 3s buffer for 3-shots), redirect to show captured page
 setTimeout(function() {
     window.location.href = "{{ url_for('image_processing.show_captured') }}";
-}, 6000);
+}, 8000);
 </script>
 </body>
 </html>

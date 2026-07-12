@@ -30,7 +30,8 @@
                                         class="fas fa-camera text-[#0f52ba] me-2"></i>Captured Biometric</h6>
                                 <div
                                     class="bg-slate-100 rounded-xl p-2 mb-3 shadow-sm border border-slate-200 d-inline-block">
-                                    <img src="{{ url_for('static', filename='shots/' + req.shot_filename) if req.shot_filename else 'https://ui-avatars.com/api/?name=New+Employee' }}"
+                                    {% set first_shot = req.shot_filename.split(',')[0] if req.shot_filename else '' %}
+                                    <img src="{{ url_for('static', filename='shots/' + first_shot) if first_shot else 'https://ui-avatars.com/api/?name=New+Employee' }}"
                                         alt="Captured Face" class="img-fluid rounded-lg"
                                         style="max-height: 250px; object-fit: cover;">
                                 </div>

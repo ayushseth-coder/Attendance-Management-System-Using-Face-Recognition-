@@ -16,20 +16,27 @@ def record(out):
    
 image_processing = Blueprint('image_processing', __name__)
 
-global pan_data, frame, captured_data, captured_image
+global pan_data, frame, captured_data, captured_image, captured_images
 pan_data=None
 frame=None
 capture = 0
 captured_data = None
 captured_image = None
+captured_images = []
 
 def gen_frames():
-    global captured_image, captured_data
+    global captured_image, captured_data, captured_images
     camera = get_camera()
     captured_data = None
     captured_image = None
+    captured_images = []
     start_time = time.time()
     countdown_duration = 5.0  # reduced to 5 seconds
+    
+    shots_taken = 0
+    max_shots = 3
+    last_shot_time = 0
+    shot_interval = 0.2 # 200ms between shots
     
     try:
         while True:
@@ -40,22 +47,29 @@ def gen_frames():
 
             elapsed_time = time.time() - start_time
 
-            # # After countdown, detect card and capture
-            if elapsed_time >= countdown_duration and captured_image is None:
-                now = datetime.datetime.now()
-                os.makedirs('static/shots', exist_ok=True)  # save to static to render in HTML
-                filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S')}.png")
-                cv2.imwrite(filename, frame)
-                captured_image = filename
-                print(f"[INFO] Image captured and saved to {filename}")
-                break
+            # Start taking multiple shots after the initial countdown
+            if elapsed_time >= countdown_duration and shots_taken < max_shots:
+                current_time = time.time()
+                if current_time - last_shot_time >= shot_interval:
+                    now = datetime.datetime.now()
+                    os.makedirs('static/shots', exist_ok=True)
+                    filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S_%f')}.png")
+                    cv2.imwrite(filename, frame)
+                    captured_images.append(filename)
+                    shots_taken += 1
+                    last_shot_time = current_time
+                    print(f"[INFO] Image {shots_taken}/3 captured: {filename}")
+                    
+                    if shots_taken == max_shots:
+                        captured_image = captured_images[0]
+                        break
 
             # Encode the current frame for streaming
             ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
+            frame_bytes = buffer.tobytes()
 
             yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
     finally:
         release_camera()
 
@@ -68,12 +82,16 @@ def video_feed():
 @image_processing.route('/show_captured')
 def show_captured():
     from flask import request
-    global captured_data, captured_image
+    global captured_data, captured_image, captured_images
     
     # Check for strict role routing
     role_type = request.args.get('role_type', 'visitor')
     
-    shot_filename = os.path.basename(captured_image) if captured_image else None
+    # --- MULTI-SHOT CAPTURE LOGIC ---
+    if captured_images:
+        shot_filename = ",".join([os.path.basename(path) for path in captured_images])
+    else:
+        shot_filename = os.path.basename(captured_image) if captured_image else None
 
     # Skip OCR completely if it is an Employee Registration!
     if role_type == 'employee':
@@ -89,5 +107,5 @@ def show_captured():
         captured_data = {}
 
     approvedby = ""  
+    
     return render_template('extract.html', data=captured_data, approvedby=approvedby, shot_filename=shot_filename, role_type=role_type)
- 
