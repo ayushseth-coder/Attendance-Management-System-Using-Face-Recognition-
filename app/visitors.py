@@ -33,6 +33,12 @@ def visitor1():
             apprv = request.form['Approvedby']
             card = request.form['card']
             shot_filename = request.form.get('shot_filename', '')
+            
+            # Strict Validation: Prevent submitting the form if no photo was captured
+            if not shot_filename:
+                flash("Error: No photo was captured! You must have a valid facial scan to enroll.", "danger")
+                return redirect(request.referrer or url_for('security.securitydash'))
+
             registration_role = request.form.get('Registration_Role', 'Visitor')
             role_type = request.form.get('role_type', 'visitor')
             is_delivery = (role_type == 'delivery')
@@ -177,6 +183,13 @@ def process_employee_enrollment(uid):
         
     name = request.form.get('name')
     email = request.form.get('email', 'Unknown')
+    
+    # Pre-check: Ensure the email isn't already registered in MongoDB before running AI extraction
+    from models.database import collection
+    if collection.find_one({"Email": email}):
+        flash(f"Error: The email {email} is already registered. Please use a different email or delete the existing record.", "danger")
+        return redirect(request.referrer or url_for('admin.admindash'))
+
     phone = request.form.get('phone', 'Unknown')
     gender = request.form.get('gender', 'Unknown')
     job = request.form.get('role', 'Unknown')

@@ -135,21 +135,41 @@ def admindash():
     present_ext_count = len(present_external_list)
 
     # 4. Calculate overall totals for dashboard cards
-    from models.database import collection, visitors_status
-    # Employees (from collection)
-    employees_query = list(collection.find())
-    employee_names = [emp.get("Name", "Unknown") for emp in employees_query]
-    total_employees = len(employee_names)
+    from models.vector_db import employee_collection, visitor_collection, other_collection
 
-    # Regular Visitors (from visitors_status)
-    regular_visitors_query = list(visitors_status.find({"Registration_Role": "Visitor"}))
-    regular_visitor_names = [vis.get("Name", "Unknown") for vis in regular_visitors_query]
-    total_regular_visitors = len(regular_visitor_names)
+    # Employees (Unique count from ChromaDB, grouped by HR_ID)
+    try:
+        emp_res = employee_collection.get(include=["metadatas"])
+        emp_metas = emp_res.get("metadatas", [])
+        unique_emp_ids = set([m.get("HR_ID") for m in emp_metas if m and m.get("HR_ID")])
+        total_employees = len(unique_emp_ids)
+        
+        # For the dropdown list, show Name (HR_ID) to distinguish them
+        unique_emp_names = set([f"{m.get('Name', 'Unknown')} ({m.get('HR_ID', 'Unknown')})" for m in emp_metas if m and m.get("HR_ID")])
+        employee_names = list(unique_emp_names)
+    except:
+        total_employees = 0
+        employee_names = []
 
-    # External Staff (from visitors_status, neither Visitor nor Employee)
-    external_staff_query = list(visitors_status.find({"Registration_Role": {"$nin": ["Visitor", "Employee"]}}))
-    external_staff_names = [ext.get("Name", "Unknown") for ext in external_staff_query]
-    total_external_staff = len(external_staff_names)
+    # Regular Visitors (Unique count from ChromaDB)
+    try:
+        vis_res = visitor_collection.get(include=["documents"])
+        unique_vis = set([doc for doc in vis_res.get("documents", []) if doc])
+        total_regular_visitors = len(unique_vis)
+        regular_visitor_names = list(unique_vis)
+    except:
+        total_regular_visitors = 0
+        regular_visitor_names = []
+
+    # External Staff (Unique count from ChromaDB)
+    try:
+        ext_res = other_collection.get(include=["documents"])
+        unique_ext = set([doc for doc in ext_res.get("documents", []) if doc])
+        total_external_staff = len(unique_ext)
+        external_staff_names = list(unique_ext)
+    except:
+        total_external_staff = 0
+        external_staff_names = []
 
     # Pending Requests (from reqvistable)
     pending_query = list(reqvistable.find())
@@ -395,10 +415,14 @@ def manage_employees():
                 match = re.match(r"([A-Za-z]+)[_-]?(\d*)", raw_name.strip().capitalize())
                 if match:
                     clean_name = match.group(1).capitalize()
+                    extracted_id = match.group(2)
                 else:
                     clean_name = raw_name.strip().capitalize()
+                    extracted_id = ""
                     
-                user_lookup[clean_name] = {
+                hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
+                    
+                user_lookup[hr_id] = {
                     "Email": user.get("Email", "Unknown"),
                     "Job": user.get("Job", "Unknown"),
                     "Phone": user.get("Phone", "Unknown"),
@@ -414,12 +438,14 @@ def manage_employees():
             
             real_name = metadatas[i].get("Name", hr_id) if metadatas and i < len(metadatas) and metadatas[i] else hr_id
             
-            if real_name not in unique_employees:
-                user_info = user_lookup.get(real_name, {"Email": "Unknown", "Job": "Unknown", "Phone": "Unknown", "Address": "Unknown", "Leave_Status": "Active"})
-                unique_employees[real_name] = {
+            if hr_id not in unique_employees:
+                user_info = user_lookup.get(hr_id, {"Email": "Unknown", "Job": "Unknown", "Phone": "Unknown", "Address": "Unknown", "Leave_Status": "Active"})
+                
+                # Show Name (ID) if we want to be safe, but they are already separated into different rows
+                unique_employees[hr_id] = {
                     "emp_id": hr_id,
                     "HR_ID": hr_id,
-                    "Name": real_name,
+                    "Name": f"{real_name} ({hr_id})",
                     "Email": user_info.get("Email", "Unknown"),
                     "Job": user_info.get("Job", "Unknown"),
                     "Phone": user_info.get("Phone", "Unknown"),
