@@ -244,7 +244,7 @@ def process_employee_enrollment(uid):
                         cv2.imwrite(permanent_img_path, enhanced_img)
                         
                     print(f"[INFO] Extracting vector for Employee Burst Image: {employee_name}")
-                    representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
+                    representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=True)
                     
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]

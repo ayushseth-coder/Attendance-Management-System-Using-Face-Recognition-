@@ -83,7 +83,108 @@ When the Administrator logs in, they get full, unrestricted access to the entire
 
 ---
 
-## 7. Future Scope & Modifications
+## 7. Advanced Biometric AI Architecture
+
+This system uses a highly robust, multi-dimensional profile mapping to guarantee zero false-positives and extreme accuracy under any lighting condition.
+
+### 7.1 First Time Architecture (Enrollment)
+
+When an employee or visitor uses the kiosk for the very first time, the system focuses on building a highly robust, multi-dimensional profile in the database.
+
+1. **Camera Warmup & Burst:** The camera turns on, waits 3 seconds to auto-focus and adjust exposure, and then rapidly snaps 3 distinct photos spaced 0.4 seconds apart.
+2. **Form Submission:** The user fills out their details (Name, Phone, etc.) and submits the 3 photos.
+3. **Admin Verification:** The Admin reviews the data and approves the enrollment.
+4. **Strict Extraction:** The backend loops through all 3 images, applies CLAHE, and uses ArcFace (with `enforce_detection=True` to prevent scanning background walls) to extract 3 unique biometric vectors.
+5. **Database Injection:** All 3 vectors are saved to ChromaDB under the exact same `HR_ID` (e.g., EMP-110).
+
+```mermaid
+graph TD
+    A[New User at Kiosk] -->|3.0s Warmup| B[Burst Capture: 3 Photos]
+    B --> C[User Fills Out Form]
+    C --> D[Admin Approves Profile]
+    
+    subgraph Enrollment
+        D --> E[Apply CLAHE Enhancement]
+        E --> F[ArcFace Vector Extraction]
+        F -->|enforce_detection=True| G{Is Face Detected?}
+        G -->|No| H[Discard Image]
+        G -->|Yes| I[Save Vector]
+    end
+    
+    I --> J[(ChromaDB: employee_faces)]
+    I --> K[(MongoDB: HR Data)]
+    J -.->|Linked by HR_ID| K
+```
+
+### 7.2 Daily Attendance Architecture (Authentication)
+
+When an already enrolled employee walks up to the Face Login camera to mark their daily attendance, the system prioritizes speed and extreme accuracy to prevent false positives.
+
+1. **Burst Stream:** The camera quietly streams video and grabs 3 photos. 
+2. **Parallel Processing:** All 3 photos are enhanced with CLAHE and vectorized by ArcFace.
+3. **Strict Matching:** The system queries ChromaDB with a highly strict distance threshold (`< 0.35`). This guarantees it won't accidentally mark a lookalike present.
+4. **Majority Voting:** The system tallies the results from the 3 photos. If at least 2 out of 3 photos match the exact same `HR_ID`, the user is officially verified.
+5. **Log Generation:** The attendance log is updated and pushed to the Universal Registry.
+
+```mermaid
+graph TD
+    A[Employee at Face Login] --> B[Burst Capture: 3 Photos]
+    
+    subgraph Authentication
+        B --> C[Apply CLAHE Enhancement]
+        C --> D[ArcFace Vector Extraction]
+        D --> E[Query ChromaDB]
+        E --> F{Distance < 0.35?}
+        F -->|No| G[Result: Unknown]
+        F -->|Yes| H[Result: HR_ID Match]
+    end
+    
+    H --> I((Majority Voting Engine))
+    G --> I
+    
+    I -->|2+ Votes for HR_ID| J[Success: Mark Present]
+    I -->|Unknown Wins or Tie| K[Failure: Reject]
+    
+    J --> L[(MongoDB: Update Attendance Log)]
+```
+
+### 7.3 Core Enhancements Explained
+
+#### Multi-Shot Burst Capture
+Previously, your system relied on a "Single-Shot" enrollment. If a user blinked, looked slightly away, or moved quickly, their baseline mathematical profile was permanently flawed. By capturing 3 distinct shots spaced 0.4 seconds apart, the AI builds a 3D-like mathematical representation of the face, recording micro-expressions and slight head tilts. During daily attendance, the **Majority Voting** eliminates "False Negatives" (where the system fails to recognize a valid employee).
+
+#### CLAHE (Contrast Limited Adaptive Histogram Equalization)
+Facial recognition AI notoriously struggles in real-world environments due to **backlighting** (e.g., a bright window behind the user) or harsh overhead lighting. Before the AI ever sees the photo, the image is chopped into tiny `8x8` pixel grids. The contrast is equalized *locally* inside each specific grid. This artificially "relights" the face, pulling hidden facial landmarks (jawlines, eye sockets) out from deep shadows, guaranteeing standardized lighting regardless of the time of day.
+
+### 7.4 Internal System Data Flow
+
+Your application operates on a highly scalable, dual-database architecture.
+
+```mermaid
+graph TD
+    A[Web Camera Stream] --> B[Flask Backend: OpenCV]
+    
+    B --> C{Burst Capture Engine}
+    C --> D[CLAHE Preprocessor]
+    D --> E[DeepFace: ArcFace]
+    
+    subgraph Storage
+        E -->|512-Dim Vector| F[(ChromaDB: Vector DB)]
+        G[(MongoDB: Document DB)]
+    end
+    
+    F -->|Stores Math Vectors| H[Identity Resolver]
+    G -->|Stores Names & Emails| H
+    
+    H -.->|Strict HR_ID Link| I[Admin Dashboard & KPIs]
+```
+
+> [!IMPORTANT]
+> **Storage Optimization:** By only storing mathematical vectors in ChromaDB and dynamically purging the heavy `.png` files via the background cleanup script, the server requires significantly less RAM and Hard Drive space, allowing it to run smoothly on standard enterprise hardware.
+
+---
+
+## 8. Future Scope & Modifications
 We are always looking to make this system smarter and more efficient! Here are some major modifications and features we plan to add in the future:
 *   **Automated Gate/IoT Integration:** Connecting the facial recognition output directly to physical office doors, turnstile gates, or boom barriers so they open automatically for authenticated people.
 *   **Instant Host Notifications:** Sending an automated WhatsApp or Email alert directly to the host employee when their visitor arrives at the security desk.
@@ -92,7 +193,7 @@ We are always looking to make this system smarter and more efficient! Here are s
 
 ---
 
-## 8. Conclusion
+## 9. Conclusion
 Building the **Elgoss Visitor & Employee Management System** was an incredible journey of combining Artificial Intelligence with practical, real-world software engineering. We wanted to solve the everyday administrative headaches of slow paper registers and unhygienic fingerprint scanners. 
 
 We successfully created a complete solution that is fast, touchless, highly secure, and fully automated. This project showcases the true power of AI when applied to everyday business operations.

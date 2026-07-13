@@ -37,11 +37,11 @@ def gen_face_frames():
     
     camera = get_camera()
     start_time = time.time()
-    countdown_duration = 5.0  # reduced to 5 seconds
+    countdown_duration = 3.0  # reduced to 3 seconds
     
     max_shots = 3
     last_shot_time = 0
-    shot_interval = 0.2 # 200ms between shots
+    shot_interval = 0.4 # 400ms between shots
 
     try:
         while True:
@@ -142,7 +142,7 @@ def face_result():
                         )
                         if db_results['ids'] and len(db_results['ids'][0]) > 0:
                             distance = db_results['distances'][0][0]
-                            if distance < 0.55:
+                            if distance < 0.35:
                                 chroma_id = db_results['ids'][0][0]
                                 emp_name = db_results['metadatas'][0][0].get('Name', chroma_id).capitalize() if db_results.get('metadatas') and db_results['metadatas'][0] else chroma_id.capitalize()
                                 h_id = db_results['metadatas'][0][0].get('HR_ID') if db_results.get('metadatas') and db_results['metadatas'][0] else None
@@ -380,7 +380,7 @@ def visitor_result():
                         )
                         if db_results['ids'] and len(db_results['ids'][0]) > 0:
                             distance = db_results['distances'][0][0]
-                            if distance < 0.55:
+                            if distance < 0.35:
                                 v_id = db_results['ids'][0][0]
                                 v_name = db_results['documents'][0][0].capitalize() if db_results.get('documents') and db_results['documents'][0] else v_id
                                 results_list.append((v_name, v_id))
@@ -610,7 +610,7 @@ def other_result():
                         )
                         if db_results['ids'] and len(db_results['ids'][0]) > 0:
                             distance = db_results['distances'][0][0]
-                            if distance < 0.55:
+                            if distance < 0.35:
                                 e_id = db_results['ids'][0][0]
                                 e_name = db_results['documents'][0][0] if db_results.get('documents') and db_results['documents'][0] else e_id
                                 meta = db_results['metadatas'][0][0] or {}
