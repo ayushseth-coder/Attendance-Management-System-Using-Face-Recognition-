@@ -133,6 +133,15 @@ def face_result():
                 enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
                 
                 # 2. Extract Vector using ArcFace on Enhanced Image
+                # --- Liveness Check (Anti-Spoofing) ---
+                from models.anti_spoofing import liveness_detector
+                is_real, score = liveness_detector.check_liveness(img_path)
+                if not is_real:
+                    print(f"[WARNING] Spoofing Detected on frame! (Score: {score:.2f})")
+                    results_list.append("Spoof")
+                    continue
+                
+                # 2. Extract Vector using ArcFace on Enhanced Image
                 representations = DeepFace.represent(img_path=enhanced_img, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
                 if representations and len(representations) > 0:
                     embedding = representations[0]["embedding"]
@@ -371,6 +380,15 @@ def visitor_result():
                 enhanced_gray = clahe.apply(gray)
                 enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
                 
+                # --- Liveness Check (Anti-Spoofing) ---
+                from models.anti_spoofing import liveness_detector
+                is_real, score = liveness_detector.check_liveness(img_path)
+                if not is_real:
+                    print(f"[WARNING] Spoofing Detected on frame! (Score: {score:.2f})")
+                    results_list.append("Spoof")
+                    continue
+                
+                # 2. Extract Vector using ArcFace on Enhanced Image
                 representations = DeepFace.represent(img_path=enhanced_img, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
                 if representations and len(representations) > 0:
                     embedding = representations[0]["embedding"]
@@ -601,6 +619,15 @@ def other_result():
                 enhanced_gray = clahe.apply(gray)
                 enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
                 
+                # --- Liveness Check (Anti-Spoofing) ---
+                from models.anti_spoofing import liveness_detector
+                is_real, score = liveness_detector.check_liveness(img_path)
+                if not is_real:
+                    print(f"[WARNING] Spoofing Detected on frame! (Score: {score:.2f})")
+                    results_list.append("Spoof")
+                    continue
+                
+                # 2. Extract Vector using ArcFace on Enhanced Image
                 representations = DeepFace.represent(img_path=enhanced_img, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
                 if representations and len(representations) > 0:
                     embedding = representations[0]["embedding"]

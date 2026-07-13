@@ -129,6 +129,14 @@ def accept_regular(uid):
                         cv2.imwrite(permanent_img_path, enhanced_img)
                         
                     print(f"[INFO] Extracting vector for Regular Visitor (Multi-Shot): {visitor_name}")
+                    # --- Liveness Check (Anti-Spoofing) ---
+                    from models.anti_spoofing import liveness_detector
+                    is_real, score = liveness_detector.check_liveness(permanent_img_path)
+                    if not is_real:
+                        print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
+                        continue # Skip saving this fake image to DB
+                        
+                    print(f"[INFO] Extracting vector for Regular Visitor (Multi-Shot): {visitor_name}")
                     representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
                     
                     if representations and len(representations) > 0:
@@ -244,6 +252,13 @@ def process_employee_enrollment(uid):
                         cv2.imwrite(permanent_img_path, enhanced_img)
                         
                     print(f"[INFO] Extracting vector for Employee Burst Image: {employee_name}")
+                    # --- Liveness Check (Anti-Spoofing) ---
+                    from models.anti_spoofing import liveness_detector
+                    is_real, score = liveness_detector.check_liveness(permanent_img_path)
+                    if not is_real:
+                        print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
+                        continue # Skip saving this fake image to DB
+                        
                     representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=True)
                     
                     if representations and len(representations) > 0:
@@ -353,6 +368,14 @@ def enroll_external(uid):
                         cv2.imwrite(permanent_img_path, enhanced_img)
                         
                     print(f"[INFO] Extracting vector for External Staff (Multi-Shot): {external_name} ({role})")
+                    # --- Liveness Check (Anti-Spoofing) ---
+                    from models.anti_spoofing import liveness_detector
+                    is_real, score = liveness_detector.check_liveness(permanent_img_path)
+                    if not is_real:
+                        print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
+                        continue # Skip saving this fake image to DB
+                        
+                    print(f"[INFO] Extracting vector for Regular Visitor (Multi-Shot): {visitor_name}")
                     representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
                     
                     if representations and len(representations) > 0:
