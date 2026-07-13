@@ -38,6 +38,10 @@ def gen_face_frames():
     camera = get_camera()
     start_time = time.time()
     countdown_duration = 5.0  # reduced to 5 seconds
+    
+    max_shots = 3
+    last_shot_time = 0
+    shot_interval = 0.2 # 200ms between shots
 
     try:
         while True:
@@ -64,7 +68,7 @@ def gen_face_frames():
                     time.sleep(0.1)
                 
                 print(f"[INFO] Burst Face captured: {imp.captured_images}")
-                break
+                # Intentionally not breaking so the stream continues until frontend redirect
 
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()

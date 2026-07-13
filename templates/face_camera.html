@@ -38,10 +38,10 @@
     }
   }, 1000);
 
-// After 6 seconds (5s capture + 1s processing buffer), redirect to result page
+// After 10 seconds (5s capture + buffer), redirect to result page
 setTimeout(function() {
     window.location.href = "{{ url_for('face_auth.face_result') }}";
-}, 6000);
+}, 10000);
 </script>
 </body>
 </html>

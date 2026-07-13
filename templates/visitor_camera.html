@@ -39,10 +39,10 @@
     }
   }, 1000);
 
-// After 6 seconds, redirect to the visitor pre-check result
+// After 10 seconds, redirect to the visitor pre-check result
 setTimeout(function() {
     window.location.href = "{{ url_for('face_auth.visitor_result') }}";
-}, 6000);
+}, 10000);
 </script>
 </body>
 </html>

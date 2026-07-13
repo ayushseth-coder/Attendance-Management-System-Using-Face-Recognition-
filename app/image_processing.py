@@ -62,8 +62,6 @@ def gen_frames():
                     
                     if shots_taken == max_shots:
                         captured_image = captured_images[0]
-                        break
-
             # Encode the current frame for streaming
             ret, buffer = cv2.imencode('.jpg', frame)
             frame_bytes = buffer.tobytes()
@@ -92,6 +90,9 @@ def show_captured():
         shot_filename = ",".join([os.path.basename(path) for path in captured_images])
     else:
         shot_filename = os.path.basename(captured_image) if captured_image else None
+        
+    print(f"[DEBUG-SHOW] captured_images list length: {len(captured_images)}")
+    print(f"[DEBUG-SHOW] shot_filename: {shot_filename}")
 
     # Skip OCR completely if it is an Employee Registration!
     if role_type == 'employee':
