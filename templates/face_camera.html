@@ -1,85 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employee Face Login</title>
-  <link href="../static/camera.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Face Login</title>
+    <link href="../static/camera.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
-  <div class="container-fluid">
-    <div class="row">
-        <div class="camera-wrapper">
-          <div class="camera-box">
-  <form>
-    <h2>EMPLOYEE FACE LOGIN: <span id="timer">3</span> seconds</h2>
-    <p class="text-muted text-center">Look directly at the camera. If no match is found, you will be processed as a Visitor.</p>
-    <div style="margin-top: 20px;" class="form-row">
-      <img src="{{ url_for('face_auth.face_video_feed') }}" width="100%" height="auto" alt="Camera Feed" />
-    </div>
-  </form>
-</div>
-</div>
-</div>
-<script>
-  let timeLeft = 3; // seconds
-  const timerEl = document.getElementById('timer');
+    <div class="container-fluid">
+        <div class="row">
+            <div class="camera-wrapper">
+                <div class="camera-box">
+                    <form>
+                        <h2>EMPLOYEE FACE LOGIN: <span id="timer">3</span> seconds</h2>
+                        <p class="text-muted text-center">Look directly at the camera. If no match is found, you will be
+                            processed as a Visitor.</p>
+                        <div style="margin-top: 20px;" class="form-row">
+                            <img id="camera-feed" src="" width="100%" height="auto" alt="Camera Feed" />
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <script>
+            let timeLeft = 3; // seconds
+            const timerEl = document.getElementById('timer');
 
-  const countdown = setInterval(() => {
-    timeLeft--;
-    timerEl.textContent = timeLeft;
-    
-    if (timeLeft <= 0) {
-      clearInterval(countdown);
-      timerEl.textContent = "Processing...";
-    }
-  }, 1000);
+            const countdown = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
 
-// After 4.5 seconds (3.3s capture + buffer), fetch result via AJAX
-setTimeout(function() {
-    fetch("{{ url_for('face_auth.face_result') }}?t=" + new Date().getTime())
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "spoof" || data.status === "too_close") {
-                let title = data.status === "spoof" ? "Fake Face Detected!" : "Too Close to Camera!";
-                let text = data.status === "spoof" ? "Please show your real face." : "Please step back a bit.";
-                let icon = data.status === "spoof" ? "error" : "warning";
-                
-                let timerInterval;
-                Swal.fire({
-                    title: title,
-                    html: text + '<br><br>Restarting in <b>3</b> seconds.',
-                    icon: icon,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    showConfirmButton: false,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: () => {
-                        const b = Swal.getHtmlContainer().querySelector('b');
-                        timerInterval = setInterval(() => {
-                            b.textContent = Math.ceil(Swal.getTimerLeft() / 1000);
-                        }, 100);
-                    },
-                    willClose: () => {
-                        clearInterval(timerInterval);
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    timerEl.textContent = "Processing...";
+                }
+            }, 1000);
+
+            // After 4.5 seconds (3.3s capture + buffer), fetch result via AJAX
+            setTimeout(function () {
+                fetch("{{ url_for('face_auth.face_result') }}?t=" + new Date().getTime())
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "spoof" || data.status === "too_close") {
+                            let title = data.status === "spoof" ? "Fake Face Detected!" : "Too Close to Camera!";
+                            let text = data.status === "spoof" ? "Please show your real face." : "Please step back a bit.";
+                            let icon = data.status === "spoof" ? "error" : "warning";
+
+                            // Add Voice Alert
+                            if ('speechSynthesis' in window) {
+                                console.log("Triggering Voice Alert: " + title);
+                                let msg = new SpeechSynthesisUtterance(title + " " + text);
+                                msg.rate = 1.3; // Speak 30% faster to finish before reload
+                                msg.volume = 1.0; // 1.0 is the maximum volume allowed by browsers
+                                msg.lang = 'en-US'; // Force English voice
+                                window.speechSynthesis.cancel(); // Clear any stuck speech
+                                window.speechSynthesis.speak(msg);
+                            }
+
+                            let timerInterval;
+                            Swal.fire({
+                                title: title,
+                                html: text + '<br><br>Restarting in <b>4</b> seconds.',
+                                icon: icon,
+                                timer: 4000,
+                                timerProgressBar: true,
+                                showConfirmButton: false,
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                didOpen: () => {
+                                    const b = Swal.getHtmlContainer().querySelector('b');
+                                    timerInterval = setInterval(() => {
+                                        b.textContent = Math.ceil(Swal.getTimerLeft() / 1000);
+                                    }, 100);
+                                },
+                                willClose: () => {
+                                    clearInterval(timerInterval);
+                                }
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else if (data.status === "redirect") {
+                            window.location.href = data.url;
+                        } else if (data.status === "success") {
+                            document.open();
+                            document.write(data.html);
+                            document.close();
+                        }
+                    });
+            }, 4500);
+        </script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                var img = document.getElementById("camera-feed");
+                if (img) {
+                    var url = "";
+                    if (window.location.href.includes("face_login")) {
+                        url = "{{ url_for('face_auth.face_video_feed') }}";
+                    } else {
+                        url = "{{ url_for('image_processing.video_feed') }}";
                     }
-                }).then(() => {
-                    window.location.reload();
-                });
-            } else if (data.status === "redirect") {
-                window.location.href = data.url;
-            } else if (data.status === "success") {
-                document.open();
-                document.write(data.html);
-                document.close();
-            }
-        });
-}, 4500);
-</script>
+                    img.src = url + "?t=" + new Date().getTime();
+                }
+            });
+        </script>
 </body>
+
 </html>

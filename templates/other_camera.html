@@ -24,7 +24,7 @@
     <p class="text-muted text-center">Stand in front of the camera...</p>
     <div style="margin-top: 20px;" class="form-row">
       <!-- Reusing the standard video feed -->
-      <img src="{{ url_for('face_auth.face_video_feed') }}" width="100%" height="auto" alt="Camera Feed" />
+      <img id="camera-feed" src="" width="100%" height="auto" alt="Camera Feed" />
     </div>
   </form>
 </div>
@@ -51,5 +51,20 @@
         window.location.href = "{{ url_for('face_auth.other_modal') }}";
       }, 4500);
     </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var img = document.getElementById("camera-feed");
+        if(img) {
+            var url = "";
+            if (window.location.href.includes("face_login")) {
+                url = "{{ url_for('face_auth.face_video_feed') }}";
+            } else {
+                url = "{{ url_for('image_processing.video_feed') }}";
+            }
+            img.src = url + "?t=" + new Date().getTime();
+        }
+    });
+</script>
 </body>
 </html>

@@ -62,6 +62,8 @@ def gen_frames():
                     
                     if shots_taken == max_shots:
                         captured_image = captured_images[0]
+                        break # Freeze frame and release camera
+            
             # Encode the current frame for streaming
             ret, buffer = cv2.imencode('.jpg', frame)
             frame_bytes = buffer.tobytes()
