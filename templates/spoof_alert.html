@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spoofing Detected</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+        .alert-box {
+            background-color: #2c2c2c;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-top: 5px solid #e74c3c;
+            max-width: 400px;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin: 0 0 15px 0;
+            color: #e74c3c;
+        }
+        p {
+            font-size: 16px;
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+        .btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="alert-box">
+        <div class="icon">🚫</div>
+        <h2>Fake Face Detected!</h2>
+        <p>Please show your real face. Spoofing is not allowed.</p>
+        {% if role_type == 'visitor' %}
+            <a href="{{ url_for('face_auth.visitor_auth') }}" class="btn">Try Again</a>
+        {% elif role_type == 'employee' %}
+            <a href="{{ url_for('face_auth.face_login') }}" class="btn">Try Again</a>
+        {% else %}
+            <a href="{{ url_for('face_auth.select_role') }}" class="btn">Try Again</a>
+        {% endif %}
+    </div>
+</body>
+</html>

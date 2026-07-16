@@ -7,7 +7,10 @@ camera = None
 def get_camera():
     global camera
     if camera is None or not camera.isOpened():
-        camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        camera = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+
+        if not camera.isOpened():
+            camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         
         # Buffer Flush & Warm-up
         # Give the hardware sensors 0.5 seconds to turn on and adjust exposure

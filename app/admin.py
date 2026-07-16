@@ -369,7 +369,7 @@ def enroll_employees():
                 try:
                     # Run AI Extraction
                     # representations = DeepFace.represent(img_path=filepath, model_name="Facenet", enforce_detection=False)
-                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=False)
+                    representations = DeepFace.represent(img_path=filepath, model_name="ArcFace", enforce_detection=True)
                     
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]

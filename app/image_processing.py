@@ -31,7 +31,7 @@ def gen_frames():
     captured_image = None
     captured_images = []
     start_time = time.time()
-    countdown_duration = 5.0  # reduced to 5 seconds
+    countdown_duration = 3.0  # reduced to 3 seconds
     
     shots_taken = 0
     max_shots = 3

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, Response, redirect, url_for
+from flask import Blueprint, render_template, request, Response, redirect, url_for, jsonify
 import cv2
 import datetime
 import os
@@ -136,8 +136,10 @@ def face_result():
                 # --- Liveness Check (Anti-Spoofing) ---
                 from models.anti_spoofing import liveness_detector
                 is_real, score = liveness_detector.check_liveness(img_path)
-                if not is_real:
-                    print(f"[WARNING] Spoofing Detected on frame! (Score: {score:.2f})")
+                if is_real == "TooClose":
+                    results_list.append("TooClose")
+                    continue
+                elif not is_real:
                     results_list.append("Spoof")
                     continue
                 
@@ -170,7 +172,13 @@ def face_result():
                 vote_counts = Counter(results_list)
                 winner, votes = vote_counts.most_common(1)[0]
                 
-                if winner != "Unknown" and votes >= (len(imp.captured_images) // 2 + 1):
+                if winner == "TooClose":
+                    imp.captured_images.clear()
+                    return jsonify({"status": "too_close"})
+                elif winner == "Spoof":
+                    imp.captured_images.clear()
+                    return jsonify({"status": "spoof"})
+                elif winner != "Unknown" and votes >= (len(imp.captured_images) // 2 + 1):
                     employee_name, hr_id = winner
                     now = datetime.datetime.now()
                     today_str = now.strftime('%Y-%m-%d')
@@ -317,7 +325,7 @@ def face_result():
                     pass
             threading.Thread(target=delete_file_later, args=(imp.captured_image,)).start()
             
-        return render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)
+        return jsonify({"status": "success", "html": render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)})
     else:
         print("[INFO] Face not recognized. Falling back to Employee OCR pipeline.")
         
@@ -334,7 +342,7 @@ def face_result():
                     pass
             threading.Thread(target=delete_file_later, args=(imp.captured_image,)).start()
             
-        return redirect(url_for('image_processing.show_captured', role_type='employee'))
+        return jsonify({"status": "redirect", "url": url_for('image_processing.show_captured', role_type='employee')})
 
 @face_auth.route('/visitor_auth')
 def visitor_auth():
@@ -383,8 +391,10 @@ def visitor_result():
                 # --- Liveness Check (Anti-Spoofing) ---
                 from models.anti_spoofing import liveness_detector
                 is_real, score = liveness_detector.check_liveness(img_path)
-                if not is_real:
-                    print(f"[WARNING] Spoofing Detected on frame! (Score: {score:.2f})")
+                if is_real == "TooClose":
+                    results_list.append("TooClose")
+                    continue
+                elif not is_real:
                     results_list.append("Spoof")
                     continue
                 
@@ -416,7 +426,13 @@ def visitor_result():
                 vote_counts = Counter(results_list)
                 winner, votes = vote_counts.most_common(1)[0]
                 
-                if winner != "Unknown" and votes >= (len(imp.captured_images) // 2 + 1):
+                if winner == "TooClose":
+                    imp.captured_images.clear()
+                    return jsonify({"status": "too_close"})
+                elif winner == "Spoof":
+                    imp.captured_images.clear()
+                    return jsonify({"status": "spoof"})
+                elif winner != "Unknown" and votes >= (len(imp.captured_images) // 2 + 1):
                     visitor_name, visitor_id = winner
                     now = datetime.datetime.now()
                     today_str = now.strftime('%Y-%m-%d')
@@ -542,7 +558,7 @@ def visitor_result():
             threading.Thread(target=delete_file_later, args=(imp.captured_image,)).start()
             
         # Reuse the success template for Regular Visitors
-        return render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)
+        return jsonify({"status": "success", "html": render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)})
     else:
         print("[INFO] Unknown Visitor. Falling back to OCR Form Registration.")
         
@@ -559,7 +575,7 @@ def visitor_result():
                     pass
             threading.Thread(target=delete_file_later, args=(imp.captured_image,)).start()
             
-        return redirect(url_for('image_processing.show_captured', role_type='visitor'))
+        return jsonify({"status": "redirect", "url": url_for('image_processing.show_captured', role_type='visitor')})
 
 @face_auth.route('/other_auth')
 def other_auth():
@@ -622,8 +638,10 @@ def other_result():
                 # --- Liveness Check (Anti-Spoofing) ---
                 from models.anti_spoofing import liveness_detector
                 is_real, score = liveness_detector.check_liveness(img_path)
-                if not is_real:
-                    print(f"[WARNING] Spoofing Detected on frame! (Score: {score:.2f})")
+                if is_real == "TooClose":
+                    results_list.append("TooClose")
+                    continue
+                elif not is_real:
                     results_list.append("Spoof")
                     continue
                 
@@ -657,7 +675,13 @@ def other_result():
                 vote_counts = Counter(results_list)
                 winner, votes = vote_counts.most_common(1)[0]
                 
-                if winner != "Unknown" and votes >= (len(imp.captured_images) // 2 + 1):
+                if winner == "TooClose":
+                    imp.captured_images.clear()
+                    return jsonify({"status": "too_close"})
+                elif winner == "Spoof":
+                    imp.captured_images.clear()
+                    return jsonify({"status": "spoof"})
+                elif winner != "Unknown" and votes >= (len(imp.captured_images) // 2 + 1):
                     external_name, external_id, role = winner
                     now = datetime.datetime.now()
                     today_str = now.strftime('%Y-%m-%d')
@@ -766,7 +790,7 @@ def other_result():
                     pass
             threading.Thread(target=delete_file_later, args=(imp.captured_image,)).start()
             
-        return render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)
+        return jsonify({"status": "success", "html": render_template('attendance_success.html', data=face_match_data, shot_filename=shot_filename)})
     else:
         print("[INFO] Unknown External. Falling back to OCR.")
         
@@ -783,7 +807,7 @@ def other_result():
                     pass
             threading.Thread(target=delete_file_later, args=(imp.captured_image,)).start()
             
-        return redirect(url_for('image_processing.show_captured', filename=shot_filename, role_type='external'))
+        return jsonify({"status": "redirect", "url": url_for('image_processing.show_captured', filename=shot_filename, role_type='external')})
 
 @face_auth.route('/other_skip', methods=['POST'])
 def other_skip():

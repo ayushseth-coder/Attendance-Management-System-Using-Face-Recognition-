@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
   <div class="container-fluid">
@@ -15,7 +16,7 @@
         <div class="camera-wrapper">
           <div class="camera-box">
   <form>
-    <h2>VISITOR PRE-CHECK: <span id="timer">5</span> seconds</h2>
+    <h2>VISITOR PRE-CHECK: <span id="timer">3</span> seconds</h2>
     <p class="text-muted text-center">Checking if you are a "Regular Visitor"...</p>
     <div style="margin-top: 20px;" class="form-row">
       <!-- Reusing the standard video feed -->
@@ -26,7 +27,7 @@
 </div>
 </div>
 <script>
-  let timeLeft = 5; // seconds
+  let timeLeft = 3; // seconds
   const timerEl = document.getElementById('timer');
 
   const countdown = setInterval(() => {
@@ -39,10 +40,10 @@
     }
   }, 1000);
 
-// After 10 seconds, redirect to the visitor pre-check result
+// After 4.5 seconds, redirect to the visitor pre-check result
 setTimeout(function() {
     window.location.href = "{{ url_for('face_auth.visitor_result') }}";
-}, 10000);
+}, 4500);
 </script>
 </body>
 </html>

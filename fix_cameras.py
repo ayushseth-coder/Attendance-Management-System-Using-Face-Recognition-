@@ -1,47 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employee Face Login</title>
-  <link href="../static/camera.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-</head>
-<body>
-  <div class="container-fluid">
-    <div class="row">
-        <div class="camera-wrapper">
-          <div class="camera-box">
-  <form>
-    <h2>EMPLOYEE FACE LOGIN: <span id="timer">3</span> seconds</h2>
-    <p class="text-muted text-center">Look directly at the camera. If no match is found, you will be processed as a Visitor.</p>
-    <div style="margin-top: 20px;" class="form-row">
-      <img src="{{ url_for('face_auth.face_video_feed') }}" width="100%" height="auto" alt="Camera Feed" />
-    </div>
-  </form>
-</div>
-</div>
-</div>
-<script>
-  let timeLeft = 3; // seconds
-  const timerEl = document.getElementById('timer');
+import os
 
-  const countdown = setInterval(() => {
-    timeLeft--;
-    timerEl.textContent = timeLeft;
-    
-    if (timeLeft <= 0) {
-      clearInterval(countdown);
-      timerEl.textContent = "Processing...";
-    }
-  }, 1000);
-
-// After 4.5 seconds (3.3s capture + buffer), fetch result via AJAX
+script_to_replace = """// After 4.5 seconds (3.3s capture + buffer), redirect to result page
 setTimeout(function() {
-    fetch("{{ url_for('face_auth.face_result') }}?t=" + new Date().getTime())
+    window.location.href = "{{ url_for('face_auth.REPLACE_ROUTE') }}";
+}, 4500);"""
+
+new_script = """// After 4.5 seconds (3.3s capture + buffer), fetch result via AJAX
+setTimeout(function() {
+    fetch("{{ url_for('face_auth.REPLACE_ROUTE') }}")
         .then(response => response.json())
         .then(data => {
             if (data.status === "spoof" || data.status === "too_close") {
@@ -79,7 +45,29 @@ setTimeout(function() {
                 document.close();
             }
         });
-}, 4500);
-</script>
-</body>
-</html>
+}, 4500);"""
+
+sweetalert_tag = '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>\n</head>'
+
+files = [
+    (r"d:\Elgoss_project\elgoss-visitor-pass\templates\face_camera.html", "face_result"),
+    (r"d:\Elgoss_project\elgoss-visitor-pass\templates\visitor_camera.html", "visitor_result"),
+    (r"d:\Elgoss_project\elgoss-visitor-pass\templates\other_camera.html", "other_modal")
+]
+
+for filepath, route_name in files:
+    if os.path.exists(filepath):
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        old_str = script_to_replace.replace("REPLACE_ROUTE", route_name)
+        new_str = new_script.replace("REPLACE_ROUTE", route_name)
+        
+        content = content.replace(old_str, new_str)
+        
+        if '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>' not in content:
+            content = content.replace('</head>', sweetalert_tag)
+            
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(content)
+        print(f"Updated {filepath}")

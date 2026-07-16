@@ -132,7 +132,10 @@ def accept_regular(uid):
                     # --- Liveness Check (Anti-Spoofing) ---
                     from models.anti_spoofing import liveness_detector
                     is_real, score = liveness_detector.check_liveness(permanent_img_path)
-                    if not is_real:
+                    if is_real == "TooClose":
+                        print("[WARNING] Face Too Close on Enrollment Frame!")
+                        continue
+                    elif not is_real:
                         print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
                         continue # Skip saving this fake image to DB
                         
@@ -255,7 +258,10 @@ def process_employee_enrollment(uid):
                     # --- Liveness Check (Anti-Spoofing) ---
                     from models.anti_spoofing import liveness_detector
                     is_real, score = liveness_detector.check_liveness(permanent_img_path)
-                    if not is_real:
+                    if is_real == "TooClose":
+                        print("[WARNING] Face Too Close on Enrollment Frame!")
+                        continue
+                    elif not is_real:
                         print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
                         continue # Skip saving this fake image to DB
                         
