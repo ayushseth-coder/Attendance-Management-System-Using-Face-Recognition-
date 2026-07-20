@@ -90,7 +90,7 @@ class LivenessDetector:
             else:
                 real_score = float(probs[0])
             
-            is_real = real_score > 0.90
+            is_real = real_score > 0.80
             
             # === DUAL-ENGINE: HEURISTIC CHECK ===
             try:
@@ -102,9 +102,9 @@ class LivenessDetector:
                 
                 print(f"[DEBUG] Anti-Spoof Heuristics -> Sharpness: {laplacian_var:.1f}, Saturation: {sat_mean:.1f}")
                 
-                # Balanced strict thresholds (thoda strict, par real block na ho)
+                # Balanced relaxed thresholds to allow real faces in average lighting
                 is_heuristic_fake = False
-                if laplacian_var < 85.0 or sat_mean < 30.0:
+                if laplacian_var < 60.0 or sat_mean < 20.0:
                     is_heuristic_fake = True
                 
                 if is_real and is_heuristic_fake:

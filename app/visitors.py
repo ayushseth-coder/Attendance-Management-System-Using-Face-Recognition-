@@ -245,7 +245,19 @@ def process_employee_enrollment(uid):
                     permanent_img_path = os.path.join(employee_faces_dir, f"{employee_name}_{random_suffix}.png")
                     shutil.copy2(img_path, permanent_img_path)
                     
-                    # Apply CLAHE
+                    # --- Liveness Check (Anti-Spoofing) MUST BE DONE ON ORIGINAL COLOR IMAGE ---
+                    from models.anti_spoofing import liveness_detector
+                    is_real, score = liveness_detector.check_liveness(permanent_img_path)
+                    if is_real == "TooClose":
+                        print("[WARNING] Face Too Close on Enrollment Frame!")
+                        os.remove(permanent_img_path)
+                        continue
+                    elif not is_real:
+                        print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
+                        os.remove(permanent_img_path)
+                        continue # Skip saving this fake image to DB
+                        
+                    # Apply CLAHE (After liveness check, because CLAHE makes it grayscale causing Saturation=0)
                     img = cv2.imread(permanent_img_path)
                     if img is not None:
                         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -255,15 +267,6 @@ def process_employee_enrollment(uid):
                         cv2.imwrite(permanent_img_path, enhanced_img)
                         
                     print(f"[INFO] Extracting vector for Employee Burst Image: {employee_name}")
-                    # --- Liveness Check (Anti-Spoofing) ---
-                    from models.anti_spoofing import liveness_detector
-                    is_real, score = liveness_detector.check_liveness(permanent_img_path)
-                    if is_real == "TooClose":
-                        print("[WARNING] Face Too Close on Enrollment Frame!")
-                        continue
-                    elif not is_real:
-                        print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
-                        continue # Skip saving this fake image to DB
                         
                     representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=True)
                     
