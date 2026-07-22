@@ -1,4 +1,4 @@
-{% extends 'admin_base.html' %}
+{% extends 'admin_base.html' if session.get('role') == 'admin' else 'security_base.html' %}
 
 {% block title %}Employee Timesheet
 <script>
@@ -56,33 +56,46 @@ $(document).ready(function() {
     <h2 class="mb-0" style="font-size: 32px; line-height: 1.2;"><b style="color: black;">Employee</b> <span style="color: #20c997;">Timesheet</span></h2>
     
     <div class="flex flex-wrap items-center gap-3">
-        <form class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-200"
-            action="{{ url_for('admin.attendance_timesheet') }}" method="GET">
+        <form id="dateForm" class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-200"
+            action="{{ url_for('admin.attendance_timesheet') if session.get('role') == 'admin' else url_for('security.attendance_timesheet') }}" method="GET">
             <label for="date" class="text-sm font-bold text-slate-600 mb-0 px-2 whitespace-nowrap"><i class="fa fa-calendar me-2"></i>Select Date:</label>
-            <input type="date" id="date" name="date" class="border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0f52ba]/20 focus:border-[#0f52ba] text-slate-700 font-medium px-3 py-1.5 outline-none transition-all"
-                value="{{ selected_date }}">
-            <button type="submit" class="btn btn-primary m-0 px-4 py-1.5" style="background-color: #0f52ba; border-color: #0f52ba; border-radius: 0.5rem; font-weight: bold;">
-              Search
-            </button>
+            <input type="date" id="date" name="date" class="border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0f52ba]/20 focus:border-[#0f52ba] text-slate-700 font-medium px-3 py-1.5 outline-none transition-all cursor-pointer"
+                value="{{ selected_date }}" onchange="document.getElementById('dateForm').submit();">
         </form>
     </div>
 </div>
 
 
-<div class="flex flex-wrap items-center justify-end gap-3 mb-4">
-    <select id="customLengthMenu" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary block px-3 py-2 cursor-pointer shadow-sm outline-none transition-all">
-        <option value="" disabled selected hidden>Show Entries</option>
-        <option value="5">5 Entries</option>
-        <option value="10">10 Entries</option>
-        <option value="20">20 Entries</option>
-        <option value="50">50 Entries</option>
-        <option value="-1">All Entries</option>
-    </select>
-    <div class="flex items-center shadow-sm rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <button id="customSearchIcon" class="px-3 py-2 text-slate-400 hover:text-primary bg-white transition-colors focus:outline-none">
-            <i class="fas fa-search text-sm"></i>
-        </button>
-        <input type="text" id="customSearchInput" class="border-none focus:ring-0 text-sm font-medium text-slate-700 bg-white placeholder-slate-400 outline-none" placeholder="Search...">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <!-- Switcher -->
+    <div class="bg-slate-100/80 p-1 rounded-xl d-inline-flex border border-slate-200 shadow-inner" style="gap: 4px;">
+        <a href="{{ url_for('admin.attendance_timesheet') if session.get('role') == 'admin' else url_for('security.attendance_timesheet') }}" class="btn btn-sm px-4 py-2 {% if request.endpoint in ['admin.attendance_timesheet', 'security.attendance_timesheet'] %}bg-white text-[#0f52ba] shadow-sm fw-bold border border-slate-200/50{% else %}text-slate-500 bg-transparent hover:text-slate-700 hover:bg-slate-200/50 border-0 fw-medium{% endif %}" style="border-radius: 8px; transition: all 0.2s ease;">
+            <i class="fas fa-briefcase me-2"></i>Employee Timesheet
+        </a>
+        <a href="{{ url_for('admin.attendance_visitor') if session.get('role') == 'admin' else url_for('security.attendance_visitor') }}" class="btn btn-sm px-4 py-2 {% if request.endpoint in ['admin.attendance_visitor', 'security.attendance_visitor'] %}bg-white text-[#0f52ba] shadow-sm fw-bold border border-slate-200/50{% else %}text-slate-500 bg-transparent hover:text-slate-700 hover:bg-slate-200/50 border-0 fw-medium{% endif %}" style="border-radius: 8px; transition: all 0.2s ease;">
+            <i class="fas fa-id-badge me-2"></i>Visitor Logs
+        </a>
+        <a href="{{ url_for('admin.attendance_other') if session.get('role') == 'admin' else url_for('security.attendance_other') }}" class="btn btn-sm px-4 py-2 {% if request.endpoint in ['admin.attendance_other', 'security.attendance_other'] %}bg-white text-[#0f52ba] shadow-sm fw-bold border border-slate-200/50{% else %}text-slate-500 bg-transparent hover:text-slate-700 hover:bg-slate-200/50 border-0 fw-medium{% endif %}" style="border-radius: 8px; transition: all 0.2s ease;">
+            <i class="fas fa-users me-2"></i>External Staff Logs
+        </a>
+    </div>
+
+    <!-- Search and Entries -->
+    <div class="flex flex-wrap items-center justify-end gap-3">
+        <select id="customLengthMenu" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary block px-3 py-2 cursor-pointer shadow-sm outline-none transition-all">
+            <option value="" disabled selected hidden>Show Entries</option>
+            <option value="5">5 Entries</option>
+            <option value="10">10 Entries</option>
+            <option value="20">20 Entries</option>
+            <option value="50">50 Entries</option>
+            <option value="-1">All Entries</option>
+        </select>
+        <div class="flex items-center shadow-sm rounded-lg border border-slate-200 bg-white overflow-hidden">
+            <button id="customSearchIcon" class="px-3 py-2 text-slate-400 hover:text-primary bg-white transition-colors focus:outline-none">
+                <i class="fas fa-search text-sm"></i>
+            </button>
+            <input type="text" id="customSearchInput" class="border-none focus:ring-0 text-sm font-medium text-slate-700 bg-white placeholder-slate-400 outline-none" placeholder="Search...">
+        </div>
     </div>
 </div>
 
@@ -150,11 +163,7 @@ $(document).ready(function() {
   </div>
 </div>
 
-<div class="mt-4 flex justify-start">
-    <a href="{{ url_for('admin.attendance_select') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 hover:text-slate-800 transition-colors shadow-sm">
-        <i class="fa fa-arrow-left"></i> Back to Selection
-    </a>
-</div>
+
 
 <script>
 $(document).ready(function() {

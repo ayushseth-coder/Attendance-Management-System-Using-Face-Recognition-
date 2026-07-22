@@ -56,10 +56,8 @@ $(document).ready(function() {
     <div class="row mb-4">
         <div class="col-md-12 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <a href="{{ url_for('admin.manage_section') }}" class="btn btn-outline-secondary me-3" style="border-radius: 50%; width: 40px; height: 40px; display: inline-flex; justify-content: center; align-items: center;" title="Back to Manage Section">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <h2 class="mb-0">Manage Enrolled Employees</h2>
+
+                <h2 class="mb-0" style="font-size: 32px;"><b style="color: black;">Manage</b> <span style="color: #20c997;">Employees</span></h2>
             </div>
             <div class="d-flex align-items-center">
                 <span class="badge bg-primary fs-6 me-3">Total Employees: {{ unique_count }} (Photos: {{ total_count }})</span>
@@ -97,7 +95,22 @@ $(document).ready(function() {
 
 
 
-<div class="flex flex-wrap items-center justify-end gap-3 mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <!-- Switcher -->
+    <div class="bg-slate-100/80 p-1 rounded-xl d-inline-flex border border-slate-200 shadow-inner" style="gap: 4px;">
+        <a href="{{ url_for('admin.manage_employees') }}" class="btn btn-sm px-4 py-2 {% if request.endpoint == 'admin.manage_employees' %}bg-white text-[#0f52ba] shadow-sm fw-bold border border-slate-200/50{% else %}text-slate-500 bg-transparent hover:text-slate-700 hover:bg-slate-200/50 border-0 fw-medium{% endif %}" style="border-radius: 8px; transition: all 0.2s ease;">
+            <i class="fas fa-user-tie me-2"></i>Employees
+        </a>
+        <a href="{{ url_for('admin.manage_visitors') }}" class="btn btn-sm px-4 py-2 {% if request.endpoint == 'admin.manage_visitors' %}bg-white text-[#0f52ba] shadow-sm fw-bold border border-slate-200/50{% else %}text-slate-500 bg-transparent hover:text-slate-700 hover:bg-slate-200/50 border-0 fw-medium{% endif %}" style="border-radius: 8px; transition: all 0.2s ease;">
+            <i class="fas fa-address-book me-2"></i>Visitors
+        </a>
+        <a href="{{ url_for('admin.manage_other') }}" class="btn btn-sm px-4 py-2 {% if request.endpoint == 'admin.manage_other' %}bg-white text-[#0f52ba] shadow-sm fw-bold border border-slate-200/50{% else %}text-slate-500 bg-transparent hover:text-slate-700 hover:bg-slate-200/50 border-0 fw-medium{% endif %}" style="border-radius: 8px; transition: all 0.2s ease;">
+            <i class="fas fa-hard-hat me-2"></i>External Staff
+        </a>
+    </div>
+
+    <!-- Search and Entries -->
+    <div class="flex flex-wrap items-center justify-end gap-3">
     <select id="customLengthMenu" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary block px-3 py-2 cursor-pointer shadow-sm outline-none transition-all">
         <option value="" disabled selected hidden>Show Entries</option>
         <option value="5">5 Entries</option>
@@ -112,6 +125,7 @@ $(document).ready(function() {
         </button>
         <input type="text" id="customSearchInput" class="border-none focus:ring-0 text-sm font-medium text-slate-700 bg-white placeholder-slate-400 outline-none" placeholder="Search...">
     </div>
+</div>
 </div>
 
 <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6 mt-4">

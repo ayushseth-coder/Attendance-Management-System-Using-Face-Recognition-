@@ -74,22 +74,28 @@
 
 <div class="row g-3 mt-2">
     <div class="col-md-3">
-        <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
-            <h4 class="fw-bold mb-1" style="color: #ffc107;">{{countvis}}</h4>
-            <p class="text-muted mb-0">Today's Entries</p>
-        </div>
+        <a href="{{url_for('security.attendance_timesheet')}}" style="text-decoration: none; color: inherit">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
+                <h4 class="fw-bold mb-1" style="color: #ffc107;">{{countvis}}</h4>
+                <p class="text-muted mb-0">Today's Employees timesheet</p>
+            </div>
+        </a>
     </div>
     <div class="col-md-3">
-        <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
-            <h4 class="fw-bold mb-1" style="color: #dc3545;">0</h4>
-            <p class="text-muted mb-0">Today's Exits</p>
-        </div>
+        <a href="{{url_for('security.attendance_visitor')}}" style="text-decoration: none; color: inherit">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
+                <h4 class="fw-bold mb-1" style="color: #dc3545;">0</h4>
+                <p class="text-muted mb-0">Today's Visitors timesheet</p>
+            </div>
+        </a>
     </div>
     <div class="col-md-3">
-        <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
-            <h4 class="fw-bold mb-1" style="color: #20c997;">0</h4>
-            <p class="text-muted mb-0">Checkpoints</p>
-        </div>
+        <a href="{{url_for('security.attendance_other')}}" style="text-decoration: none; color: inherit">
+            <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">
+                <h4 class="fw-bold mb-1" style="color: #20c997;">0</h4>
+                <p class="text-muted mb-0">Today's others timesheet</p>
+            </div>
+        </a>
     </div>
     <div class="col-md-3">
         <div class="card dash-card-hover text-center p-3 border-0 shadow-sm" style="background-color: white; border-radius: 10px;">

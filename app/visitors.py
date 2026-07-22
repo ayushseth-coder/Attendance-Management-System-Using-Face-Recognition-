@@ -21,17 +21,17 @@ def visitor1():
     
     if request.method == 'POST':
         if request.form['submit'] == 'pass':
-            name = request.form['name']
-            father = request.form['father']
-            dob = request.form['dob']
-            gender = request.form['gender']
-            uid = request.form['uid']
-            date = request.form['Date']
-            purpose = request.form['Purpose']
-            email = request.form['Email']
-            phone = request.form['phone']
-            apprv = request.form['Approvedby']
-            card = request.form['card']
+            name = request.form.get('name', 'N/A')
+            father = request.form.get('father', 'N/A')
+            dob = request.form.get('dob', 'N/A')
+            gender = request.form.get('gender', 'N/A')
+            uid = request.form.get('uid', 'N/A')
+            date = request.form.get('Date', '')
+            purpose = request.form.get('Purpose', 'N/A')
+            email = request.form.get('Email', 'N/A')
+            phone = request.form.get('phone', 'N/A')
+            apprv = request.form.get('Approvedby', 'N/A')
+            card = request.form.get('card', 'N/A')
             shot_filename = request.form.get('shot_filename', '')
             
             # Strict Validation: Prevent submitting the form if no photo was captured

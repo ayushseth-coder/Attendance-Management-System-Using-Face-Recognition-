@@ -551,10 +551,7 @@ def delete_all_employees():
 
 @admin.route('/manage_section', methods=['GET'])
 def manage_section():
-    if session.get('logged_in'):
-        return render_template('manage_section.html')
-    else:
-        return redirect(url_for('auth.login'))
+    return redirect(url_for('admin.manage_employees'))
 
 @admin.route('/manage_visitors', methods=['GET'])
 def manage_visitors():
@@ -829,7 +826,7 @@ def delete_all_other():
 
 @admin.route('/attendance/select', methods=['GET'])
 def attendance_select():
-    return render_template('attendance_select.html')
+    return redirect(url_for('admin.attendance_timesheet'))
 
 @admin.route('/attendance/employee', methods=['GET'])
 def attendance_employee():

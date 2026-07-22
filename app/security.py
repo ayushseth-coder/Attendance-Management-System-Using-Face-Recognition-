@@ -143,3 +143,101 @@ def overview():
     visitobj = list(visitorlogtable.find({"exit_time": None}))
   
     return render_template("overview.html",visitobj=visitobj)
+
+@security.route('/security/attendance/timesheet', methods=['GET'])
+def attendance_timesheet():
+    from models.database import attendance_log, collection
+    import datetime
+    
+    selected_date = request.args.get('date')
+    if not selected_date:
+        selected_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+    query = {
+        "Date": {"$regex": f"^{selected_date}"},
+        "Status": "Present"
+    }
+    raw_logs = list(attendance_log.find(query).sort("Date", -1))
+    
+    all_users = list(collection.find())
+    user_lookup = {}
+    for user in all_users:
+        name = user.get("Name", "")
+        if name:
+            user_lookup[name] = {
+                "Email": user.get("Email", "N/A"),
+                "Job": user.get("Job", "Employee")
+            }
+            
+    timesheet_data = []
+    for log in raw_logs:
+        name = log.get("Name", "")
+        entry_datetime_str = log.get("Date", "")
+        exit_time_str = log.get("ExitTime")
+        
+        entry_time_str = entry_datetime_str.split(' ')[1] if ' ' in entry_datetime_str else entry_datetime_str
+        
+        working_hours = None
+        if exit_time_str and ' ' in entry_datetime_str:
+            try:
+                fmt = '%H:%M:%S'
+                t1 = datetime.datetime.strptime(entry_time_str, fmt)
+                t2 = datetime.datetime.strptime(exit_time_str, fmt)
+                
+                if t2 < t1:
+                    t2 += datetime.timedelta(days=1)
+                    
+                diff = t2 - t1
+                hours, remainder = divmod(diff.seconds, 3600)
+                minutes, _ = divmod(remainder, 60)
+                working_hours = f"{hours}h {minutes}m"
+            except Exception as e:
+                print(f"[ERROR] Failed to calculate working hours for {name}: {e}")
+                working_hours = "Error"
+                
+        user_info = user_lookup.get(name, {"Email": "Unknown", "Job": "Unknown"})
+        
+        timesheet_data.append({
+            "Name": name,
+            "Email": user_info["Email"],
+            "Job": user_info["Job"],
+            "EntryTime": entry_time_str,
+            "ExitTime": exit_time_str,
+            "WorkingHours": working_hours
+        })
+        
+    return render_template('attendance_timesheet.html', timesheet=timesheet_data, selected_date=selected_date)
+
+@security.route('/security/attendance/visitor', methods=['GET'])
+def attendance_visitor():
+    from models.database import attendance_log
+    import datetime
+    
+    selected_date = request.args.get('date')
+    if not selected_date:
+        selected_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+    query = {
+        "Date": {"$regex": f"^{selected_date}"},
+        "Status": "Regular Visitor"
+    }
+    logs = list(attendance_log.find(query).sort("Date", -1))
+    
+    return render_template('attendance_visitor.html', logs=logs, selected_date=selected_date)
+
+@security.route('/security/attendance/other', methods=['GET'])
+def attendance_other():
+    from models.database import attendance_log
+    import datetime
+    
+    selected_date = request.args.get('date')
+    if not selected_date:
+        selected_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        
+    query = {
+        "Date": {"$regex": f"^{selected_date}"},
+        "Status": {"$regex": r"^Present \("}
+    }
+    logs = list(attendance_log.find(query).sort("Date", -1))
+    
+    return render_template('attendance_other.html', logs=logs, selected_date=selected_date)

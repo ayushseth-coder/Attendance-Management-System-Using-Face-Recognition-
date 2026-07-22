@@ -40,9 +40,25 @@
     }
   }, 1000);
 
-// After 4.5 seconds, redirect to the visitor pre-check result
 setTimeout(function() {
-    window.location.href = "{{ url_for('face_auth.visitor_result') }}";
+    fetch("{{ url_for('face_auth.visitor_result') }}")
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'redirect') {
+                window.location.href = data.url;
+            } else if (data.status === 'success') {
+                document.open();
+                document.write(data.html);
+                document.close();
+            } else {
+                console.error("Unknown response status:", data);
+            }
+        })
+        .catch(err => {
+            console.error("Error calling visitor_result:", err);
+            // Fallback just in case
+            window.location.href = "{{ url_for('image_processing.show_captured', role_type='visitor') }}";
+        });
 }, 4500);
 </script>
 

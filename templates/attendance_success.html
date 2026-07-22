@@ -8,7 +8,7 @@
         <i class="fa fa-check-circle text-success" style="font-size: 80px;"></i>
         {% if shot_filename %}
         <div class="mt-3">
-            <img src="{{ url_for('static', filename='shots/' + shot_filename) }}" alt="Captured Image" class="img-thumbnail rounded-circle shadow" style="width: 150px; height: 150px; object-fit: cover; margin-top: 20px;">
+            <img src="{{ url_for('static', filename='shots/' + shot_filename) }}" alt="Captured Image" class="img-thumbnail rounded-circle shadow mx-auto d-block" style="width: 150px; height: 150px; object-fit: cover; margin-top: 20px;">
         </div>
         {% endif %}
         <h2 class="mt-4 text-success">Match Found!</h2>
