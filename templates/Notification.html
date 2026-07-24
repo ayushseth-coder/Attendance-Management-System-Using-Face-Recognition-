@@ -137,7 +137,8 @@
           </td>
           <td class="px-3 py-2.5 whitespace-nowrap">
             {% if rvis.get('shot_filename') %}
-              <img src="{{ url_for('static', filename='shots/' + rvis['shot_filename']) }}" class="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm" alt="Photo">
+              {% set first_shot = rvis.get('shot_filename').split(',')[0].strip() %}
+              <img src="{{ url_for('static', filename='shots/' + first_shot) }}" class="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm" alt="Photo" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/visitor.png') }}'">
             {% else %}
               <span class="text-slate-400 text-xs italic">No Photo</span>
             {% endif %}

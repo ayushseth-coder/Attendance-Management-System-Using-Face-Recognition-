@@ -9,6 +9,8 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Include Centralized Face Alerts Logic -->
+<script src="{{ url_for('static', filename='face_alerts.js') }}"></script>
 </head>
 <body>
   <div class="container-fluid">
@@ -44,7 +46,9 @@ setTimeout(function() {
     fetch("{{ url_for('face_auth.visitor_result') }}")
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'redirect') {
+            if (handleFaceAlerts(data)) {
+                return; // Alert handled
+            } else if (data.status === 'redirect') {
                 window.location.href = data.url;
             } else if (data.status === 'success') {
                 document.open();
@@ -59,7 +63,7 @@ setTimeout(function() {
             // Fallback just in case
             window.location.href = "{{ url_for('image_processing.show_captured', role_type='visitor') }}";
         });
-}, 4500);
+}, 6000);
 </script>
 
 <script>

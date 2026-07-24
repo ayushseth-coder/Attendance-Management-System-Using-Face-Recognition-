@@ -400,6 +400,7 @@ def visitor_result():
                     results_list.append("Spoof")
                     continue
                 
+                
                 # 2. Extract Vector using ArcFace on Enhanced Image
                 representations = DeepFace.represent(img_path=enhanced_img, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
                 if representations and len(representations) > 0:
@@ -646,6 +647,7 @@ def other_result():
                 elif not is_real:
                     results_list.append("Spoof")
                     continue
+                
                 
                 # 2. Extract Vector using ArcFace on Enhanced Image
                 representations = DeepFace.represent(img_path=enhanced_img, model_name="ArcFace", enforce_detection=True, detector_backend="opencv")
