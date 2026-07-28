@@ -1,74 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometric Scan - Camera</title>
+    <!-- Modern Biometric Scanner Styles -->
+    <link href="{{ url_for('static', filename='camera.css') }}" rel="stylesheet" />
+    <link href="../static/camera.css" rel="stylesheet" />
+    <!-- Font Awesome & Tailwind CSS for Modern Project UI Parity -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Dependencies -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-  <link href="../static/camera.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <div class="scanner-wrapper">
+        <div class="scanner-card">
+            <!-- Live Status Indicator -->
+            <div class="status-badge">
+                <div class="live-indicator"></div>
+                <span id="scan-status">Smart Camera Live</span>
+            </div>
 
-  <div class="container-fluid">
-    <div class="row">
-     
-        <div class="camera-wrapper">
-          <div class="camera-box">
- 
+            <!-- Header Titles -->
+            <h1 class="scanner-title">Biometric <span class="highlight">Scanner</span></h1>
+            <p class="scanner-subtitle">Please position your face within the frame for automated image capture.</p>
 
-  <form >
-    <h2>PLEASE SHOW YOUR ID: <span id="timer">10</span> seconds</h2>
+            <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
+            <div class="camera-frame-wrapper">
+                <div class="camera-inner">
+                    <img id="camera-feed" src="{{ url_for('image_processing.video_feed') }}" alt="Camera Feed" />
+                </div>
+            </div>
 
-    <!-- Action buttons -->
-  
-   
-    <div style="margin-top: 20px;" class="form-row">
-      <img src="{{ url_for('image_processing.video_feed') }}" width="100%" height="auto" alt="Camera Feed" />
+            <!-- Digital Timer Display -->
+            <div class="timer-box" id="timer-container">
+                <i class="fas fa-camera text-emerald-600 me-2"></i> Capturing in <span class="timer-number" id="timer">3</span> seconds
+            </div>
 
+            <!-- Feature & Instructional Pills -->
+            <div class="scanner-tips">
+                <div class="tip-chip"><i class="fas fa-lightbulb"></i> Ensure Lighting</div>
+                <div class="tip-chip"><i class="fas fa-camera"></i> Auto Capture</div>
+                <div class="tip-chip"><i class="fas fa-check-circle"></i> High Precision</div>
+            </div>
+        </div>
     </div>
-
-    <!-- Footer buttons -->
-    <div style="margin-top: 20px;" class="form-row">
-  
-    </div>
-
-  </form>
-</div>
-</div>
-</div>
-
-
 
 <script>
-  let timeLeft = 3; // seconds
-  const timerEl = document.getElementById('timer');
+    let timeLeft = 3; // seconds
+    const timerEl = document.getElementById('timer');
+    const timerContainer = document.getElementById('timer-container');
+    const scanStatus = document.getElementById('scan-status');
 
-  const countdown = setInterval(() => {
-    timeLeft--;
-    timerEl.textContent = timeLeft;
-    
-    if (timeLeft <= 0) {
-      clearInterval(countdown);
-      timerEl.textContent = "Expired";
-      
-    }
-  }, 1000);
+    const countdown = setInterval(() => {
+        timeLeft--;
+        if(timerEl) {
+            timerEl.textContent = timeLeft;
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            if(timerContainer) {
+                timerContainer.innerHTML = '<i class="fas fa-spinner fa-spin text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">Captured...</span>';
+            }
+            if(scanStatus) {
+                scanStatus.textContent = "Processing Capture...";
+            }
+        }
+    }, 1000);
 </script>
-  <!-- Highlight the clicked button -->
+
+<!-- Highlight the clicked button -->
 <script>
 const buttons = document.querySelectorAll('.btn');
 buttons.forEach(btn => {
-btn.addEventListener('click', function () {
-  buttons.forEach(b => b.classList.remove('active'));
-  this.classList.add('active');
-});
+    btn.addEventListener('click', function () {
+        buttons.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    });
 });
 </script>
 
-
 <script>
+// Force auto-reload when coming back from browser cache/history
+window.addEventListener("pageshow", function(event) {
+    if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        window.location.reload();
+    }
+});
+
 // After 4.5 seconds (3s capture + 1.5s buffer for 3-shots), redirect to show captured page
 setTimeout(function() {
     window.location.href = "{{ url_for('image_processing.show_captured') }}";
@@ -76,6 +98,3 @@ setTimeout(function() {
 </script>
 </body>
 </html>
-
-
-

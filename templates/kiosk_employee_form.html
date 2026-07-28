@@ -148,7 +148,7 @@
                     <input type="hidden" name="uid" id="generateUid" value="">
 
                     <div class="d-flex gap-3 justify-content-end">
-                        <button type="button" onclick="history.back()"
+                        <button type="button" onclick="window.location.href='{{ url_for('face_auth.face_login') }}'"
                             class="btn btn-light border-slate-300 font-bold px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
                         <button type="submit" name="submit" value="pass"
                             class="btn bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-sm d-flex align-items-center gap-2 transition-all">

@@ -1,81 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Face Login</title>
+    <title>Employee Face Authentication - Smart Scanner</title>
+    <!-- Modern Biometric Scanner Styles -->
+    <link href="{{ url_for('static', filename='camera.css') }}" rel="stylesheet" />
     <link href="../static/camera.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <!-- Font Awesome & Tailwind CSS for Modern Project UI Parity -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Dependencies & Centralized Alerts -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Include Centralized Face Alerts Logic -->
     <script src="{{ url_for('static', filename='face_alerts.js') }}"></script>
 </head>
-
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="camera-wrapper">
-                <div class="camera-box">
-                    <form>
-                        <h2>EMPLOYEE FACE LOGIN: <span id="timer">3</span> seconds</h2>
-                        <p class="text-muted text-center">Look directly at the camera. If no match is found, you will be
-                            processed as a Visitor.</p>
-                        <div style="margin-top: 20px;" class="form-row">
-                            <img id="camera-feed" src="" width="100%" height="auto" alt="Camera Feed" />
-                        </div>
-                    </form>
+    <div class="scanner-wrapper">
+        <div class="scanner-card">
+            <!-- Live Status Indicator -->
+            <div class="status-badge">
+                <div class="live-indicator"></div>
+                <span id="scan-status">Employee Biometric Gateway</span>
+            </div>
+
+            <!-- Header Titles -->
+            <h1 class="scanner-title">Employee <span class="highlight">Face Login</span></h1>
+            <p class="scanner-subtitle">Look directly at the camera. If no employee match is found, you will automatically transition to visitor processing.</p>
+
+            <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
+            <div class="camera-frame-wrapper">
+                <div class="camera-inner">
+                    <img id="camera-feed" src="" alt="Camera Feed" />
                 </div>
             </div>
+
+            <!-- Digital Timer Display -->
+            <div class="timer-box" id="timer-container">
+                <i class="fas fa-id-badge text-emerald-600 me-2"></i> Capturing in <span class="timer-number" id="timer">3</span> seconds
+            </div>
+
+            <!-- Feature & Instructional Pills -->
+            <div class="scanner-tips">
+                <div class="tip-chip"><i class="fas fa-user-check"></i> Instant Attendance</div>
+                <div class="tip-chip"><i class="fas fa-lock"></i> Secure Vector DB</div>
+                <div class="tip-chip"><i class="fas fa-shield"></i> Anti-Spoof Guard</div>
+            </div>
         </div>
-        <script>
-            let timeLeft = 3; // seconds
-            const timerEl = document.getElementById('timer');
+    </div>
 
-            const countdown = setInterval(() => {
-                timeLeft--;
-                timerEl.textContent = timeLeft;
+<script>
+    let timeLeft = 3; // seconds
+    const timerEl = document.getElementById('timer');
+    const timerContainer = document.getElementById('timer-container');
+    const scanStatus = document.getElementById('scan-status');
 
-                if (timeLeft <= 0) {
-                    clearInterval(countdown);
-                    timerEl.textContent = "Processing...";
-                }
-            }, 1000);
+    const countdown = setInterval(() => {
+        timeLeft--;
+        if (timerEl) {
+            timerEl.textContent = timeLeft;
+        }
 
-            // After 4.5 seconds (3.3s capture + buffer), fetch result via AJAX
-            setTimeout(function () {
-                fetch("{{ url_for('face_auth.face_result') }}?t=" + new Date().getTime())
-                    .then(response => response.json())
-                    .then(data => {
-                        if (handleFaceAlerts(data)) {
-                            return; // Alert handled
-                        } else if (data.status === 'redirect') {
-                            window.location.href = data.url;
-                        } else if (data.status === "success") {
-                            document.open();
-                            document.write(data.html);
-                            document.close();
-                        }
-                    });
-            }, 4500);
-        </script>
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            if (timerContainer) {
+                timerContainer.innerHTML = '<i class="fas fa-spinner fa-spin text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">Verifying Identity...</span>';
+            }
+            if (scanStatus) {
+                scanStatus.textContent = "Processing Face Vectors...";
+            }
+        }
+    }, 1000);
 
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                var img = document.getElementById("camera-feed");
-                if (img) {
-                    var url = "";
-                    if (window.location.href.includes("face_login")) {
-                        url = "{{ url_for('face_auth.face_video_feed') }}";
-                    } else {
-                        url = "{{ url_for('image_processing.video_feed') }}";
-                    }
-                    img.src = url + "?t=" + new Date().getTime();
+    // After 4.5 seconds (3.3s capture + buffer), fetch result via AJAX
+    setTimeout(function () {
+        fetch("{{ url_for('face_auth.face_result') }}?t=" + new Date().getTime())
+            .then(response => response.json())
+            .then(data => {
+                if (handleFaceAlerts(data)) {
+                    return; // Alert handled
+                } else if (data.status === 'redirect') {
+                    window.location.href = data.url;
+                } else if (data.status === "success") {
+                    document.open();
+                    document.write(data.html);
+                    document.close();
                 }
             });
-        </script>
-</body>
+    }, 4500);
+</script>
 
+<script>
+    window.addEventListener("pageshow", function(event) {
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var img = document.getElementById("camera-feed");
+        if (img) {
+            var url = "";
+            if (window.location.href.includes("face_login")) {
+                url = "{{ url_for('face_auth.face_video_feed') }}";
+            } else {
+                url = "{{ url_for('image_processing.video_feed') }}";
+            }
+            img.src = url + "?t=" + new Date().getTime();
+        }
+    });
+</script>
+</body>
 </html>

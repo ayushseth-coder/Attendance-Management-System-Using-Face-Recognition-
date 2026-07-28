@@ -1,44 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visitor Smart Scan</title>
-  <link href="../static/camera.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- Include Centralized Face Alerts Logic -->
-<script src="{{ url_for('static', filename='face_alerts.js') }}"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visitor Smart Scan - Face Recognition</title>
+    <!-- Modern Biometric Scanner Styles -->
+    <link href="{{ url_for('static', filename='camera.css') }}" rel="stylesheet" />
+    <link href="../static/camera.css" rel="stylesheet" />
+    <!-- Font Awesome & Tailwind CSS for Modern Project UI Parity -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Dependencies & Centralized Alerts -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ url_for('static', filename='face_alerts.js') }}"></script>
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="row">
-        <div class="camera-wrapper">
-          <div class="camera-box">
-  <form>
-    <h2>VISITOR PRE-CHECK: <span id="timer">3</span> seconds</h2>
-    <p class="text-muted text-center">Checking if you are a "Regular Visitor"...</p>
-    <div style="margin-top: 20px;" class="form-row">
-      <!-- Reusing the standard video feed -->
-      <img id="camera-feed" src="" width="100%" height="auto" alt="Camera Feed" />
+    <div class="scanner-wrapper">
+        <div class="scanner-card">
+            <!-- Live Status Indicator -->
+            <div class="status-badge">
+                <div class="live-indicator"></div>
+                <span id="scan-status">AI Live Recognition Active</span>
+            </div>
+
+            <!-- Header Titles -->
+            <h1 class="scanner-title">Visitor <span class="highlight">Smart Scan</span></h1>
+            <p class="scanner-subtitle">Please align your face comfortably within the frame. Checking pre-registered visitor credentials.</p>
+
+            <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
+            <div class="camera-frame-wrapper">
+                <div class="camera-inner">
+                    <img id="camera-feed" src="" alt="Camera Feed" />
+                </div>
+            </div>
+
+            <!-- Digital Timer Display -->
+            <div class="timer-box" id="timer-container">
+                <i class="fas fa-camera text-emerald-600 me-2"></i> Capturing in <span class="timer-number" id="timer">3</span> seconds
+            </div>
+
+            <!-- Feature & Instructional Pills -->
+            <div class="scanner-tips">
+                <div class="tip-chip"><i class="fas fa-lightbulb"></i> Well-lit area</div>
+                <div class="tip-chip"><i class="fas fa-eye"></i> Look at camera</div>
+                <div class="tip-chip"><i class="fas fa-shield-halved"></i> Liveness Verified</div>
+            </div>
+        </div>
     </div>
-  </form>
-</div>
-</div>
-</div>
+
 <script>
   let timeLeft = 3; // seconds
   const timerEl = document.getElementById('timer');
+  const timerContainer = document.getElementById('timer-container');
+  const scanStatus = document.getElementById('scan-status');
 
   const countdown = setInterval(() => {
     timeLeft--;
-    timerEl.textContent = timeLeft;
+    if (timerEl) {
+        timerEl.textContent = timeLeft;
+    }
     
     if (timeLeft <= 0) {
       clearInterval(countdown);
-      timerEl.textContent = "Checking Database...";
+      if (timerContainer) {
+          timerContainer.innerHTML = '<i class="fas fa-circle-notch fa-spin text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">Checking Database...</span>';
+      }
+      if (scanStatus) {
+          scanStatus.textContent = "Matching Biometrics...";
+      }
     }
   }, 1000);
 
@@ -67,6 +97,12 @@ setTimeout(function() {
 </script>
 
 <script>
+    window.addEventListener("pageshow", function(event) {
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
+
     document.addEventListener("DOMContentLoaded", function() {
         var img = document.getElementById("camera-feed");
         if(img) {

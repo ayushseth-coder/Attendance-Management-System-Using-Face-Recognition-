@@ -210,7 +210,7 @@
           <hr class="my-4 text-slate-200">
 
           <div class="d-flex gap-3 justify-content-end">
-            <button type="button" onclick="history.back()"
+            <button type="button" onclick="cancelRegistration()"
               class="btn btn-light border-slate-300 font-bold px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
             <button type="submit" name="submit" value="pass"
               class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg shadow-sm d-flex align-items-center gap-2 transition-all">
@@ -224,6 +224,17 @@
 </div>
 
 <script>
+  function cancelRegistration() {
+    const role = "{{ role_type }}";
+    if (role === 'employee') {
+        window.location.href = "{{ url_for('face_auth.face_login') }}";
+    } else if (role === 'external' || role === 'delivery') {
+        window.location.href = "{{ url_for('face_auth.other_auth') }}";
+    } else {
+        window.location.href = "{{ url_for('face_auth.visitor_auth') }}";
+    }
+  }
+
   // Auto-fill current date if not set
   if (!document.getElementById('currentDate').value) {
     const today = new Date();

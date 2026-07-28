@@ -1,58 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Other Logs Smart Gateway</title>
-  <link href="../static/camera.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-  <style>
-    .modal-backdrop { opacity: 0.8 !important; }
-    .action-btn { font-size: 1.2rem; padding: 15px; margin-bottom: 10px; width: 100%; font-weight: bold; }
-  </style>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Gateway - External Scanner</title>
+    <!-- Modern Biometric Scanner Styles -->
+    <link href="{{ url_for('static', filename='camera.css') }}" rel="stylesheet" />
+    <link href="../static/camera.css" rel="stylesheet" />
+    <!-- Font Awesome & Tailwind CSS for Modern Project UI Parity -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Dependencies -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .modal-backdrop { opacity: 0.8 !important; }
+    </style>
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="row">
-        <div class="camera-wrapper">
-          <div class="camera-box">
-  <form>
-    <h2>SMART GATEWAY</h2>
-    <p class="text-muted text-center">Stand in front of the camera...</p>
-    <div style="margin-top: 20px;" class="form-row">
-      <!-- Reusing the standard video feed -->
-      <img id="camera-feed" src="" width="100%" height="auto" alt="Camera Feed" />
+    <div class="scanner-wrapper">
+        <div class="scanner-card">
+            <!-- Live Status Indicator -->
+            <div class="status-badge">
+                <div class="live-indicator"></div>
+                <span id="scan-status">Smart Gateway Active</span>
+            </div>
+
+            <!-- Header Titles -->
+            <h1 class="scanner-title">Smart <span class="highlight">Gateway Scan</span></h1>
+            <p class="scanner-subtitle">Position yourself clearly inside the frame for automated guest and delivery gateway authentication.</p>
+
+            <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
+            <div class="camera-frame-wrapper">
+                <div class="camera-inner">
+                    <img id="camera-feed" src="" alt="Camera Feed" />
+                </div>
+            </div>
+
+            <!-- Digital Timer Display -->
+            <div class="timer-box" id="timer-container">
+                <i class="fas fa-camera text-emerald-600 me-2"></i> Scanning in <span class="timer-number" id="timer">3</span> seconds
+            </div>
+
+            <!-- Feature & Instructional Pills -->
+            <div class="scanner-tips">
+                <div class="tip-chip"><i class="fas fa-truck-fast"></i> Quick Delivery Logging</div>
+                <div class="tip-chip"><i class="fas fa-eye"></i> Clear Face View</div>
+                <div class="tip-chip"><i class="fas fa-bolt"></i> Express Pass</div>
+            </div>
+        </div>
     </div>
-  </form>
-</div>
-</div>
-</div>
 
 <script>
-      let timeLeft = 3; // seconds
-  const timerEl = document.getElementById('timer');
+    let timeLeft = 3; // seconds
+    const timerEl = document.getElementById('timer');
+    const timerContainer = document.getElementById('timer-container');
+    const scanStatus = document.getElementById('scan-status');
 
-  const countdown = setInterval(() => {
-    timeLeft--;
-    if (timerEl) {
-      timerEl.textContent = timeLeft;
-    }
-    
-    if (timeLeft <= 0) {
-      clearInterval(countdown);
-    }
-  }, 1000);
+    const countdown = setInterval(() => {
+        timeLeft--;
+        if (timerEl) {
+            timerEl.textContent = timeLeft;
+        }
 
-      // After 4.5 seconds, redirect to the smart gateway modal
-      setTimeout(function () {
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            if (timerContainer) {
+                timerContainer.innerHTML = '<i class="fas fa-spinner fa-spin text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">Opening Gateway...</span>';
+            }
+            if (scanStatus) {
+                scanStatus.textContent = "Processing Capture...";
+            }
+        }
+    }, 1000);
+
+    // After 4.5 seconds, redirect to the smart gateway modal
+    setTimeout(function () {
         window.location.href = "{{ url_for('face_auth.other_modal') }}";
-      }, 4500);
-    </script>
+    }, 4500);
+</script>
 
 <script>
+    window.addEventListener("pageshow", function(event) {
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
+
     document.addEventListener("DOMContentLoaded", function() {
         var img = document.getElementById("camera-feed");
         if(img) {

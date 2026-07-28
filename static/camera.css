@@ -1,47 +1,281 @@
-.camera-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: calc(100vh - 80px); /* Adjust based on navbar height */
+/* Modern Professional Biometric UI Styling - Glowing Edge Animation */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+body {
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f8f9ff;
+    color: #1e293b;
+    margin: 0;
+    padding: 0;
 }
 
-.camera-box {
-  background: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 700px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-  text-align: center;
+.scanner-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 90vh;
+    padding: 25px;
+    box-sizing: border-box;
 }
 
-.camera-box video,
-.camera-box img {
-  width: 100%;
-  height: auto;
-  border-radius: 10px;
-  object-fit: cover;
-}
-
-.camera-box .btn {
-  margin-top: 15px;
-}
-
-/* Responsive tweaks */
-@media (max-width: 768px) {
-  .camera-wrapper {
-    padding: 10px;
-  }
-
-  .camera-box {
-    padding: 20px;
-  }
-
-  .camera-box .btn {
+.scanner-card {
+    background: #ffffff;
+    padding: 40px 35px;
+    border-radius: 28px;
+    border: 1px solid #e2e8f0;
     width: 100%;
-    margin-top: 10px;
-  }
+    max-width: 680px; /* Widened to accommodate larger camera frame */
+    box-shadow: 0 25px 50px -12px rgba(15, 82, 186, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Top Accent Bar */
+.scanner-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #10b981, #3b82f6, #10b981);
+    background-size: 200% 100%;
+    animation: gradient-shift 4s linear infinite;
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+}
+
+/* Status Pill */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 18px;
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 22px;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.12);
+}
+
+.live-indicator {
+    width: 10px;
+    height: 10px;
+    background-color: #10b981;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 8px #10b981;
+}
+
+.live-indicator::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid #10b981;
+    border-radius: 50%;
+    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* Typography */
+.scanner-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.scanner-title .highlight {
+    color: #10b981;
+}
+
+.scanner-subtitle {
+    font-size: 1.05rem;
+    color: #64748b;
+    margin-bottom: 30px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+}
+
+/* ----------------------------------------------------
+   Spacious Rounded Camera Frame with Clockwise Green Light
+   ---------------------------------------------------- */
+.camera-frame-wrapper {
+    position: relative;
+    width: 480px;  /* Significantly larger camera frame width */
+    height: 400px; /* Spacious clear view height */
+    margin: 0 auto 30px auto;
+    border-radius: 38px; /* Reduced border radius from full circle to sleek modern squircle */
+    padding: 5px; /* Thickness of the glowing animated border */
+    background: #1e293b;
+    box-shadow: 0 15px 35px -5px rgba(16, 185, 129, 0.25), 0 0 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Clockwise Rotating Neon Green Light Along Perimeter */
+.camera-frame-wrapper::before {
+    content: '';
+    position: absolute;
+    width: 160%;
+    height: 160%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        transparent 230deg,
+        rgba(16, 185, 129, 0.4) 280deg,
+        #10b981 330deg,
+        #00ff88 360deg
+    );
+    animation: spin-clockwise 2.2s linear infinite;
+    z-index: 0;
+}
+
+/* Subtle underlying border ring so the non-lit edges stay visible */
+.camera-frame-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 36px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+@keyframes spin-clockwise {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Inner camera image container */
+.camera-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #0f172a;
+    border-radius: 33px; /* Slightly smaller than outer wrapper radius */
+    overflow: hidden;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.camera-inner img,
+.camera-inner video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 33px;
+    pointer-events: none;
+}
+
+/* Digital Timer Badge */
+.timer-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 12px 28px;
+    border-radius: 14px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+}
+
+.timer-number {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #10b981;
+    margin: 0 6px;
+    min-width: 28px;
+    display: inline-block;
+}
+
+/* Feature & Instructional Pills */
+.scanner-tips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 25px;
+}
+
+.tip-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+    transition: background-color 0.2s;
+}
+
+.tip-chip:hover {
+    background-color: #f1f5f9;
+}
+
+.tip-chip i {
+    color: #10b981;
+    font-size: 1rem;
+}
+
+/* Responsive Scaling for Tablets & Mobile */
+@media (max-width: 640px) {
+    .scanner-card {
+        padding: 30px 18px;
+        border-radius: 22px;
+    }
+
+    .camera-frame-wrapper {
+        width: 100%;
+        max-width: 360px;
+        height: 320px;
+        border-radius: 28px;
+        margin-bottom: 22px;
+    }
+
+    .camera-inner,
+    .camera-inner img {
+        border-radius: 23px;
+    }
+
+    .scanner-title { font-size: 1.6rem; }
+    .timer-box { font-size: 1rem; padding: 10px 20px; }
+    .timer-number { font-size: 1.3rem; }
+    .tip-chip { font-size: 0.78rem; padding: 6px 12px; }
 }
