@@ -90,10 +90,9 @@ setTimeout(function() {
         })
         .catch(err => {
             console.error("Error calling visitor_result:", err);
-            // Fallback just in case
             window.location.href = "{{ url_for('image_processing.show_captured', role_type='visitor') }}";
         });
-}, 6000);
+}, 4500);
 </script>
 
 <script>

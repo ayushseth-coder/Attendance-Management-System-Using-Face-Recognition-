@@ -115,7 +115,7 @@ $(document).ready(function() {
           {% for log in logs %}
           <tr class="hover:bg-slate-50 transition-colors duration-150">
             <td class="px-3 py-2.5 whitespace-nowrap">
-              <img src="{{ url_for('admin.visitor_image', name=log.Name) }}" alt="{{ log.Name }}" class="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm">
+              <img src="{{ url_for('admin.visitor_image', name=log.Name, id=log.ID) }}" alt="{{ log.Name }}" class="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm">
             </td>
             <td class="px-3 py-2.5 whitespace-nowrap font-bold text-slate-800">{{ log.Name }}</td>
             <td class="px-3 py-2.5 whitespace-nowrap">

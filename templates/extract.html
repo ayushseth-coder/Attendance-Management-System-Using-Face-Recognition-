@@ -12,7 +12,7 @@
       </h5>
     </div>
 
-    <form action="{{ url_for('visitors.visitor1') }}" method="post" class="p-4 md:p-6">
+    <form action="{{ url_for('visitors.visitor1') }}" method="post" class="p-4 md:p-6" id="enrollForm">
       <div class="row g-4">
         <!-- Photo Preview Column -->
         <div class="col-md-4 text-center border-e border-slate-200 pe-md-4">
@@ -55,9 +55,10 @@
               <div class="input-group shadow-sm">
                 <span class="input-group-text bg-white text-blue-600 border-e-0"><i class="fas fa-user"></i></span>
                 <input type="text" class="form-control border-s-0 font-medium text-slate-800 focus:ring-blue-500"
-                  name="name" value="{{ data['Name'] if data and 'Name' in data else '' }}" required
+                  name="name" id="nameInput" value="{{ data['Name'] if data and 'Name' in data else '' }}" required
                   placeholder="Enter Full Name">
               </div>
+              <div class="text-danger mt-1 fw-bold text-sm" id="nameError" style="display: none;"></div>
             </div>
 
             <!-- Phone Number -->
@@ -227,11 +228,11 @@
   function cancelRegistration() {
     const role = "{{ role_type }}";
     if (role === 'employee') {
-        window.location.href = "{{ url_for('face_auth.face_login') }}";
+      window.location.href = "{{ url_for('face_auth.face_login') }}";
     } else if (role === 'external' || role === 'delivery') {
-        window.location.href = "{{ url_for('face_auth.other_auth') }}";
+      window.location.href = "{{ url_for('face_auth.other_auth') }}";
     } else {
-        window.location.href = "{{ url_for('face_auth.visitor_auth') }}";
+      window.location.href = "{{ url_for('face_auth.visitor_auth') }}";
     }
   }
 
@@ -240,5 +241,27 @@
     const today = new Date();
     document.getElementById('currentDate').value = today.toISOString().split('T')[0];
   }
+
+  // Name Format Validation
+  document.getElementById('enrollForm').addEventListener('submit', function (e) {
+    const role = "{{ role_type }}";
+    if (role === 'employee') {
+      const nameInput = document.getElementById('nameInput');
+      const nameError = document.getElementById('nameError');
+      const regex = /^[A-Za-z]+_\w+$/;
+
+      if (!regex.test(nameInput.value.trim())) {
+        e.preventDefault(); // Stop form submission
+        nameInput.classList.add('is-invalid');
+        nameInput.style.borderColor = 'red';
+        nameError.style.display = 'block';
+        nameError.innerText = "Name format is incorrect! Please write in correct format (e.g., Ayush_858)";
+      } else {
+        nameInput.classList.remove('is-invalid');
+        nameInput.style.borderColor = '';
+        nameError.style.display = 'none';
+      }
+    }
+  });
 </script>
 {% endblock %}

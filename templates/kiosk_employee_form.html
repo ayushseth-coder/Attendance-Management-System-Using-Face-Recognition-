@@ -12,7 +12,7 @@
             </h5>
         </div>
 
-        <form action="{{ url_for('visitors.visitor1') }}" method="post" class="p-4 md:p-6">
+        <form action="{{ url_for('visitors.visitor1') }}" method="post" class="p-4 md:p-6" id="enrollForm">
             <input type="hidden" name="Registration_Role" value="Employee">
             <input type="hidden" name="role_type" value="{{ role_type }}">
             <input type="hidden" name="Purpose" value="Employment Registration">
@@ -60,10 +60,11 @@
                             <div class="input-group shadow-sm">
                                 <span class="input-group-text bg-white text-emerald-600 border-e-0"><i
                                         class="fas fa-user"></i></span>
-                                <input type="text"
+                                <input type="text" id="nameInput"
                                     class="form-control border-s-0 font-medium text-slate-800 focus:ring-emerald-500"
                                     name="name" required placeholder="eg. : Ayush_001">
                             </div>
+                            <div class="text-danger mt-1 fw-bold text-sm" id="nameError" style="display: none;"></div>
                             <small class="text-slate-400 mt-1 d-block"><i class="fas fa-lightbulb text-amber-400"></i>
                                 Tip: Fill the employee id if available.</small>
                         </div>
@@ -168,5 +169,24 @@
 
     // Generate a temporary UID for the pending request
     document.getElementById('generateUid').value = "PEND-" + Math.floor(100000 + Math.random() * 900000);
+
+    // Name Format Validation
+    document.getElementById('enrollForm').addEventListener('submit', function(e) {
+        const nameInput = document.getElementById('nameInput');
+        const nameError = document.getElementById('nameError');
+        const regex = /^[A-Za-z]+_\w+$/;
+        
+        if (!regex.test(nameInput.value.trim())) {
+            e.preventDefault(); // Stop form submission
+            nameInput.classList.add('is-invalid');
+            nameInput.style.borderColor = 'red';
+            nameError.style.display = 'block';
+            nameError.innerText = "Name format is incorrect! Please write in correct format (e.g., Ayush_858)";
+        } else {
+            nameInput.classList.remove('is-invalid');
+            nameInput.style.borderColor = '';
+            nameError.style.display = 'none';
+        }
+    });
 </script>
 {% endblock %}

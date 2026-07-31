@@ -1,0 +1,739 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Employee Detail - {{ emp.Name }}{% endblock title %}
+
+{% block body %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* 2-Column Responsive Layout */
+    .detail-grid-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+        align-items: flex-start;
+    }
+    
+    /* Left Column: Calendar Wrapper (50% Width Split) */
+    .cal-section-wrapper {
+        flex: 1;
+        min-width: 320px;
+        max-width: calc(50% - 14px);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* Top Navigation Header Card */
+    .cal-nav-card {
+        background: #ffffff;
+        border-radius: 28px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .cal-circle-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1px solid #f1f5f9;
+        background: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #1e293b;
+        transition: all 0.2s ease;
+    }
+    .cal-circle-btn:hover {
+        background: #f8fafc;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 3 Metric Cards Row */
+    .cal-metrics-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+    }
+    .cal-metric-card {
+        background: #ffffff;
+        border-radius: 24px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+        padding: 16px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .cal-metric-label {
+        font-size: 0.68rem;
+        font-weight: 800;
+        color: #94a3b8;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 6px;
+    }
+    .cal-metric-val {
+        font-size: 1.8rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 12px;
+    }
+    .cal-progress-track {
+        height: 4px;
+        width: 100%;
+        border-radius: 10px;
+        background: #f1f5f9;
+        overflow: hidden;
+    }
+    .cal-progress-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+
+    /* Calendar Grid Card */
+    .cal-main-card {
+        background: #ffffff;
+        border-radius: 28px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+        padding: 24px;
+    }
+    .cal-grid-header {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+        text-align: center;
+        margin-bottom: 16px;
+    }
+    .cal-hdr-day {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #94a3b8;
+    }
+    .cal-grid-days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px 8px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    /* Circle Date Cells */
+    .cal-day-cell {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        position: relative;
+        transition: all 0.15s ease;
+        line-height: 1.1;
+    }
+    .cal-status-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        margin-top: 1px;
+    }
+
+    /* Selected / Today Active Circle Date */
+    .cal-day-cell.active-today {
+        background: #2563eb !important;
+        color: #ffffff !important;
+        border-color: #2563eb !important;
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35) !important;
+    }
+    .cal-day-cell.active-today .cal-status-dot {
+        background-color: #ffffff !important;
+    }
+
+    /* Dimmed / Weekend / Non-Month Days */
+    .cal-day-cell.dimmed {
+        border-color: transparent !important;
+        background: #f8fafc !important;
+        color: #cbd5e1 !important;
+    }
+
+    /* Daily Activity Card */
+    .cal-activity-card {
+        background: #ffffff;
+        border-radius: 28px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+        padding: 24px;
+    }
+    .activity-item {
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        border-radius: 20px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    .activity-item:last-child {
+        margin-bottom: 0;
+    }
+    .act-date-badge {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-weight: 800;
+        line-height: 1;
+        font-size: 0.85rem;
+    }
+
+    /* Detail Card (Right Side 50% Width Split) */
+    .emp-card-wrapper {
+        flex: 1;
+        min-width: 320px;
+        max-width: calc(50% - 14px);
+    }
+
+    .emp-detail-card {
+        background: #ffffff;
+        border-radius: 28px;
+        box-shadow: 0 16px 40px -12px rgba(15, 23, 42, 0.08);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .emp-profile-banner {
+        background: linear-gradient(135deg, #0d52bf 0%, #1e40af 100%);
+        height: 150px;
+        position: relative;
+    }
+
+    .emp-profile-avatar-container {
+        position: absolute;
+        bottom: -45px;
+        left: 36px;
+        width: 125px;
+        height: 125px;
+        background: #ffffff;
+        padding: 4px;
+        border-radius: 50%;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .emp-profile-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .emp-profile-info {
+        padding: 60px 36px 36px 36px;
+    }
+
+    .info-item {
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        border-radius: 14px;
+        padding: 12px 16px;
+        height: 100%;
+        transition: all 0.2s ease;
+    }
+
+    .info-item:hover {
+        background: #ffffff;
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .info-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #64748b;
+        font-weight: 700;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .info-value {
+        font-size: 1.05rem;
+        color: #0f172a;
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    .btn-action {
+        padding: 9px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+
+    .btn-back {
+        background-color: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        text-decoration: none;
+    }
+
+    .btn-back:hover {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+
+    .status-pill {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(8px);
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+</style>
+
+<div class="container-fluid px-0 mt-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <h2 class="mb-0" style="font-size: 32px;"><b style="color: black;">Employee</b> <span
+                        style="color: #20c997;">Details</span></h2>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('admin.manage_employees') }}" class="btn btn-action btn-back shadow-sm">
+                    <i class="fas fa-arrow-left me-2 text-slate-500"></i> Back to Directory
+                </a>
+                <form action="{{ url_for('admin.delete_employee', name=emp.emp_id) }}" method="POST" class="m-0">
+                    <button type="submit" class="btn btn-action shadow-sm"
+                        style="background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca;"
+                        onclick="return confirm('Are you sure you want to permanently delete this employee?');">
+                        <i class="fas fa-trash-alt me-1.5"></i> Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main 2-Column Layout -->
+    <div class="detail-grid-container">
+        
+        <!-- LEFT SIDE: Screenshot Exact Functional Attendance Calendar -->
+        <div class="cal-section-wrapper">
+            
+            <!-- 1. Navigation Header Card -->
+            <div class="cal-nav-card">
+                <button type="button" class="cal-circle-btn" onclick="prevMonth()">
+                    <i class="fas fa-chevron-left text-xs"></i>
+                </button>
+                <div class="text-center">
+                    <h4 id="calMonthTitle" class="fw-extrabold text-slate-800 mb-0" style="font-size: 1.15rem; color: #1e293b;">October 2023</h4>
+                    <span id="calWorkWeeks" class="text-xs fw-extrabold text-slate-400 uppercase tracking-widest block mt-0.5" style="font-size: 0.65rem;">4 WORK WEEKS</span>
+                </div>
+                <button type="button" class="cal-circle-btn" onclick="nextMonth()">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+
+            <!-- 2. Metric Summary Cards Row -->
+            <div class="cal-metrics-row">
+                <div class="cal-metric-card">
+                    <span class="cal-metric-label">PRESENT</span>
+                    <h3 class="cal-metric-val text-blue-600" id="metricPresent">00</h3>
+                    <div class="cal-progress-track">
+                        <div class="cal-progress-fill bg-blue-600" id="barPresent" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div class="cal-metric-card">
+                    <span class="cal-metric-label">ABSENT</span>
+                    <h3 class="cal-metric-val text-red-500" id="metricAbsent">00</h3>
+                    <div class="cal-progress-track bg-red-50">
+                        <div class="cal-progress-fill bg-red-500" id="barAbsent" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div class="cal-metric-card">
+                    <span class="cal-metric-label">LATE</span>
+                    <h3 class="cal-metric-val text-amber-500" id="metricLate">00</h3>
+                    <div class="cal-progress-track bg-amber-50">
+                        <div class="cal-progress-fill bg-amber-500" id="barLate" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Main Calendar Circle Grid Card -->
+            <div class="cal-main-card">
+                <!-- Sunday to Saturday Day Headers -->
+                <div class="cal-grid-header">
+                    <span class="cal-hdr-day">S</span>
+                    <span class="cal-hdr-day">M</span>
+                    <span class="cal-hdr-day">T</span>
+                    <span class="cal-hdr-day">W</span>
+                    <span class="cal-hdr-day">T</span>
+                    <span class="cal-hdr-day">F</span>
+                    <span class="cal-hdr-day">S</span>
+                </div>
+
+                <!-- Calendar Days Grid -->
+                <div id="calendarGrid" class="cal-grid-days"></div>
+
+                <!-- Legend Row -->
+                <div class="d-flex items-center justify-content-between pt-3 border-top border-slate-100 px-1 text-xs font-semibold text-slate-500">
+                    <div class="d-flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Present
+                    </div>
+                    <div class="d-flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Absent
+                    </div>
+                    <div class="d-flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Late
+                    </div>
+                    <div class="d-flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Holiday
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Daily Activity Feed Card -->
+            <div class="cal-activity-card">
+                <div class="d-flex items-center justify-content-between mb-3">
+                    <h5 class="fw-extrabold text-slate-800 mb-0" style="font-size: 1.05rem;">Daily Activity</h5>
+                    <span class="badge bg-blue-50 text-blue-600 rounded-pill px-3 py-1 font-bold" style="font-size: 0.72rem;">View All</span>
+                </div>
+
+                {% if emp.recent_activity %}
+                    {% for act in emp.recent_activity %}
+                    <div class="activity-item">
+                        <div class="d-flex items-center gap-3">
+                            <div class="act-date-badge {{ 'bg-amber-500' if act.is_late else 'bg-blue-600' }}">
+                                <span>{{ act.day_num }}</span>
+                                <span style="font-size: 0.62rem; font-weight: 700;">{{ act.month_short }}</span>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-slate-900 mb-0" style="font-size: 0.95rem;">{{ act.day_name }}</h6>
+                                <small class="text-slate-400 font-semibold" style="font-size: 0.75rem;">{{ act.duration }}</small>
+                            </div>
+                        </div>
+                        <div class="text-end" style="font-size: 0.72rem; font-weight: 700;">
+                            <div class="text-slate-400 uppercase tracking-wider">
+                                IN <span class="{{ 'text-red-500' if act.is_late else 'text-slate-800' }}">{{ act.in_time }}</span>
+                            </div>
+                            <div class="text-slate-400 uppercase tracking-wider mt-0.5">
+                                OUT <span class="text-slate-800">{{ act.out_time }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Demo Fallback Activity Items matching screenshot -->
+                    <div class="activity-item">
+                        <div class="d-flex items-center gap-3">
+                            <div class="act-date-badge bg-blue-600">
+                                <span>09</span>
+                                <span style="font-size: 0.62rem; font-weight: 700;">OCT</span>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-slate-900 mb-0" style="font-size: 0.95rem;">Monday</h6>
+                                <small class="text-slate-400 font-semibold" style="font-size: 0.75rem;">8h 25m total</small>
+                            </div>
+                        </div>
+                        <div class="text-end" style="font-size: 0.72rem; font-weight: 700;">
+                            <div class="text-slate-400 uppercase tracking-wider">
+                                IN <span class="text-slate-800">10:05</span>
+                            </div>
+                            <div class="text-slate-400 uppercase tracking-wider mt-0.5">
+                                OUT <span class="text-slate-800">18:30</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="d-flex items-center gap-3">
+                            <div class="act-date-badge bg-amber-500">
+                                <span>05</span>
+                                <span style="font-size: 0.62rem; font-weight: 700;">OCT</span>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-slate-900 mb-0" style="font-size: 0.95rem;">Thursday</h6>
+                                <small class="text-slate-400 font-semibold" style="font-size: 0.75rem;">7h 55m total</small>
+                            </div>
+                        </div>
+                        <div class="text-end" style="font-size: 0.72rem; font-weight: 700;">
+                            <div class="text-slate-400 uppercase tracking-wider">
+                                IN <span class="text-red-500">10:35</span>
+                            </div>
+                            <div class="text-slate-400 uppercase tracking-wider mt-0.5">
+                                OUT <span class="text-slate-800">18:30</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDE: Employee Detail Card -->
+        <div class="emp-card-wrapper">
+            <div class="emp-detail-card">
+                <!-- Header Banner with Status Badge -->
+                <div class="emp-profile-banner">
+                    <div class="position-absolute top-0 end-0 p-3">
+                        <span class="status-pill d-inline-flex align-items-center gap-2">
+                            <span class="rounded-circle bg-emerald-400"
+                                style="width: 8px; height: 8px; display: inline-block;"></span>
+                            {{ emp.Leave_Status if emp.Leave_Status else 'Active' }}
+                        </span>
+                    </div>
+                    <div class="emp-profile-avatar-container">
+                        <img src="{{ url_for('admin.employee_image', name=emp.Name, id=emp.emp_id) }}" alt="Profile Photo"
+                            class="emp-profile-avatar"
+                            onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ emp.Name | urlencode }}&background=0d6efd&color=fff&size=150'">
+                    </div>
+                </div>
+
+                <!-- Body Content -->
+                <div class="emp-profile-info">
+                    <!-- Name & Job Title -->
+                    <div class="mb-4">
+                        <h2 class="fw-extrabold text-slate-900 mb-1" style="font-size: 1.85rem; letter-spacing: -0.5px;">{{ emp.Name }}</h2>
+                        <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-blue-50 text-blue-600 font-semibold"
+                            style="font-size: 0.95rem;">
+                            <i class="fas fa-briefcase"></i>
+                            <span>{{ emp.Job }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Sleek Info Grid -->
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-id-badge text-blue-600"></i> EMPLOYEE ID
+                                </div>
+                                <div class="info-value text-slate-800">{{ emp.emp_id }}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-envelope text-blue-600"></i> EMAIL ADDRESS
+                                </div>
+                                <div class="info-value text-slate-800">{{ emp.Email }}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-phone-alt text-blue-600"></i> PHONE NUMBER
+                                </div>
+                                <div class="info-value text-slate-800">{{ emp.Phone }}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-user-shield text-blue-600"></i> SYSTEM ROLE
+                                </div>
+                                <div class="info-value text-slate-800">{{ emp.Role }}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-map-marker-alt text-blue-600"></i> ADDRESS
+                                </div>
+                                <div class="info-value text-slate-800">{{ emp.Address }}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-camera text-blue-600"></i> ENROLLED PHOTOS
+                                </div>
+                                <div class="info-value text-slate-800 d-flex align-items-center gap-2">
+                                    <span>{{ emp.Photo_Count }} {{ 'Photo' if emp.Photo_Count == 1 else 'Photos' }}</span>
+                                    <span class="badge bg-blue-100 text-blue-700 rounded-pill font-semibold px-2 py-0.5 text-xs">AI Vectors</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Functional Calendar Script matching Screenshot -->
+<script>
+    const presentDates = new Set({{ emp.present_dates | tojson }});
+    const lateDates = new Set({{ emp.late_dates | tojson }});
+    let currentDate = new Date();
+
+    function renderCalendar(date) {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        document.getElementById("calMonthTitle").innerText = `${monthNames[month]} ${year}`;
+        
+        // Calculate work weeks count
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+        const usedDays = firstDayOfMonth.getDay() + lastDayOfMonth.getDate();
+        const workWeeks = Math.ceil(usedDays / 7);
+        document.getElementById("calWorkWeeks").innerText = `${workWeeks} WORK WEEKS`;
+        
+        const grid = document.getElementById("calendarGrid");
+        grid.innerHTML = "";
+        
+        // Grid starts on Sunday (0 = Sun, 1 = Mon, ..., 6 = Sat)
+        const startDayIndex = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+        
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        let presentCount = 0;
+        let absentCount = 0;
+        let lateCount = 0;
+        
+        // Fill prev month padding cells
+        for (let i = startDayIndex - 1; i >= 0; i--) {
+            const cell = document.createElement("div");
+            cell.className = "cal-day-cell dimmed";
+            const numSpan = document.createElement("span");
+            const dVal = daysInPrevMonth - i;
+            numSpan.innerText = dVal < 10 ? `0${dVal}` : dVal;
+            cell.appendChild(numSpan);
+            grid.appendChild(cell);
+        }
+        
+        // Fill current month cells
+        for (let day = 1; day <= daysInMonth; day++) {
+            const cell = document.createElement("div");
+            const cellDate = new Date(year, month, day);
+            cellDate.setHours(0,0,0,0);
+            
+            const yyyy = year;
+            const mm = String(month + 1).padStart(2, '0');
+            const dd = String(day).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+            
+            const dayOfWeek = cellDate.getDay(); // 0 = Sun, 6 = Sat
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+            const isToday = (cellDate.getTime() === today.getTime());
+
+            // Date Number format (e.g. 01, 02, 09, 10)
+            const numSpan = document.createElement("span");
+            numSpan.innerText = day < 10 ? `0${day}` : `${day}`;
+            cell.appendChild(numSpan);
+
+            // Status Dot
+            const dotSpan = document.createElement("span");
+            dotSpan.className = "cal-status-dot";
+
+            let cellClass = "cal-day-cell";
+            
+            if (isToday) {
+                cellClass += " active-today";
+            }
+            
+            if (isWeekend) {
+                cellClass += " dimmed";
+                dotSpan.className += " bg-slate-300";
+            } else if (lateDates.has(dateStr)) {
+                dotSpan.className += " bg-amber-500";
+                lateCount++;
+            } else if (presentDates.has(dateStr)) {
+                dotSpan.className += " bg-blue-600";
+                presentCount++;
+            } else if (cellDate < today) {
+                dotSpan.className += " bg-red-500";
+                absentCount++;
+            } else {
+                cellClass += " dimmed";
+                dotSpan.className += " bg-slate-300";
+            }
+
+            cell.className = cellClass;
+            cell.appendChild(dotSpan);
+            grid.appendChild(cell);
+        }
+
+        // Fill next month padding cells to complete 35 or 42 grid cells
+        const totalRendered = startDayIndex + daysInMonth;
+        const totalGridCells = totalRendered <= 35 ? 35 : 42;
+        for (let day = 1; day <= (totalGridCells - totalRendered); day++) {
+            const cell = document.createElement("div");
+            cell.className = "cal-day-cell dimmed";
+            const numSpan = document.createElement("span");
+            numSpan.innerText = day < 10 ? `0${day}` : `${day}`;
+            cell.appendChild(numSpan);
+            grid.appendChild(cell);
+        }
+
+        // Update 3 Metrics Cards & Progress Bars
+        const strP = presentCount < 10 ? `0${presentCount}` : `${presentCount}`;
+        const strA = absentCount < 10 ? `0${absentCount}` : `${absentCount}`;
+        const strL = lateCount < 10 ? `0${lateCount}` : `${lateCount}`;
+
+        document.getElementById("metricPresent").innerText = strP;
+        document.getElementById("metricAbsent").innerText = strA;
+        document.getElementById("metricLate").innerText = strL;
+
+        const totalWorkingDays = (presentCount + absentCount + lateCount) || 1;
+        document.getElementById("barPresent").style.width = `${Math.round((presentCount / totalWorkingDays) * 100)}%`;
+        document.getElementById("barAbsent").style.width = `${Math.round((absentCount / totalWorkingDays) * 100)}%`;
+        document.getElementById("barLate").style.width = `${Math.round((lateCount / totalWorkingDays) * 100)}%`;
+    }
+
+    function prevMonth() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar(currentDate);
+    }
+
+    function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar(currentDate);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        renderCalendar(currentDate);
+    });
+</script>
+
+{% endblock %}

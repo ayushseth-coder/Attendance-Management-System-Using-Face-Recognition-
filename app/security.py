@@ -130,14 +130,27 @@ def visitor():
     
 
 
+def get_dashboard_counts():
+    from models.database import attendance_log, visitorlogtable, rejectedvistable
+    import datetime
+    today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+    
+    today_emp = attendance_log.count_documents({"Date": {"$regex": f"^{today_str}"}, "Status": "Present"})
+    today_vis = attendance_log.count_documents({"Date": {"$regex": f"^{today_str}"}, "Status": "Regular Visitor"})
+    today_other = attendance_log.count_documents({"Date": {"$regex": f"^{today_str}"}, "Status": {"$regex": r"^Present \("}})
+    total_vis = visitorlogtable.count_documents({}) + rejectedvistable.count_documents({})
+    
+    return today_emp, today_vis, today_other, total_vis
+
 @security.route("/security_home", methods=["GET"])
 def security_home():
-   
-    return render_template("security_home.html",total=total,countvis=countvis)
+    today_emp, today_vis, today_other, total_vis = get_dashboard_counts()
+    return render_template("security_home.html", total=total_vis, countvis=today_emp, today_emp=today_emp, today_vis=today_vis, today_other=today_other)
 
 @security.route('/home', methods=['POST', 'GET'])
 def home():
-    return render_template("security_home.html",total=total,countvis=countvis)
+    today_emp, today_vis, today_other, total_vis = get_dashboard_counts()
+    return render_template("security_home.html", total=total_vis, countvis=today_emp, today_emp=today_emp, today_vis=today_vis, today_other=today_other)
 @security.route("/overview", methods=["GET"])
 def overview():
     visitobj = list(visitorlogtable.find({"exit_time": None}))
@@ -162,16 +175,22 @@ def attendance_timesheet():
     all_users = list(collection.find())
     user_lookup = {}
     for user in all_users:
+        user_info = {
+            "Email": user.get("Email", "N/A"),
+            "Job": user.get("Job", "Employee")
+        }
+        if user.get("HR_ID"):
+            user_lookup[str(user.get("HR_ID"))] = user_info
+        if user.get("ID"):
+            user_lookup[str(user.get("ID"))] = user_info
         name = user.get("Name", "")
         if name:
-            user_lookup[name] = {
-                "Email": user.get("Email", "N/A"),
-                "Job": user.get("Job", "Employee")
-            }
+            user_lookup[name] = user_info
             
     timesheet_data = []
     for log in raw_logs:
         name = log.get("Name", "")
+        log_id = log.get("ID", log.get("HR_ID", ""))
         entry_datetime_str = log.get("Date", "")
         exit_time_str = log.get("ExitTime")
         
@@ -195,9 +214,10 @@ def attendance_timesheet():
                 print(f"[ERROR] Failed to calculate working hours for {name}: {e}")
                 working_hours = "Error"
                 
-        user_info = user_lookup.get(name, {"Email": "Unknown", "Job": "Unknown"})
+        user_info = user_lookup.get(str(log_id), user_lookup.get(name, {"Email": "Unknown", "Job": "Unknown"}))
         
         timesheet_data.append({
+            "ID": log_id,
             "Name": name,
             "Email": user_info["Email"],
             "Job": user_info["Job"],

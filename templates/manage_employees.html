@@ -168,6 +168,10 @@ $(document).ready(function() {
           </td>
           <td class="px-3 py-2.5 whitespace-nowrap">
             <div class="flex justify-center items-center gap-2">
+              <!-- Inspect Button -->
+              <a href="{{ url_for('admin.employee_detail', employee_id=emp.emp_id) }}" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm inline-block text-decoration-none">
+                <i class="fas fa-eye me-1"></i> Inspect
+              </a>
               <!-- Edit Button -->
               <button class="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 px-3 py-1.5 rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ loop.index }}">
                 Edit
@@ -205,47 +209,78 @@ $(document).ready(function() {
                             <!-- Edit Modal -->
                             <div class="modal fade" id="editModal{{ loop.index }}" tabindex="-1" aria-labelledby="editModalLabel{{ loop.index }}" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content border-0 shadow-lg">
-                                        <div class="modal-header bg-dark text-white border-0">
-                                            <h5 class="modal-title" id="editModalLabel{{ loop.index }}"><i class="fa fa-user-edit me-2"></i>Edit Employee Details</h5>
+                                    <div class="modal-content border-0 shadow-2xl rounded-2xl overflow-hidden">
+                                        <div class="modal-header bg-[#0f52ba] text-white border-0 px-6 py-4">
+                                            <h5 class="modal-title font-bold text-lg flex items-center gap-2" id="editModalLabel{{ loop.index }}">
+                                                <i class="fas fa-user-edit text-blue-200"></i> Edit Employee Details
+                                            </h5>
                                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <form action="{{ url_for('admin.update_employee_details') }}" method="POST">
-                                            <div class="modal-body p-4 text-start">
-                                                <div class="mb-4">
-                                                    <label class="form-label text-secondary fw-bold mb-1">Employee Name (ID)</label>
-                                                    <input type="text" class="form-control bg-light border-0 fs-5" name="name" value="{{ emp.Name }}" readonly>
-                                                    <input type="hidden" name="hr_id" value="{{ emp.HR_ID }}">
-                                                    <small class="text-muted"><i class="fa fa-lock me-1"></i>Locked to biometric signature</small>
+                                            <div class="modal-body p-6 text-start space-y-4">
+                                                <!-- Locked Identity Banner -->
+                                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                                                    <div>
+                                                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Employee Name & ID</span>
+                                                        <span class="text-base font-extrabold text-slate-800">{{ emp.Name }}</span>
+                                                        <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 ml-2">{{ emp.emp_id }}</span>
+                                                    </div>
+                                                    <i class="fas fa-lock text-slate-400 text-lg" title="Locked to Biometric ID"></i>
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label text-dark fw-bold mb-1">Email Address</label>
-                                                    <input type="email" class="form-control" name="email" value="{{ '' if emp.get('Email', 'Unknown') == 'Unknown' else emp.get('Email', '') }}" placeholder="employee@elgoss.com" required>
+
+                                                <input type="hidden" name="name" value="{{ emp.Name }}">
+                                                <input type="hidden" name="emp_id" value="{{ emp.emp_id }}">
+                                                <input type="hidden" name="hr_id" value="{{ emp.HR_ID }}">
+
+                                                <!-- Email -->
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                                        <i class="fas fa-envelope text-blue-600"></i> Email Address <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <input type="email" class="form-control rounded-xl border-slate-200 font-medium text-slate-800 focus:ring-blue-500 py-2.5" name="email" value="{{ '' if emp.get('Email', 'Unknown') == 'Unknown' else emp.get('Email', '') }}" placeholder="employee@elgoss.com" required>
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label text-dark fw-bold mb-1">Phone Number</label>
-                                                    <input type="text" class="form-control" name="phone" value="{{ '' if emp.get('Phone', 'Unknown') == 'Unknown' else emp.get('Phone', '') }}" placeholder="+1 234 567 8900">
+
+                                                <!-- Phone -->
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                                        <i class="fas fa-phone-alt text-blue-600"></i> Phone Number
+                                                    </label>
+                                                    <input type="text" class="form-control rounded-xl border-slate-200 font-medium text-slate-800 focus:ring-blue-500 py-2.5" name="phone" value="{{ '' if emp.get('Phone', 'Unknown') == 'Unknown' else emp.get('Phone', '') }}" placeholder="+91 9876543210">
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label text-dark fw-bold mb-1">Home Address</label>
-                                                    <input type="text" class="form-control" name="address" value="{{ '' if emp.get('Address', 'Unknown') == 'Unknown' else emp.get('Address', '') }}" placeholder="123 Main St, City">
+
+                                                <!-- Address -->
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                                        <i class="fas fa-map-marker-alt text-blue-600"></i> Home Address
+                                                    </label>
+                                                    <input type="text" class="form-control rounded-xl border-slate-200 font-medium text-slate-800 focus:ring-blue-500 py-2.5" name="address" value="{{ '' if emp.get('Address', 'Unknown') == 'Unknown' else emp.get('Address', '') }}" placeholder="123 Main St, City">
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label text-dark fw-bold mb-1">Job Title / Role</label>
-                                                    <input type="text" class="form-control" name="job" value="{{ '' if emp.get('Job', 'Unknown') == 'Unknown' else emp.get('Job', '') }}" placeholder="e.g. Developer, HR" required>
+
+                                                <!-- Job Title -->
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                                        <i class="fas fa-briefcase text-blue-600"></i> Job Title / Role <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <input type="text" class="form-control rounded-xl border-slate-200 font-medium text-slate-800 focus:ring-blue-500 py-2.5" name="job" value="{{ '' if emp.get('Job', 'Unknown') == 'Unknown' else emp.get('Job', '') }}" placeholder="e.g. Software Engineer, HR" required>
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label text-dark fw-bold mb-1">Leave Status</label>
-                                                    <select class="form-select" name="leave_status">
+
+                                                <!-- Leave Status -->
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                                        <i class="fas fa-toggle-on text-blue-600"></i> Leave Status
+                                                    </label>
+                                                    <select class="form-select rounded-xl border-slate-200 font-medium text-slate-800 focus:ring-blue-500 py-2.5" name="leave_status">
                                                         <option value="Active" {% if emp.get('Leave_Status', 'Active') == 'Active' %}selected{% endif %}>Active</option>
                                                         <option value="On Leave" {% if emp.get('Leave_Status', 'Active') == 'On Leave' %}selected{% endif %}>On Leave</option>
                                                         <option value="Suspended" {% if emp.get('Leave_Status', 'Active') == 'Suspended' %}selected{% endif %}>Suspended</option>
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div class="modal-footer border-top-0 bg-light">
-                                                <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-primary px-4 rounded-pill shadow-sm">Save Details</button>
+                                            <div class="modal-footer bg-slate-50 border-t border-slate-100 px-6 py-4 flex items-center justify-end gap-2">
+                                                <button type="button" class="btn btn-light border-slate-300 font-bold px-4 py-2 rounded-xl text-slate-700 hover:bg-slate-100" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-xl shadow-md d-flex align-items-center gap-2">
+                                                    <i class="fas fa-save"></i> Save Changes
+                                                </button>
                                             </div>
                                         </form>
                                     </div>

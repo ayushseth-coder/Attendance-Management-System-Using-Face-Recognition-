@@ -32,11 +32,7 @@ def gen_frames():
     captured_images = []
     start_time = time.time()
     countdown_duration = 3.0  # reduced to 3 seconds
-    
-    shots_taken = 0
-    max_shots = 3
-    last_shot_time = 0
-    shot_interval = 0.2 # 200ms between shots
+    burst_captured = False
     
     try:
         while True:
@@ -47,22 +43,24 @@ def gen_frames():
 
             elapsed_time = time.time() - start_time
 
-            # Start taking multiple shots after the initial countdown
-            if elapsed_time >= countdown_duration and shots_taken < max_shots:
-                current_time = time.time()
-                if current_time - last_shot_time >= shot_interval:
-                    now = datetime.datetime.now()
-                    os.makedirs('static/shots', exist_ok=True)
-                    filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S_%f')}.png")
-                    cv2.imwrite(filename, frame)
-                    captured_images.append(filename)
-                    shots_taken += 1
-                    last_shot_time = current_time
-                    print(f"[INFO] Image {shots_taken}/3 captured: {filename}")
-                    
-                    if shots_taken == max_shots:
-                        captured_image = captured_images[0]
-                        break # Freeze frame and release camera
+            # Fast rapid 3-shot burst capture after initial countdown
+            if elapsed_time >= countdown_duration and not burst_captured:
+                burst_captured = True
+                now = datetime.datetime.now()
+                os.makedirs('static/shots', exist_ok=True)
+                
+                for i in range(3):
+                    succ, burst_frame = camera.read()
+                    if succ:
+                        filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S')}_{i}.png")
+                        cv2.imwrite(filename, burst_frame)
+                        captured_images.append(filename)
+                        if i == 0:
+                            captured_image = filename # Legacy support
+                    time.sleep(0.1)
+                
+                print(f"[INFO] Burst captured for Visitor/General: {captured_images}")
+                break # Freeze frame on frontend and release camera
             
             # Encode the current frame for streaming
             ret, buffer = cv2.imencode('.jpg', frame)

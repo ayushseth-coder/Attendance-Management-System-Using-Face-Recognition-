@@ -41,6 +41,14 @@ def visitor1():
 
             registration_role = request.form.get('Registration_Role', 'Visitor')
             role_type = request.form.get('role_type', 'visitor')
+            
+            import re
+            # Strictly validate Employee Name Format (Name_ID)
+            if registration_role == 'Employee':
+                if not re.match(r"^[A-Za-z]+_\w+$", name.strip()):
+                    flash("Error: Employee name must be in the exact format 'Name_ID' (e.g., Ayush_858). Please correct the name and submit again.", "danger")
+                    return redirect(request.referrer or url_for('security.securitydash'))
+                    
             is_delivery = (role_type == 'delivery')
 
             # Prevent Duplicate Submissions (Double Click Issue)
@@ -94,7 +102,7 @@ def deletevis(uid):
 
 @visitor.route('/accept_regular/<uid>', methods=['GET'])
 def accept_regular(uid):
-    element1 = reqvistable.find_one({"UID": uid})
+    element1 = reqvistable.find_one_and_delete({"UID": uid})
     if not element1:
         return redirect(url_for('admin.admindash'))
 
@@ -113,6 +121,11 @@ def accept_regular(uid):
             visitor_faces_dir = os.path.join(base_dir, 'visitor_faces')
             os.makedirs(visitor_faces_dir, exist_ok=True)
             
+            import random
+            base_visitor_id = str(random.randint(100000, 999999))
+            element1['Visitor_ID'] = base_visitor_id
+            element1['ID'] = base_visitor_id
+            
             for shot_filename in shot_filenames.split(','):
                 shot_filename = shot_filename.strip()
                 if not shot_filename: continue
@@ -124,51 +137,71 @@ def accept_regular(uid):
                     flash(f"Error: The photo ({shot_filename}) for this visitor was deleted or not found. Cannot enroll in AI database. Please ask them to register again.", "danger")
                     return redirect(url_for('admin.admindash'))
                 
-                random_suffix = str(uuid.uuid4())[:6]
-                permanent_img_path = os.path.join(visitor_faces_dir, f"{visitor_name}_{random_suffix}.png")
+                random_suffix = str(uuid.uuid4())[:6].upper()
+                permanent_img_path = os.path.join(visitor_faces_dir, f"{visitor_name}_{base_visitor_id}_{random_suffix}.png")
                 shutil.copy2(img_path, permanent_img_path)
+                
+                # Auto-delete temporary shot after permanent copy
+                try:
+                    os.remove(img_path)
+                except Exception:
+                    pass
                 
                 # --- Liveness Check (Anti-Spoofing) ---
                 # Check liveness on the ORIGINAL colored image
                 from models.anti_spoofing import liveness_detector
                 is_real, score = liveness_detector.check_liveness(permanent_img_path)
-                if is_real == "TooClose":
-                    print("[WARNING] Face Too Close on Enrollment Frame!")
-                    continue
-                elif not is_real:
-                    print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
-                    continue # Skip saving this fake image to DB
-                    
-                # Apply CLAHE only for ArcFace extraction (do not overwrite the colored file)
+                if not is_real:
+                    # If fake, delete the copied image and abort enrollment
+                    try:
+                        os.remove(permanent_img_path)
+                    except Exception:
+                        pass
+                    flash(f"Spoofing detected (Score: {score:.2f}). Enrollment aborted. Please provide a real photo.", "danger")
+                    return redirect(url_for('admin.admindash'))
+                # --------------------------------------
+                
+                # Ensure DeepFace works with grayscale if color fails, but typically color is better for ArcFace
+                # Let's try reading it just to verify it's readable
                 img = cv2.imread(permanent_img_path)
-                if img is not None:
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-                    enhanced_gray = clahe.apply(gray)
-                    enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
-                else:
-                    enhanced_img = permanent_img_path
+                if img is None:
+                    continue
                     
-                print(f"[INFO] Extracting vector for Regular Visitor (Multi-Shot): {visitor_name}")
+                enhanced_img = permanent_img_path
+                    
+                print(f"[INFO] Extracting vector for Regular Visitor (Multi-Shot): {visitor_name} [ID: {base_visitor_id}]")
                 representations = DeepFace.represent(img_path=enhanced_img, model_name="ArcFace", enforce_detection=True)
                 
                 if representations and len(representations) > 0:
                     embedding = representations[0]["embedding"]
                     if visitor_collection is not None:
-                        import random
-                        num_id = str(random.randint(100000, 999999))
+                        chroma_id = f"VIS-{base_visitor_id}-{random_suffix}"
                         visitor_collection.upsert(
                             embeddings=[embedding],
                             documents=[visitor_name],
-                            ids=[num_id]
+                            ids=[chroma_id],
+                            metadatas=[{"path": permanent_img_path, "Name": visitor_name, "Visitor_ID": base_visitor_id}]
                         )
-            print(f"[SUCCESS] Regular Visitor {element1['Name']} permanently enrolled (Multi-Shot) in ChromaDB!")
+            print(f"[SUCCESS] Regular Visitor {element1['Name']} permanently enrolled (Multi-Shot) in ChromaDB with ID {base_visitor_id}!")
         except Exception as e:
             print(f"[ERROR] Failed to enroll Regular Visitor in ChromaDB: {e}")
 
-    # 2. Standard Accept Logic
-    reqvistable.delete_one({"UID": uid})
+    # 2. Standard Accept Logic & Centralized User Insertion
+    from models.database import collection
+    import datetime
     
+    # Save Regular Visitor to centralized users collection for Inspect Page
+    collection.insert_one({
+        "ID": base_visitor_id,
+        "Role": "Regular Visitor",
+        "Name": element1.get('Name', 'Unknown'),
+        "Email": element1.get('Email', 'Unknown'),
+        "Phone": element1.get('Phone', 'Unknown'),
+        "Gender": element1.get('Gender', 'Unknown'),
+        "Address": element1.get('Address', 'Unknown'),
+        "Date": datetime.datetime.now()
+    })
+
     # Strip _id to avoid DuplicateKeyError across collections
     if "_id" in element1:
         del element1["_id"]
@@ -197,9 +230,9 @@ def enroll_employee(uid):
 
 @visitor.route('/process_employee_enrollment/<uid>', methods=['POST'])
 def process_employee_enrollment(uid):
-    element1 = reqvistable.find_one({"UID": uid})
+    element1 = reqvistable.find_one_and_delete({"UID": uid})
     if not element1:
-        flash("Pending request not found.", "danger")
+        flash("Pending request not found (already processed).", "danger")
         return redirect(url_for('admin.admindash'))
         
     name = request.form.get('name')
@@ -255,6 +288,12 @@ def process_employee_enrollment(uid):
                     permanent_img_path = os.path.join(employee_faces_dir, f"{employee_name}_{random_suffix}.png")
                     shutil.copy2(img_path, permanent_img_path)
                     
+                    # Auto-delete temporary shot after permanent copy
+                    try:
+                        os.remove(img_path)
+                    except Exception:
+                        pass
+                    
                     # --- Liveness Check (Anti-Spoofing) MUST BE DONE ON ORIGINAL COLOR IMAGE ---
                     from models.anti_spoofing import liveness_detector
                     is_real, score = liveness_detector.check_liveness(permanent_img_path)
@@ -294,8 +333,10 @@ def process_employee_enrollment(uid):
             
             print(f"[SUCCESS] Employee {employee_name} permanently enrolled (Multi-Shot) in ChromaDB!")
             
-            # Save Data to MongoDB Collection
+            # Save Data to MongoDB Collection (users table)
             collection.insert_one({
+                "ID": base_hr_id,
+                "Role": "Employee",
                 "Name": name,
                 "Email": email,
                 "Phone": phone,
@@ -307,47 +348,30 @@ def process_employee_enrollment(uid):
                 "Date": datetime.datetime.now()
             })
             
-            # Save Data to Universal Registry (Shadow DB)
-            universal_registry.update_one(
-                {"_id": base_hr_id},
-                {
-                    "$set": {
-                        "Date": datetime.datetime.now().strftime('%Y-%m-%d'),
-                        "Email": email,
-                        "Phone": phone,
-                        "Gender": gender,
-                        "Job": job,
-                        "Address": "Unknown",
-                        "Leave_Status": "Active"
-                    },
-                    "$setOnInsert": {
-                        "Name": clean_name,
-                        "Role": "Employee",
-                        "Visitor_Type": "Regular"
-                    }
-                },
-                upsert=True
-            )
-            
             print(f"[SUCCESS] Employee {employee_name} fully onboarded via Admin Review!")
             flash(f"Successfully onboarded employee {name}.", "success")
         except Exception as e:
             print(f"[ERROR] Failed to enroll Employee: {e}")
             flash(f"Failed to onboard employee: {e}", "danger")
 
-    # Remove from pending requests
-    reqvistable.delete_one({"UID": uid})
+    # Remove from pending requests (already deleted by find_one_and_delete)
     
     status = 'Enrolled as Employee' 
     myquery = visitors_status.find_one({"UID": uid})
     if myquery:
         visitors_status.update_one(myquery, {"$set": {"status": status}})
 
+    try:
+        if base_hr_id:
+            return redirect(url_for('admin.employee_detail', employee_id=base_hr_id))
+    except Exception:
+        pass
+        
     return redirect(url_for('admin.manage_employees'))
 
 @visitor.route('/enroll_external/<uid>', methods=['GET'])
 def enroll_external(uid):
-    element1 = reqvistable.find_one({"UID": uid})
+    element1 = reqvistable.find_one_and_delete({"UID": uid})
     if not element1:
         return redirect(url_for('admin.admindash'))
 
@@ -367,6 +391,11 @@ def enroll_external(uid):
             external_faces_dir = os.path.join(base_dir, 'external_faces')
             os.makedirs(external_faces_dir, exist_ok=True)
             
+            import random
+            base_external_id = str(random.randint(100000, 999999))
+            element1['External_ID'] = base_external_id
+            element1['ID'] = base_external_id
+            
             for shot_filename in shot_filenames.split(','):
                 shot_filename = shot_filename.strip()
                 if not shot_filename: continue
@@ -374,20 +403,27 @@ def enroll_external(uid):
                 
                 if os.path.exists(img_path):
                     external_name = element1['Name'].strip().title()
-                    random_suffix = str(uuid.uuid4())[:6]
-                    permanent_img_path = os.path.join(external_faces_dir, f"{external_name}_{random_suffix}.png")
+                    random_suffix = str(uuid.uuid4())[:6].upper()
+                    permanent_img_path = os.path.join(external_faces_dir, f"{external_name}_{base_external_id}_{random_suffix}.png")
                     shutil.copy2(img_path, permanent_img_path)
                     
-                    # Apply CLAHE
+                    # Auto-delete temporary shot after permanent copy
+                    try:
+                        os.remove(img_path)
+                    except Exception:
+                        pass
+                    
+                    # Apply CLAHE only for vector extraction (do not overwrite original color file)
                     img = cv2.imread(permanent_img_path)
                     if img is not None:
                         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
                         enhanced_gray = clahe.apply(gray)
                         enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
-                        cv2.imwrite(permanent_img_path, enhanced_img)
+                    else:
+                        enhanced_img = permanent_img_path
                         
-                    print(f"[INFO] Extracting vector for External Staff (Multi-Shot): {external_name} ({role})")
+                    print(f"[INFO] Extracting vector for External Staff (Multi-Shot): {external_name} [ID: {base_external_id}] ({role})")
                     # --- Liveness Check (Anti-Spoofing) ---
                     from models.anti_spoofing import liveness_detector
                     is_real, score = liveness_detector.check_liveness(permanent_img_path)
@@ -395,25 +431,21 @@ def enroll_external(uid):
                         print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
                         continue # Skip saving this fake image to DB
                         
-                    print(f"[INFO] Extracting vector for Regular Visitor (Multi-Shot): {visitor_name}")
-                    representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
+                    representations = DeepFace.represent(img_path=enhanced_img, model_name="ArcFace", enforce_detection=False)
                     
                     if representations and len(representations) > 0:
                         embedding = representations[0]["embedding"]
                         if other_collection is not None:
-                            import random
-                            num_id = str(random.randint(100000, 999999))
+                            chroma_id = f"EXT-{base_external_id}-{random_suffix}"
                             other_collection.upsert(
                                 embeddings=[embedding],
                                 documents=[external_name],
-                                metadatas=[{"Role": role}],
-                                ids=[num_id]
+                                metadatas=[{"Role": role, "path": permanent_img_path, "Name": external_name, "External_ID": base_external_id}],
+                                ids=[chroma_id]
                             )
-            print(f"[SUCCESS] {role} {element1['Name']} permanently enrolled (Multi-Shot) in ChromaDB!")
+            print(f"[SUCCESS] {role} {element1['Name']} permanently enrolled (Multi-Shot) in ChromaDB with ID {base_external_id}!")
         except Exception as e:
             print(f"[ERROR] Failed to enroll External Staff in ChromaDB: {e}")
-
-    reqvistable.delete_one({"UID": uid})
 
     status = f'Enrolled as {role}' 
     myquery = visitors_status.find_one({"UID": uid})
@@ -424,13 +456,11 @@ def enroll_external(uid):
 
 @visitor.route('/acceptvis/<uid>', methods=['POST', 'GET'])
 def acceptvis(uid):
-    element1 = reqvistable.find_one({"UID": uid})
+    element1 = reqvistable.find_one_and_delete({"UID": uid})
     if not element1:
         flash("Request already processed or not found.", "warning")
         return redirect(url_for('admin.admindash'))
         
-    reqvistable.delete_one({"UID": uid})
-  
     if "_id" in element1:
         del element1["_id"]
     visitorlogtable.insert_one(element1)

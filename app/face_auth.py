@@ -186,15 +186,20 @@ def face_result():
                     today_str = now.strftime('%Y-%m-%d')
                     time_str = now.strftime('%H:%M:%S')
                     
-                    existing_log = attendance_log.find_one({"Name": employee_name, "Date": {"$regex": f"^{today_str}"}})
+                    existing_log = None
+                    if hr_id:
+                        existing_log = attendance_log.find_one({"ID": hr_id, "Date": {"$regex": f"^{today_str}"}})
+                    if not existing_log:
+                        existing_log = attendance_log.find_one({"Name": employee_name, "Date": {"$regex": f"^{today_str}"}})
                     if existing_log:
-                        attendance_log.update_one({"_id": existing_log["_id"]}, {"$set": {"ExitTime": time_str}})
+                        attendance_log.update_one({"_id": existing_log["_id"]}, {"$set": {"ExitTime": time_str, "ID": hr_id}})
                         face_match_data = existing_log
                         face_match_data["ExitTime"] = time_str
+                        face_match_data["ID"] = hr_id
                         from models.universal_db_helper import log_to_universal_registry
                         log_to_universal_registry(employee_name, "Employee", existing_log.get("Date").split(" ")[1], time_str, hr_id=hr_id)
                     else:
-                        face_match_data = {"Name": employee_name, "Date": f"{today_str} {time_str}", "Status": "Present", "ExitTime": None}
+                        face_match_data = {"Name": employee_name, "ID": hr_id, "Date": f"{today_str} {time_str}", "Status": "Present", "ExitTime": None}
                         attendance_log.insert_one(face_match_data)
                         from models.universal_db_helper import log_to_universal_registry
                         log_to_universal_registry(employee_name, "Employee", time_str, None, hr_id=hr_id)
@@ -407,12 +412,17 @@ def visitor_result():
                     embedding = representations[0]["embedding"]
                     if visitor_collection is not None and visitor_collection.count() > 0:
                         db_results = visitor_collection.query(
-                            query_embeddings=[embedding], n_results=1, include=["distances", "documents"]
+                            query_embeddings=[embedding], n_results=1, include=["distances", "documents", "metadatas"]
                         )
                         if db_results['ids'] and len(db_results['ids'][0]) > 0:
                             distance = db_results['distances'][0][0]
                             if distance < 0.35:
-                                v_id = db_results['ids'][0][0]
+                                meta = db_results['metadatas'][0][0] if db_results.get('metadatas') and db_results['metadatas'][0] else {}
+                                v_id = meta.get('Visitor_ID', meta.get('ID', db_results['ids'][0][0]))
+                                if str(v_id).startswith("VIS-"):
+                                    parts = str(v_id).split("-")
+                                    if len(parts) >= 2:
+                                        v_id = parts[1]
                                 v_name = db_results['documents'][0][0].capitalize() if db_results.get('documents') and db_results['documents'][0] else v_id
                                 results_list.append((v_name, v_id))
                             else:
@@ -441,15 +451,20 @@ def visitor_result():
                     today_str = now.strftime('%Y-%m-%d')
                     time_str = now.strftime('%H:%M:%S')
                     
-                    existing_log = attendance_log.find_one({"Name": visitor_name, "Date": {"$regex": f"^{today_str}"}})
+                    existing_log = None
+                    if visitor_id:
+                        existing_log = attendance_log.find_one({"ID": visitor_id, "Date": {"$regex": f"^{today_str}"}})
+                    if not existing_log:
+                        existing_log = attendance_log.find_one({"Name": visitor_name, "Date": {"$regex": f"^{today_str}"}})
                     if existing_log:
-                        attendance_log.update_one({"_id": existing_log["_id"]}, {"$set": {"ExitTime": time_str}})
+                        attendance_log.update_one({"_id": existing_log["_id"]}, {"$set": {"ExitTime": time_str, "ID": visitor_id}})
                         face_match_data = existing_log
                         face_match_data["ExitTime"] = time_str
+                        face_match_data["ID"] = visitor_id
                         from models.universal_db_helper import log_to_universal_registry
                         log_to_universal_registry(visitor_name, "Visitor", existing_log.get("Date").split(" ")[1], time_str, visitor_id=visitor_id)
                     else:
-                        face_match_data = {"Name": visitor_name, "Date": f"{today_str} {time_str}", "Status": "Regular Visitor", "ExitTime": None}
+                        face_match_data = {"Name": visitor_name, "ID": visitor_id, "Date": f"{today_str} {time_str}", "Status": "Regular Visitor", "ExitTime": None}
                         attendance_log.insert_one(face_match_data)
                         from models.universal_db_helper import log_to_universal_registry
                         log_to_universal_registry(visitor_name, "Visitor", time_str, None, visitor_id=visitor_id)
@@ -660,9 +675,13 @@ def other_result():
                         if db_results['ids'] and len(db_results['ids'][0]) > 0:
                             distance = db_results['distances'][0][0]
                             if distance < 0.35:
-                                e_id = db_results['ids'][0][0]
-                                e_name = db_results['documents'][0][0] if db_results.get('documents') and db_results['documents'][0] else e_id
                                 meta = db_results['metadatas'][0][0] or {}
+                                e_id = meta.get('External_ID', meta.get('ID', db_results['ids'][0][0]))
+                                if str(e_id).startswith("EXT-"):
+                                    parts = str(e_id).split("-")
+                                    if len(parts) >= 2:
+                                        e_id = parts[1]
+                                e_name = db_results['documents'][0][0] if db_results.get('documents') and db_results['documents'][0] else e_id
                                 role = meta.get('Role', 'External Staff')
                                 results_list.append((e_name, e_id, role))
                             else:
@@ -691,15 +710,20 @@ def other_result():
                     today_str = now.strftime('%Y-%m-%d')
                     time_str = now.strftime('%H:%M:%S')
                     
-                    existing_log = attendance_log.find_one({"Name": external_name, "Date": {"$regex": f"^{today_str}"}})
+                    existing_log = None
+                    if external_id:
+                        existing_log = attendance_log.find_one({"ID": external_id, "Date": {"$regex": f"^{today_str}"}})
+                    if not existing_log:
+                        existing_log = attendance_log.find_one({"Name": external_name, "Date": {"$regex": f"^{today_str}"}})
                     if existing_log:
-                        attendance_log.update_one({"_id": existing_log["_id"]}, {"$set": {"ExitTime": time_str}})
+                        attendance_log.update_one({"_id": existing_log["_id"]}, {"$set": {"ExitTime": time_str, "ID": external_id}})
                         face_match_data = existing_log
                         face_match_data["ExitTime"] = time_str
+                        face_match_data["ID"] = external_id
                         from models.universal_db_helper import log_to_universal_registry
                         log_to_universal_registry(external_name, role, existing_log.get("Date").split(" ")[1], time_str, visitor_id=external_id)
                     else:
-                        face_match_data = {"Name": external_name, "Date": f"{today_str} {time_str}", "Status": f"Present ({role})", "ExitTime": None}
+                        face_match_data = {"Name": external_name, "ID": external_id, "Date": f"{today_str} {time_str}", "Status": f"Present ({role})", "ExitTime": None}
                         attendance_log.insert_one(face_match_data)
                         from models.universal_db_helper import log_to_universal_registry
                         log_to_universal_registry(external_name, role, time_str, None, visitor_id=external_id)

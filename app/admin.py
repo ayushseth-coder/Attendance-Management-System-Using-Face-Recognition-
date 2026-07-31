@@ -469,6 +469,141 @@ def manage_employees():
         
     return render_template('manage_employees.html', employees_data=employees_data, total_count=total_count, unique_count=total_unique_count)
 
+@admin.route('/employee/detail/<employee_id>', methods=['GET'])
+def employee_detail(employee_id):
+    from models.vector_db import employee_collection
+    from models.database import collection
+    import os
+    import re
+    
+    try:
+        # STEP 1: Direct ID search (Fast & Clean)
+        user_info = collection.find_one({"ID": employee_id})
+        
+        # STEP 2: Fallback for older legacy records (where ID was embedded in Name)
+        if not user_info:
+            for user in collection.find():
+                match = re.match(r"([A-Za-z]+)[_-]?(\d*)", user.get("Name", "").strip().capitalize())
+                if match and match.group(2) and employee_id == f"EMP-{match.group(2)}":
+                    user_info = user
+                    break
+                        
+        if not user_info:
+            flash(f"Employee with ID {employee_id} not found in database.", "warning")
+            return redirect(url_for('admin.manage_employees'))
+            
+        # Fetch ChromaDB data for vector/photo count
+        results = employee_collection.get(include=["metadatas"])
+        metadatas = results.get('metadatas', [])
+        photo_count = 0
+        real_name = user_info.get("Name", employee_id)
+        
+        for meta in metadatas:
+            if meta:
+                hr_id = meta.get("HR_ID")
+                if str(hr_id) == str(employee_id):
+                    photo_count += 1
+                    real_name = meta.get("Name", real_name)
+                    
+        # Fetch dynamic role stored in database
+        db_role = user_info.get("Role") or user_info.get("Registration_Role") or user_info.get("role")
+        if not db_role or str(db_role).lower() == "employee":
+            db_role = user_info.get("Job") or "Employee"
+
+        # Fetch Attendance logs for Present dates, Late dates, & Daily Activity
+        from models.database import attendance_log
+        import datetime
+
+        present_dates = []
+        late_dates = []
+        recent_activity = []
+
+        try:
+            attendance_records = list(attendance_log.find({
+                "$or": [
+                    {"ID": str(employee_id)},
+                    {"HR_ID": str(employee_id)},
+                    {"Name": real_name}
+                ]
+            }).sort("Date", -1))
+
+            for rec in attendance_records:
+                d_val = rec.get("Date") or rec.get("date")
+                if d_val:
+                    d_str = str(d_val).split(" ")[0]
+                    if d_str not in present_dates:
+                        present_dates.append(d_str)
+
+                    # Extract entry & exit time (Office Timing: 10:00 AM - 6:30 PM)
+                    entry_time_full = str(d_val)
+                    entry_time = entry_time_full.split(" ")[1] if " " in entry_time_full else "10:00:00"
+                    exit_time = rec.get("ExitTime") or rec.get("exit_time") or "18:30:00"
+
+                    # Check late status (Office Timing: 10:00 AM, Late consider after 10:30 AM)
+                    is_late = False
+                    try:
+                        entry_h, entry_m = map(int, entry_time.split(":")[:2])
+                        if entry_h > 10 or (entry_h == 10 and entry_m > 30):
+                            is_late = True
+                            if d_str not in late_dates:
+                                late_dates.append(d_str)
+                    except Exception:
+                        pass
+
+                    # Build Daily Activity List Item
+                    try:
+                        dt_obj = datetime.datetime.strptime(d_str, "%Y-%m-%d")
+                        day_name = dt_obj.strftime("%A")
+                        day_num = dt_obj.strftime("%d")
+                        month_short = dt_obj.strftime("%b").upper()
+
+                        t1 = datetime.datetime.strptime(entry_time[:5], "%H:%M")
+                        t2 = datetime.datetime.strptime(exit_time[:5], "%H:%M")
+                        if t2 < t1:
+                            t2 += datetime.timedelta(days=1)
+                        diff = t2 - t1
+                        hours, remainder = divmod(diff.seconds, 3600)
+                        minutes, _ = divmod(remainder, 60)
+                        duration_str = f"{hours}h {minutes}m total"
+
+                        if len(recent_activity) < 5:
+                            recent_activity.append({
+                                "day_num": day_num,
+                                "month_short": month_short,
+                                "day_name": day_name,
+                                "duration": duration_str,
+                                "in_time": entry_time[:5],
+                                "out_time": exit_time[:5],
+                                "is_late": is_late
+                            })
+                    except Exception as ex:
+                        print(f"[ACTIVITY PARSE ERROR] {ex}")
+
+        except Exception as e:
+            print(f"[ATTENDANCE FETCH ERROR] {e}")
+
+        employee_data = {
+            "emp_id": employee_id,
+            "Name": real_name,
+            "Email": user_info.get("Email", "Not Provided"),
+            "Phone": user_info.get("Phone", "Not Provided"),
+            "Job": user_info.get("Job", "Not Specified"),
+            "Address": user_info.get("Address", "Not Provided"),
+            "Role": db_role,
+            "Leave_Status": user_info.get("Leave_Status", "Active"),
+            "Photo_Count": photo_count,
+            "present_dates": present_dates,
+            "late_dates": late_dates,
+            "recent_activity": recent_activity
+        }
+        
+        return render_template('employee_detail.html', emp=employee_data)
+        
+    except Exception as e:
+        print(f"[ERROR] Could not load employee detail for {employee_id}: {e}")
+        flash("An error occurred while loading employee details.", "danger")
+        return redirect(url_for('admin.manage_employees'))
+
 @admin.route('/delete_employee/<name>', methods=['POST'])
 def delete_employee(name):
     from models.vector_db import employee_collection
@@ -518,16 +653,21 @@ def delete_employee(name):
 @admin.route('/delete_all_employees', methods=['POST'])
 def delete_all_employees():
     from models.vector_db import employee_collection
+    from models.database import collection, universal_registry
     import os
     
     try:
-        # 1. Fetch all IDs
+        # 1. Fetch all IDs from Chroma
         results = employee_collection.get()
         all_ids = results.get('ids', [])
         
         # 2. Wipe ChromaDB
         if all_ids:
             employee_collection.delete(ids=all_ids)
+            
+        # 3. Wipe MongoDB Databases
+        collection.delete_many({'Role': {'$regex': '^employee$', '$options': 'i'}})
+        universal_registry.delete_many({'Role': {'$regex': '^employee$', '$options': 'i'}})
             
         # 3. Nuclear Scrub of employee_faces folder (only deleting images, protecting DeepFace .pkl files)
         faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
@@ -559,22 +699,37 @@ def manage_visitors():
     from models.database import universal_registry
     
     try:
-        results = visitor_collection.get(include=["documents"])
+        results = visitor_collection.get(include=["documents", "metadatas"])
         visitor_ids = results.get('ids', [])
         documents = results.get('documents', [])
-        total_count = len(visitor_ids)
+        metadatas = results.get('metadatas', [])
         
         visitor_profiles = []
+        seen_ids = set()
+        
         for i, vis_id in enumerate(visitor_ids):
-            smart_id = f"REGVIS-{vis_id}"
+            meta = metadatas[i] if metadatas and i < len(metadatas) and metadatas[i] else {}
+            real_id = meta.get("Visitor_ID", meta.get("ID", vis_id))
+            if str(real_id).startswith("VIS-"):
+                parts = str(real_id).split("-")
+                if len(parts) >= 2:
+                    real_id = parts[1]
+                    
+            if real_id in seen_ids:
+                continue
+            seen_ids.add(real_id)
+            
+            smart_id = f"REGVIS-{real_id}"
             profile = universal_registry.find_one({"_id": smart_id})
-            name = documents[i] if documents and i < len(documents) and documents[i] else vis_id
+            name = documents[i] if documents and i < len(documents) and documents[i] else real_id
             
             if profile:
-                profile['num_id'] = vis_id
+                profile['num_id'] = real_id
                 visitor_profiles.append(profile)
             else:
-                visitor_profiles.append({"num_id": vis_id, "Name": name, "Phone": "Unknown", "Email": "Unknown"})
+                visitor_profiles.append({"num_id": real_id, "Name": name, "Phone": "Unknown", "Email": "Unknown"})
+                
+        total_count = len(visitor_profiles)
                 
     except Exception as e:
         print(f"[ERROR] Could not fetch visitors: {e}")
@@ -629,22 +784,34 @@ def delete_visitor(visitor_id):
     import os
     
     try:
-        # Get the name first before deleting
-        results = visitor_collection.get(ids=[visitor_id])
-        docs = results.get("documents", [])
-        visitor_name = docs[0] if docs and len(docs) > 0 and docs[0] else visitor_id
+        results = visitor_collection.get(include=["documents", "metadatas"])
+        all_ids = results.get('ids', [])
+        documents = results.get('documents', [])
+        metadatas = results.get('metadatas', [])
         
-        # Delete from ChromaDB
-        visitor_collection.delete(ids=[visitor_id])
+        ids_to_delete = []
+        visitor_name = str(visitor_id)
+        
+        for i, vid in enumerate(all_ids):
+            meta = metadatas[i] if metadatas and i < len(metadatas) and metadatas[i] else {}
+            v_id_meta = meta.get("Visitor_ID", meta.get("ID", vid))
+            if str(v_id_meta).startswith("VIS-"):
+                v_id_meta = str(v_id_meta).split("-")[1]
+                
+            if str(vid) == str(visitor_id) or str(v_id_meta) == str(visitor_id) or str(vid).startswith(f"VIS-{visitor_id}-"):
+                ids_to_delete.append(vid)
+                if documents and i < len(documents) and documents[i]:
+                    visitor_name = documents[i]
+                    
+        if ids_to_delete:
+            visitor_collection.delete(ids=ids_to_delete)
         flash(f"Successfully deleted records for ID {visitor_id}.", "success")
         
-        # Cleanup: Delete local photo
+        # Cleanup: Delete local photos
         faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
         if os.path.exists(faces_dir):
             for filename in os.listdir(faces_dir):
-                name_without_ext = os.path.splitext(filename)[0]
-                lower_filename = name_without_ext.lower()
-                if lower_filename.startswith(f"{visitor_name.lower()}_") or lower_filename == visitor_name.lower():
+                if f"_{visitor_id}_" in filename or filename.lower().startswith(f"{visitor_name.lower()}_") or os.path.splitext(filename)[0].lower() == visitor_name.lower():
                     try:
                         os.remove(os.path.join(faces_dir, filename))
                     except Exception:
@@ -847,31 +1014,70 @@ def attendance_employee():
     
     return render_template('attendance_employee.html', logs=logs, selected_date=selected_date)
 
+def serve_user_face(faces_dir, name, unique_id=""):
+    import os
+    from flask import send_from_directory, redirect
+    from urllib.parse import quote
+    
+    if os.path.exists(faces_dir):
+        # 0. Priority Exact ID match (if ID provided)
+        if unique_id:
+            clean_id = unique_id.strip().lower()
+            for filename in sorted(os.listdir(faces_dir)):
+                if not filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                    continue
+                fname_lower = filename.lower()
+                fname_no_ext = os.path.splitext(fname_lower)[0]
+                if (f"_{clean_id}_" in fname_lower or 
+                    fname_no_ext.endswith(f"_{clean_id}") or
+                    fname_no_ext.startswith(f"{clean_id}_") or
+                    fname_no_ext == clean_id):
+                    return send_from_directory(faces_dir, filename)
+                    
+        # Legacy Name match fallback
+        if name:
+            clean_name = name.strip().lower()
+            clean_under = clean_name.replace(' ', '_')
+            clean_space = clean_name.replace('_', ' ')
+            
+            # 1. Prefix match (e.g., "An_" matching "An_989_482b22.png")
+            for filename in sorted(os.listdir(faces_dir)):
+                if not filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                    continue
+                fname_no_ext = os.path.splitext(filename)[0].lower()
+                if (fname_no_ext == clean_name or 
+                    fname_no_ext.startswith(clean_name + "_") or 
+                    fname_no_ext.startswith(clean_name + " ") or
+                    fname_no_ext.startswith(clean_under + "_") or
+                    fname_no_ext.startswith(clean_space + "_") or
+                    fname_no_ext.startswith(clean_name)):
+                    return send_from_directory(faces_dir, filename)
+                    
+            # 2. Substring match
+            for filename in sorted(os.listdir(faces_dir)):
+                if not filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                    continue
+                fname_no_ext = os.path.splitext(filename)[0].lower()
+                if clean_name in fname_no_ext or clean_under in fname_no_ext or clean_space in fname_no_ext:
+                    return send_from_directory(faces_dir, filename)
+                
+    # Clean UI Avatars fallback instead of broken SVG
+    fallback_name = quote(name if name else (unique_id if unique_id else "User"))
+    return redirect(f"https://ui-avatars.com/api/?name={fallback_name}&background=0d6efd&color=fff&size=150")
+
 @admin.route('/employee_image/<name>')
 def employee_image(name):
     import os
-    from flask import send_from_directory, abort
-    
+    from flask import request
+    unique_id = request.args.get('id', '').strip()
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'employee_faces')
-    
-    # Search for the exact file case-insensitively
-    if os.path.exists(faces_dir):
-        for filename in os.listdir(faces_dir):
-            name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == name.lower():
-                return send_from_directory(faces_dir, filename)
-                
-    # If physical image was deleted, serve a clean SVG placeholder instead of a broken image
-    svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>'''
-    from flask import Response
-    return Response(svg_data, mimetype='image/svg+xml')
+    return serve_user_face(faces_dir, name, unique_id)
 
 @admin.route('/attendance/visitor', methods=['GET'])
 def attendance_visitor():
     from models.database import attendance_log
     import datetime
+    from flask import request
     
     selected_date = request.args.get('date')
     if not selected_date:
@@ -888,26 +1094,16 @@ def attendance_visitor():
 @admin.route('/visitor_image/<name>')
 def visitor_image(name):
     import os
-    from flask import send_from_directory, abort
-    
+    from flask import request
+    unique_id = request.args.get('id', '').strip()
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'visitor_faces')
-    
-    if os.path.exists(faces_dir):
-        for filename in os.listdir(faces_dir):
-            name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == name.lower():
-                return send_from_directory(faces_dir, filename)
-                
-    svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>'''
-    from flask import Response
-    return Response(svg_data, mimetype='image/svg+xml')
+    return serve_user_face(faces_dir, name, unique_id)
 
 @admin.route('/attendance/other', methods=['GET'])
 def attendance_other():
     from models.database import attendance_log
     import datetime
+    from flask import request
     
     selected_date = request.args.get('date')
     if not selected_date:
@@ -924,26 +1120,16 @@ def attendance_other():
 @admin.route('/other_image/<name>')
 def other_image(name):
     import os
-    from flask import send_from_directory, abort
-    
+    from flask import request
+    unique_id = request.args.get('id', '').strip()
     faces_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'external_faces')
-    
-    if os.path.exists(faces_dir):
-        for filename in os.listdir(faces_dir):
-            name_without_ext = os.path.splitext(filename)[0]
-            if name_without_ext.lower() == name.lower():
-                return send_from_directory(faces_dir, filename)
-                
-    svg_data = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#adb5bd">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>'''
-    from flask import Response
-    return Response(svg_data, mimetype='image/svg+xml')
+    return serve_user_face(faces_dir, name, unique_id)
 
 @admin.route('/attendance/timesheet', methods=['GET'])
 def attendance_timesheet():
     from models.database import attendance_log, collection
     import datetime
+    from flask import request
     
     selected_date = request.args.get('date')
     if not selected_date:
@@ -958,20 +1144,26 @@ def attendance_timesheet():
     
     # 2. Fetch Users collection to get Emails and Roles
     all_users = list(collection.find())
-    # Create a quick lookup dictionary: {"John Doe": {"Email": "john@x.com", "Job": "Developer"}}
+    # Create a quick lookup dictionary keyed by ID and Name
     user_lookup = {}
     for user in all_users:
+        user_info = {
+            "Email": user.get("Email", "N/A"),
+            "Job": user.get("Job", "Employee")
+        }
+        if user.get("HR_ID"):
+            user_lookup[str(user.get("HR_ID"))] = user_info
+        if user.get("ID"):
+            user_lookup[str(user.get("ID"))] = user_info
         name = user.get("Name", "")
         if name:
-            user_lookup[name] = {
-                "Email": user.get("Email", "N/A"),
-                "Job": user.get("Job", "Employee")
-            }
+            user_lookup[name] = user_info
             
     # 3. Build the consolidated Timesheet
     timesheet_data = []
     for log in raw_logs:
         name = log.get("Name", "")
+        log_id = log.get("ID", log.get("HR_ID", ""))
         entry_datetime_str = log.get("Date", "")  # e.g. "2026-06-19 09:00:00"
         exit_time_str = log.get("ExitTime")       # e.g. "17:00:00" or None
         
@@ -998,10 +1190,11 @@ def attendance_timesheet():
                 print(f"[ERROR] Failed to calculate working hours for {name}: {e}")
                 working_hours = "Error"
                 
-        # Lookup User Info
-        user_info = user_lookup.get(name, {"Email": "Unknown", "Job": "Unknown"})
+        # Lookup User Info (try by ID first, then Name)
+        user_info = user_lookup.get(str(log_id), user_lookup.get(name, {"Email": "Unknown", "Job": "Unknown"}))
         
         timesheet_data.append({
+            "ID": log_id,
             "Name": name,
             "Email": user_info["Email"],
             "Job": user_info["Job"],
@@ -1019,16 +1212,26 @@ def update_employee_details():
     import re
     
     name = request.form.get('name')
+    emp_id = request.form.get('emp_id') or request.form.get('hr_id')
     email = request.form.get('email')
     job = request.form.get('job')
     phone = request.form.get('phone', 'Unknown')
     address = request.form.get('address', 'Unknown')
     leave_status = request.form.get('leave_status', 'Active')
     
+    # Build flexible query to match either ID or Name in primary collection
+    query_conditions = []
+    if emp_id:
+        query_conditions.append({"ID": emp_id})
     if name:
-        # 1. Update Old Architecture
+        query_conditions.append({"Name": name})
+        
+    if query_conditions:
+        query = {"$or": query_conditions} if len(query_conditions) > 1 else query_conditions[0]
+        
+        # 1. Update Primary MongoDB Collection (used by Inspect Page & Tables)
         collection.update_one(
-            {"Name": name},
+            query,
             {
                 "$set": {
                     "Email": email, 
@@ -1045,23 +1248,15 @@ def update_employee_details():
             upsert=True
         )
         
-        # 2. Update Shadow Architecture
+        # 2. Update Shadow Registry if active
         try:
-            match = re.match(r"([A-Za-z]+)(\d*)", name)
-            if match:
-                clean_name = match.group(1).capitalize()
-                extracted_id = match.group(2) if match.group(2) else None
-            else:
-                clean_name = name.capitalize()
-                extracted_id = None
-                
-            smart_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
-            
+            smart_id = emp_id if emp_id else f"EMP-{name.upper()}"
             universal_registry.update_one(
                 {"_id": smart_id},
                 {
                     "$set": {
                         "Email": email,
+                        "Job": job,
                         "Phone": phone,
                         "Address": address,
                         "Leave_Status": leave_status
@@ -1071,9 +1266,9 @@ def update_employee_details():
         except Exception as e:
             print(f"[SHADOW DB ERROR] Failed to sync update: {e}")
             
-        flash(f"Successfully updated details for {name}", "success")
+        flash(f"Successfully updated details for {name or emp_id}", "success")
     else:
-        flash("Error: Missing Employee Name", "danger")
+        flash("Error: Missing Employee Identifier", "danger")
         
     return redirect(request.referrer or url_for('admin.manage_employees'))
 
