@@ -30,7 +30,8 @@
             <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
             <div class="camera-frame-wrapper">
                 <div class="camera-inner">
-                    <img id="camera-feed" src="{{ url_for('image_processing.video_feed') }}" alt="Camera Feed" />
+                    <video id="webcam" autoplay playsinline style="width:100%; height:100%; object-fit:cover; border-radius:1.5rem;"></video>
+                    <img id="camera-feed" src="{{ url_for('image_processing.video_feed') }}" alt="Camera Feed" style="display:none;" />
                 </div>
             </div>
 
@@ -49,7 +50,27 @@
     </div>
 
 <script>
-    let timeLeft = 3; // seconds
+    const video = document.getElementById('webcam');
+    const cameraFeed = document.getElementById('camera-feed');
+    let useWebcamJS = false;
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                useWebcamJS = true;
+            })
+            .catch(function(err) {
+                console.log("Browser camera fallback to server feed:", err);
+                video.style.display = 'none';
+                cameraFeed.style.display = 'block';
+            });
+    } else {
+        video.style.display = 'none';
+        cameraFeed.style.display = 'block';
+    }
+
+    let timeLeft = 3;
     const timerEl = document.getElementById('timer');
     const timerContainer = document.getElementById('timer-container');
     const scanStatus = document.getElementById('scan-status');
@@ -68,33 +89,43 @@
             if(scanStatus) {
                 scanStatus.textContent = "Processing Capture...";
             }
+            captureFrameAndProceed();
         }
     }, 1000);
+
+    function captureFrameAndProceed() {
+        if (useWebcamJS && video.videoWidth) {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/png');
+            
+            const roleType = new URLSearchParams(window.location.search).get('role_type') || 'visitor';
+
+            fetch("{{ url_for('image_processing.save_webcam_frame') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            }).then(() => {
+                window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
+            }).catch(() => {
+                window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
+            });
+        } else {
+            const roleType = new URLSearchParams(window.location.search).get('role_type') || 'visitor';
+            window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
+        }
+    }
 </script>
 
-<!-- Highlight the clicked button -->
 <script>
-const buttons = document.querySelectorAll('.btn');
-buttons.forEach(btn => {
-    btn.addEventListener('click', function () {
-        buttons.forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-    });
-});
-</script>
-
-<script>
-// Force auto-reload when coming back from browser cache/history
 window.addEventListener("pageshow", function(event) {
     if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
         window.location.reload();
     }
 });
-
-// After 4.5 seconds (3s capture + 1.5s buffer for 3-shots), redirect to show captured page
-setTimeout(function() {
-    window.location.href = "{{ url_for('image_processing.show_captured') }}";
-}, 4500);
 </script>
 </body>
 </html>
