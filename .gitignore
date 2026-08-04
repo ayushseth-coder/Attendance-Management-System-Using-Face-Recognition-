@@ -4,6 +4,11 @@ venv/
 __pycache__/
 *.pyc
 *.pyo
+*.db
+*.sqlite
+*.sqlite3
+instance/
+*.log
 chroma_db/
 employee_faces/
 static/shots/
@@ -14,4 +19,3 @@ test_chroma.py
 .DS_Store
 sh2.jpg
 output.txt
-
