@@ -28,10 +28,11 @@
             <p class="scanner-subtitle">Please position your face within the frame for automated image capture.</p>
 
             <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
-            <div class="camera-frame-wrapper">
-                <div class="camera-inner">
+            <div class="camera-frame-wrapper" style="position: relative; overflow: hidden;">
+                <div class="camera-inner" style="position: relative;">
                     <video id="webcam" autoplay playsinline style="width:100%; height:100%; object-fit:cover; border-radius:1.5rem;"></video>
                     <img id="camera-feed" src="{{ url_for('image_processing.video_feed') }}" alt="Camera Feed" style="display:none;" />
+                    <div id="flash-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; pointer-events: none; transition: opacity 0.15s ease-out; border-radius: 1.5rem; z-index: 10;"></div>
                 </div>
             </div>
 
@@ -52,6 +53,7 @@
 <script>
     const video = document.getElementById('webcam');
     const cameraFeed = document.getElementById('camera-feed');
+    const flashOverlay = document.getElementById('flash-overlay');
     let useWebcamJS = false;
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -83,11 +85,23 @@
 
         if (timeLeft <= 0) {
             clearInterval(countdown);
+            
+            // Trigger visual shutter flash effect
+            if (flashOverlay) {
+                flashOverlay.style.opacity = '0.95';
+                setTimeout(() => { flashOverlay.style.opacity = '0'; }, 200);
+            }
+
+            // Freeze the video frame
+            if (video && video.pause) {
+                video.pause();
+            }
+
             if(timerContainer) {
-                timerContainer.innerHTML = '<i class="fas fa-spinner fa-spin text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">Captured...</span>';
+                timerContainer.innerHTML = '<i class="fas fa-check-circle text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">📸 Photo Captured!</span>';
             }
             if(scanStatus) {
-                scanStatus.textContent = "Processing Capture...";
+                scanStatus.textContent = "Photo Captured! Processing...";
             }
             captureFrameAndProceed();
         }
@@ -109,7 +123,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image: imageData })
             }).then(() => {
-                window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
+                }, 600);
             }).catch(() => {
                 window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
             });

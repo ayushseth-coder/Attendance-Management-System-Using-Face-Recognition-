@@ -43,10 +43,10 @@ def visitor1():
             role_type = request.form.get('role_type', 'visitor')
             
             import re
-            # Strictly validate Employee Name Format (Name_ID)
+            # Validate Employee Name Presence
             if registration_role == 'Employee':
-                if not re.match(r"^[A-Za-z]+_\w+$", name.strip()):
-                    flash("Error: Employee name must be in the exact format 'Name_ID' (e.g., Ayush_858). Please correct the name and submit again.", "danger")
+                if not name or not name.strip():
+                    flash("Error: Employee Name is required. Please fill in the name.", "danger")
                     return redirect(request.referrer or url_for('security.securitydash'))
                     
             is_delivery = (role_type == 'delivery')
