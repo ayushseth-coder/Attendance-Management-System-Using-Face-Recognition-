@@ -19,3 +19,4 @@ test_chroma.py
 .DS_Store
 sh2.jpg
 output.txt
+requirements_backup_full.txt
