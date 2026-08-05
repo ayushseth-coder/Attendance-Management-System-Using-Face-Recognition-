@@ -62,49 +62,59 @@
             return;
         }
 
-        navigator.mediaDevices.enumerateDevices().then(function(devices) {
-            const videoDevices = devices.filter(d => d.kind === 'videoinput');
-            let constraints = { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } };
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(initialStream) {
+                navigator.mediaDevices.enumerateDevices().then(function(devices) {
+                    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    
+                    if (videoDevices.length > 1) {
+                        const externalCam = videoDevices.find(d => 
+                            d.label.toLowerCase().includes('usb') || 
+                            d.label.toLowerCase().includes('external') ||
+                            d.label.toLowerCase().includes('cam') ||
+                            d.label.toLowerCase().includes('hd')
+                        ) || videoDevices[videoDevices.length - 1];
 
-            if (videoDevices.length > 1) {
-                const externalCam = videoDevices.find(d => 
-                    d.label.toLowerCase().includes('usb') || 
-                    d.label.toLowerCase().includes('external') ||
-                    d.label.toLowerCase().includes('webcam')
-                ) || videoDevices[videoDevices.length - 1];
+                        if (externalCam && externalCam.deviceId) {
+                            initialStream.getTracks().forEach(t => t.stop());
+                            
+                            navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: externalCam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } })
+                                .then(function(usbStream) {
+                                    video.srcObject = usbStream;
+                                    video.style.display = 'block';
+                                    cameraFeed.style.display = 'none';
+                                    useWebcamJS = true;
+                                })
+                                .catch(function() {
+                                    video.srcObject = initialStream;
+                                    video.style.display = 'block';
+                                    cameraFeed.style.display = 'none';
+                                    useWebcamJS = true;
+                                });
+                            return;
+                        }
+                    }
 
-                if (externalCam && externalCam.deviceId) {
-                    constraints = { video: { deviceId: { exact: externalCam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } };
-                }
-            }
-
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(function(stream) {
-                    video.srcObject = stream;
+                    video.srcObject = initialStream;
                     video.style.display = 'block';
                     cameraFeed.style.display = 'none';
                     useWebcamJS = true;
-                })
-                .catch(function() {
-                    navigator.mediaDevices.getUserMedia({ video: true })
-                        .then(function(stream) {
-                            video.srcObject = stream;
-                            video.style.display = 'block';
-                            cameraFeed.style.display = 'none';
-                            useWebcamJS = true;
-                        })
-                        .catch(function() {
-                            video.style.display = 'none';
-                            cameraFeed.style.display = 'block';
-                        });
+                }).catch(function() {
+                    video.srcObject = initialStream;
+                    video.style.display = 'block';
+                    cameraFeed.style.display = 'none';
+                    useWebcamJS = true;
                 });
-        }).catch(function() {
-            video.style.display = 'none';
-            cameraFeed.style.display = 'block';
-        });
+            })
+            .catch(function(err) {
+                console.log("Webcam error:", err);
+                video.style.display = 'none';
+                cameraFeed.style.display = 'block';
+            });
     }
 
     initAutoCamera();
+
 
 
 
