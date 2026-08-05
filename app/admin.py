@@ -493,17 +493,22 @@ def employee_detail(employee_id):
             return redirect(url_for('admin.manage_employees'))
             
         # Fetch ChromaDB data for vector/photo count
-        results = employee_collection.get(include=["metadatas"])
-        metadatas = results.get('metadatas', [])
         photo_count = 0
         real_name = user_info.get("Name", employee_id)
         
-        for meta in metadatas:
-            if meta:
-                hr_id = meta.get("HR_ID")
-                if str(hr_id) == str(employee_id):
-                    photo_count += 1
-                    real_name = meta.get("Name", real_name)
+        if employee_collection is not None:
+            try:
+                results = employee_collection.get(include=["metadatas"])
+                metadatas = results.get('metadatas', [])
+                for meta in metadatas:
+                    if meta:
+                        hr_id = meta.get("HR_ID")
+                        if str(hr_id) == str(employee_id):
+                            photo_count += 1
+                            real_name = meta.get("Name", real_name)
+            except Exception as chroma_err:
+                print(f"[WARNING] ChromaDB query note: {chroma_err}")
+
                     
         # Fetch dynamic role stored in database
         db_role = user_info.get("Role") or user_info.get("Registration_Role") or user_info.get("role")

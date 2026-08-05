@@ -362,10 +362,9 @@ def process_employee_enrollment(uid):
     if myquery:
         visitors_status.update_one(myquery, {"$set": {"status": status}})
 
-    if base_hr_id:
-        return redirect(url_for('admin.employee_detail', employee_id=base_hr_id))
-        
+    flash(f"Successfully onboarded employee {name}.", "success")
     return redirect(url_for('admin.manage_employees'))
+
 
 
 @visitor.route('/enroll_external/<uid>', methods=['GET'])
