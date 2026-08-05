@@ -12,21 +12,19 @@ face_auth = Blueprint('face_auth', __name__)
 global face_match_data
 face_match_data = None
 
-# --- PERFORMANCE OPTIMIZATION: LAZY LOAD AI MODEL ON DEMAND ---
-deepface_available = True
-_arcface_model = None
-
-def get_deepface():
-    global _arcface_model, deepface_available
-    if not deepface_available:
-        return None
-    try:
-        from deepface import DeepFace
-        return DeepFace
-    except Exception as e:
-        deepface_available = False
-        print(f"[WARNING] DeepFace import failed: {e}")
-        return None
+# --- PERFORMANCE OPTIMIZATION: PRE-LOAD AI MODEL ---
+try:
+    from deepface import DeepFace
+    # print("[INFO] Pre-loading Facenet model weights into RAM...")
+    # DeepFace.build_model("Facenet")
+    print("[INFO] Pre-loading ArcFace model weights into RAM...")
+    DeepFace.build_model("ArcFace")
+    deepface_available = True
+    # print("[SUCCESS] Facenet model ready.")
+    print("[SUCCESS] ArcFace model ready.")
+except Exception as e:
+    deepface_available = False
+    print(f"[WARNING] DeepFace import failed: {e}. Face auth will fail.")
 # ---------------------------------------------------
 
 def gen_face_frames():

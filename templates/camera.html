@@ -28,11 +28,9 @@
             <p class="scanner-subtitle">Please position your face within the frame for automated image capture.</p>
 
             <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
-            <div class="camera-frame-wrapper" style="position: relative; overflow: hidden;">
-                <div class="camera-inner" style="position: relative;">
-                    <video id="webcam" autoplay playsinline style="width:100%; height:100%; object-fit:cover; border-radius:1.5rem;"></video>
-                    <img id="camera-feed" src="{{ url_for('image_processing.video_feed') }}" alt="Camera Feed" style="display:none;" />
-                    <div id="flash-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; pointer-events: none; transition: opacity 0.15s ease-out; border-radius: 1.5rem; z-index: 10;"></div>
+            <div class="camera-frame-wrapper">
+                <div class="camera-inner">
+                    <img id="camera-feed" src="{{ url_for('image_processing.video_feed') }}" alt="Camera Feed" />
                 </div>
             </div>
 
@@ -51,77 +49,7 @@
     </div>
 
 <script>
-    const video = document.getElementById('webcam');
-    const cameraFeed = document.getElementById('camera-feed');
-    const flashOverlay = document.getElementById('flash-overlay');
-    let useWebcamJS = false;
-
-    function initAutoCamera() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            video.style.display = 'none';
-            cameraFeed.style.display = 'block';
-            return;
-        }
-
-        // Step 1: Request initial stream to grant permission and unlock device labels
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function(initialStream) {
-                // Step 2: Enumerate devices now that labels are unlocked by Chrome
-                navigator.mediaDevices.enumerateDevices().then(function(devices) {
-                    const videoDevices = devices.filter(d => d.kind === 'videoinput');
-                    
-                    if (videoDevices.length > 1) {
-                        const externalCam = videoDevices.find(d => 
-                            d.label.toLowerCase().includes('usb') || 
-                            d.label.toLowerCase().includes('external') ||
-                            d.label.toLowerCase().includes('cam') ||
-                            d.label.toLowerCase().includes('hd')
-                        ) || videoDevices[videoDevices.length - 1];
-
-                        if (externalCam && externalCam.deviceId) {
-                            initialStream.getTracks().forEach(t => t.stop());
-                            
-                            navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: externalCam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } })
-                                .then(function(usbStream) {
-                                    video.srcObject = usbStream;
-                                    video.style.display = 'block';
-                                    cameraFeed.style.display = 'none';
-                                    useWebcamJS = true;
-                                })
-                                .catch(function() {
-                                    video.srcObject = initialStream;
-                                    video.style.display = 'block';
-                                    cameraFeed.style.display = 'none';
-                                    useWebcamJS = true;
-                                });
-                            return;
-                        }
-                    }
-
-                    video.srcObject = initialStream;
-                    video.style.display = 'block';
-                    cameraFeed.style.display = 'none';
-                    useWebcamJS = true;
-                }).catch(function() {
-                    video.srcObject = initialStream;
-                    video.style.display = 'block';
-                    cameraFeed.style.display = 'none';
-                    useWebcamJS = true;
-                });
-            })
-            .catch(function(err) {
-                console.log("Webcam error:", err);
-                video.style.display = 'none';
-                cameraFeed.style.display = 'block';
-            });
-    }
-
-    initAutoCamera();
-
-
-
-
-    let timeLeft = 3;
+    let timeLeft = 3; // seconds
     const timerEl = document.getElementById('timer');
     const timerContainer = document.getElementById('timer-container');
     const scanStatus = document.getElementById('scan-status');
@@ -134,63 +62,39 @@
 
         if (timeLeft <= 0) {
             clearInterval(countdown);
-            
-            // Trigger visual shutter flash effect
-            if (flashOverlay) {
-                flashOverlay.style.opacity = '0.95';
-                setTimeout(() => { flashOverlay.style.opacity = '0'; }, 200);
-            }
-
-            // Freeze the video frame
-            if (video && video.pause) {
-                video.pause();
-            }
-
             if(timerContainer) {
-                timerContainer.innerHTML = '<i class="fas fa-check-circle text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">📸 Photo Captured!</span>';
+                timerContainer.innerHTML = '<i class="fas fa-spinner fa-spin text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">Captured...</span>';
             }
             if(scanStatus) {
-                scanStatus.textContent = "Photo Captured! Processing...";
+                scanStatus.textContent = "Processing Capture...";
             }
-            captureFrameAndProceed();
         }
     }, 1000);
+</script>
 
-    function captureFrameAndProceed() {
-        if (useWebcamJS && video.videoWidth) {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL('image/png');
-            
-            const roleType = new URLSearchParams(window.location.search).get('role_type') || 'visitor';
-
-            fetch("{{ url_for('image_processing.save_webcam_frame') }}", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: imageData })
-            }).then(() => {
-                setTimeout(() => {
-                    window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
-                }, 600);
-            }).catch(() => {
-                window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
-            });
-        } else {
-            const roleType = new URLSearchParams(window.location.search).get('role_type') || 'visitor';
-            window.location.href = "{{ url_for('image_processing.show_captured') }}?role_type=" + roleType;
-        }
-    }
+<!-- Highlight the clicked button -->
+<script>
+const buttons = document.querySelectorAll('.btn');
+buttons.forEach(btn => {
+    btn.addEventListener('click', function () {
+        buttons.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
 </script>
 
 <script>
+// Force auto-reload when coming back from browser cache/history
 window.addEventListener("pageshow", function(event) {
     if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
         window.location.reload();
     }
 });
+
+// After 4.5 seconds (3s capture + 1.5s buffer for 3-shots), redirect to show captured page
+setTimeout(function() {
+    window.location.href = "{{ url_for('image_processing.show_captured') }}";
+}, 4500);
 </script>
 </body>
 </html>

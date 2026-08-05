@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, Response
 import cv2
-import base64
 import datetime
 import os
 import time
@@ -111,33 +110,3 @@ def show_captured():
     approvedby = ""  
     
     return render_template('extract.html', data=captured_data, approvedby=approvedby, shot_filename=shot_filename, role_type=role_type)
-
-
-@image_processing.route('/save_webcam_frame', methods=['POST'])
-def save_webcam_frame():
-    global captured_image, captured_images, captured_data
-    try:
-        data = request.get_json()
-        if not data or 'image' not in data:
-            return {'status': 'error', 'message': 'No image data'}, 400
-        
-        img_data = data['image']
-        if ',' in img_data:
-            img_data = img_data.split(',')[1]
-            
-        image_bytes = base64.b64decode(img_data)
-        now = datetime.datetime.now()
-        os.makedirs('static/shots', exist_ok=True)
-        filename = os.path.join('static', 'shots', f"shot_{now.strftime('%Y%m%d_%H%M%S')}_0.png")
-        
-        with open(filename, 'wb') as f:
-            f.write(image_bytes)
-            
-        captured_image = filename
-        captured_images = [filename]
-        captured_data = {}
-        print(f"[SUCCESS] Browser webcam image saved: {filename}")
-        return {'status': 'success', 'filename': filename}, 200
-    except Exception as e:
-        print(f"[ERROR] Failed to save browser webcam frame: {e}")
-        return {'status': 'error', 'message': str(e)}, 500

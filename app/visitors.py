@@ -43,10 +43,10 @@ def visitor1():
             role_type = request.form.get('role_type', 'visitor')
             
             import re
-            # Validate Employee Name Presence
+            # Strictly validate Employee Name Format (Name_ID)
             if registration_role == 'Employee':
-                if not name or not name.strip():
-                    flash("Error: Employee Name is required. Please fill in the name.", "danger")
+                if not re.match(r"^[A-Za-z]+_\w+$", name.strip()):
+                    flash("Error: Employee name must be in the exact format 'Name_ID' (e.g., Ayush_858). Please correct the name and submit again.", "danger")
                     return redirect(request.referrer or url_for('security.securitydash'))
                     
             is_delivery = (role_type == 'delivery')
@@ -230,15 +230,15 @@ def enroll_employee(uid):
 
 @visitor.route('/process_employee_enrollment/<uid>', methods=['POST'])
 def process_employee_enrollment(uid):
-    element1 = reqvistable.find_one({"UID": uid})
+    element1 = reqvistable.find_one_and_delete({"UID": uid})
     if not element1:
         flash("Pending request not found (already processed).", "danger")
         return redirect(url_for('admin.admindash'))
         
-    name = request.form.get('name', 'Employee')
+    name = request.form.get('name')
     email = request.form.get('email', 'Unknown')
     
-    # Pre-check: Ensure the email isn't already registered in MongoDB
+    # Pre-check: Ensure the email isn't already registered in MongoDB before running AI extraction
     from models.database import collection
     if collection.find_one({"Email": email}):
         flash(f"Error: The email {email} is already registered. Please use a different email or delete the existing record.", "danger")
@@ -248,9 +248,7 @@ def process_employee_enrollment(uid):
     gender = request.form.get('gender', 'Unknown')
     job = request.form.get('role', 'Unknown')
     
-    base_hr_id = None
     shot_filename = element1.get('shot_filename')
-    
     if shot_filename:
         try:
             from deepface import DeepFace
@@ -267,7 +265,9 @@ def process_employee_enrollment(uid):
             employee_faces_dir = os.path.join(base_dir, 'employee_faces')
             os.makedirs(employee_faces_dir, exist_ok=True)
             
+            # --- COMBINED MULTI-SHOT AND DB LOGIC ---
             employee_name = name.strip().capitalize() 
+            
             match = re.match(r"([A-Za-z]+)[_-]?(\d*)", employee_name)
             if match:
                 clean_name = match.group(1).capitalize()
@@ -276,7 +276,7 @@ def process_employee_enrollment(uid):
                 clean_name = employee_name.capitalize()
                 extracted_id = ""
                 
-            base_hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{str(uuid.uuid4())[:6].upper()}"
+            base_hr_id = f"EMP-{extracted_id}" if extracted_id else f"EMP-{clean_name.upper()}"
             
             for shot in shot_filename.split(','):
                 shot = shot.strip()
@@ -288,34 +288,50 @@ def process_employee_enrollment(uid):
                     permanent_img_path = os.path.join(employee_faces_dir, f"{employee_name}_{random_suffix}.png")
                     shutil.copy2(img_path, permanent_img_path)
                     
+                    # Auto-delete temporary shot after permanent copy
                     try:
                         os.remove(img_path)
                     except Exception:
                         pass
                     
-                    # Liveness Check
-                    try:
-                        from models.anti_spoofing import liveness_detector
-                        is_real, score = liveness_detector.check_liveness(permanent_img_path)
-                        if is_real == "TooClose" or not is_real:
-                            print(f"[WARNING] Liveness check warning on enrollment: {is_real}")
-                    except Exception as e:
-                        print(f"[WARNING] Liveness check skipped: {e}")
+                    # --- Liveness Check (Anti-Spoofing) MUST BE DONE ON ORIGINAL COLOR IMAGE ---
+                    from models.anti_spoofing import liveness_detector
+                    is_real, score = liveness_detector.check_liveness(permanent_img_path)
+                    if is_real == "TooClose":
+                        print("[WARNING] Face Too Close on Enrollment Frame!")
+                        os.remove(permanent_img_path)
+                        continue
+                    elif not is_real:
+                        print(f"[WARNING] Spoofing Detected on Enrollment Frame! (Score: {score:.2f})")
+                        os.remove(permanent_img_path)
+                        continue # Skip saving this fake image to DB
                         
-                    # Extract vector using DeepFace
-                    try:
-                        representations = DeepFace.represent(img_path=permanent_img_path, model_name="ArcFace", enforce_detection=False)
-                        if representations and len(representations) > 0:
-                            embedding = representations[0]["embedding"]
-                            if employee_collection is not None:
-                                chroma_id = f"{base_hr_id}-{str(uuid.uuid4())[:6].upper()}"
-                                employee_collection.upsert(
-                                    embeddings=[embedding],
-                                    ids=[chroma_id],
-                                    metadatas=[{"path": permanent_img_path, "Name": clean_name, "HR_ID": base_hr_id}]
-                                )
-                    except Exception as df_err:
-                        print(f"[WARNING] DeepFace vector extraction note: {df_err}")
+                    # Apply CLAHE only for ArcFace extraction (do not overwrite the colored file)
+                    img = cv2.imread(permanent_img_path)
+                    if img is not None:
+                        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+                        enhanced_gray = clahe.apply(gray)
+                        enhanced_img = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
+                    else:
+                        enhanced_img = permanent_img_path
+                        
+                    print(f"[INFO] Extracting vector for Employee Burst Image: {employee_name}")
+                        
+                    representations = DeepFace.represent(img_path=enhanced_img, model_name="ArcFace", enforce_detection=True)
+                    
+                    if representations and len(representations) > 0:
+                        embedding = representations[0]["embedding"]
+                        if employee_collection is not None:
+                            chroma_id = f"{base_hr_id}-{str(uuid.uuid4())[:6].upper()}"
+                            
+                            employee_collection.upsert(
+                                embeddings=[embedding],
+                                ids=[chroma_id],
+                                metadatas=[{"path": permanent_img_path, "Name": clean_name, "HR_ID": base_hr_id}]
+                            )
+            
+            print(f"[SUCCESS] Employee {employee_name} permanently enrolled (Multi-Shot) in ChromaDB!")
             
             # Save Data to MongoDB Collection (users table)
             collection.insert_one({
@@ -336,37 +352,22 @@ def process_employee_enrollment(uid):
             flash(f"Successfully onboarded employee {name}.", "success")
         except Exception as e:
             print(f"[ERROR] Failed to enroll Employee: {e}")
-            flash(f"Employee registered: {name}", "success")
-    else:
-        # Fallback if no photo
-        base_hr_id = f"EMP-{str(uuid.uuid4())[:6].upper()}"
-        collection.insert_one({
-            "ID": base_hr_id,
-            "Role": "Employee",
-            "Name": name,
-            "Email": email,
-            "Phone": phone,
-            "Gender": gender,
-            "Job": job,
-            "Address": "Unknown",
-            "Leave_Status": "Active",
-            "Password": "",
-            "Date": datetime.datetime.now()
-        })
-        flash(f"Successfully onboarded employee {name}.", "success")
+            flash(f"Failed to onboard employee: {e}", "danger")
 
-    # Clean up pending request
-    reqvistable.delete_one({"UID": uid})
+    # Remove from pending requests (already deleted by find_one_and_delete)
+    
     status = 'Enrolled as Employee' 
     myquery = visitors_status.find_one({"UID": uid})
     if myquery:
         visitors_status.update_one(myquery, {"$set": {"status": status}})
 
-    if base_hr_id:
-        return redirect(url_for('admin.employee_detail', employee_id=base_hr_id))
+    try:
+        if base_hr_id:
+            return redirect(url_for('admin.employee_detail', employee_id=base_hr_id))
+    except Exception:
+        pass
         
     return redirect(url_for('admin.manage_employees'))
-
 
 @visitor.route('/enroll_external/<uid>', methods=['GET'])
 def enroll_external(uid):

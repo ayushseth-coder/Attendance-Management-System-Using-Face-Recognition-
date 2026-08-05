@@ -31,8 +31,7 @@
             <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
             <div class="camera-frame-wrapper">
                 <div class="camera-inner">
-                    <video id="webcam" autoplay playsinline style="width:100%; height:100%; object-fit:cover; border-radius:1.5rem;"></video>
-                    <img id="camera-feed" src="" alt="Camera Feed" style="display:none;" />
+                    <img id="camera-feed" src="" alt="Camera Feed" />
                 </div>
             </div>
 
@@ -51,134 +50,70 @@
     </div>
 
 <script>
-    const video = document.getElementById('webcam');
-    const cameraFeed = document.getElementById('camera-feed');
-    let useWebcamJS = false;
+  let timeLeft = 3; // seconds
+  const timerEl = document.getElementById('timer');
+  const timerContainer = document.getElementById('timer-container');
+  const scanStatus = document.getElementById('scan-status');
 
-    function initAutoCamera() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            video.style.display = 'none';
-            cameraFeed.style.display = 'block';
-            return;
-        }
-
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function(initialStream) {
-                navigator.mediaDevices.enumerateDevices().then(function(devices) {
-                    const videoDevices = devices.filter(d => d.kind === 'videoinput');
-                    
-                    if (videoDevices.length > 1) {
-                        const externalCam = videoDevices.find(d => 
-                            d.label.toLowerCase().includes('usb') || 
-                            d.label.toLowerCase().includes('external') ||
-                            d.label.toLowerCase().includes('cam') ||
-                            d.label.toLowerCase().includes('hd')
-                        ) || videoDevices[videoDevices.length - 1];
-
-                        if (externalCam && externalCam.deviceId) {
-                            initialStream.getTracks().forEach(t => t.stop());
-                            
-                            navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: externalCam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } })
-                                .then(function(usbStream) {
-                                    video.srcObject = usbStream;
-                                    video.style.display = 'block';
-                                    cameraFeed.style.display = 'none';
-                                    useWebcamJS = true;
-                                })
-                                .catch(function() {
-                                    video.srcObject = initialStream;
-                                    video.style.display = 'block';
-                                    cameraFeed.style.display = 'none';
-                                    useWebcamJS = true;
-                                });
-                            return;
-                        }
-                    }
-
-                    video.srcObject = initialStream;
-                    video.style.display = 'block';
-                    cameraFeed.style.display = 'none';
-                    useWebcamJS = true;
-                }).catch(function() {
-                    video.srcObject = initialStream;
-                    video.style.display = 'block';
-                    cameraFeed.style.display = 'none';
-                    useWebcamJS = true;
-                });
-            })
-            .catch(function(err) {
-                console.log("Webcam error:", err);
-                video.style.display = 'none';
-                cameraFeed.style.display = 'block';
-            });
+  const countdown = setInterval(() => {
+    timeLeft--;
+    if (timerEl) {
+        timerEl.textContent = timeLeft;
     }
+    
+    if (timeLeft <= 0) {
+      clearInterval(countdown);
+      if (timerContainer) {
+          timerContainer.innerHTML = '<i class="fas fa-circle-notch fa-spin text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">Checking Database...</span>';
+      }
+      if (scanStatus) {
+          scanStatus.textContent = "Matching Biometrics...";
+      }
+    }
+  }, 1000);
 
-    initAutoCamera();
-
-
-
-
-    let timeLeft = 3;
-    const timerEl = document.getElementById('timer');
-    const timerContainer = document.getElementById('timer-container');
-    const scanStatus = document.getElementById('scan-status');
-
-    const countdown = setInterval(() => {
-        timeLeft--;
-        if(timerEl) {
-            timerEl.textContent = timeLeft;
-        }
-
-        if (timeLeft <= 0) {
-            clearInterval(countdown);
-            if(timerContainer) {
-                timerContainer.innerHTML = '<i class="fas fa-spinner fa-spin text-emerald-600 me-2"></i> <span class="font-bold text-slate-700">Verifying...</span>';
+setTimeout(function() {
+    fetch("{{ url_for('face_auth.visitor_result') }}")
+        .then(response => response.json())
+        .then(data => {
+            if (handleFaceAlerts(data)) {
+                return; // Alert handled
+            } else if (data.status === 'redirect') {
+                window.location.href = data.url;
+            } else if (data.status === 'success') {
+                document.open();
+                document.write(data.html);
+                document.close();
+            } else {
+                console.error("Unknown response status:", data);
             }
-            if(scanStatus) {
-                scanStatus.textContent = "Processing Biometrics...";
-            }
-            captureVisitorAndProceed();
-        }
-    }, 1000);
-
-    function captureVisitorAndProceed() {
-        if (useWebcamJS && video.videoWidth) {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL('image/png');
-
-            fetch("{{ url_for('image_processing.save_webcam_frame') }}", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: imageData })
-            }).then(() => {
-                callVisitorResult();
-            }).catch(() => {
-                callVisitorResult();
-            });
-        } else {
-            callVisitorResult();
-        }
-    }
-
-    function callVisitorResult() {
-        fetch('/visitor_result')
-            .then(response => response.json())
-            .then(data => {
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                } else {
-                    window.location.href = "{{ url_for('image_processing.show_captured', role_type='visitor') }}";
-                }
-            })
-            .catch(err => {
-                window.location.href = "{{ url_for('image_processing.show_captured', role_type='visitor') }}";
-            });
-    }
+        })
+        .catch(err => {
+            console.error("Error calling visitor_result:", err);
+            window.location.href = "{{ url_for('image_processing.show_captured', role_type='visitor') }}";
+        });
+}, 4500);
 </script>
 
+<script>
+    window.addEventListener("pageshow", function(event) {
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var img = document.getElementById("camera-feed");
+        if(img) {
+            var url = "";
+            if (window.location.href.includes("face_login")) {
+                url = "{{ url_for('face_auth.face_video_feed') }}";
+            } else {
+                url = "{{ url_for('image_processing.video_feed') }}";
+            }
+            img.src = url + "?t=" + new Date().getTime();
+        }
+    });
+</script>
 </body>
 </html>
