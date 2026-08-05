@@ -28,12 +28,6 @@
             <h1 class="scanner-title">Employee <span class="highlight">Face Login</span></h1>
             <p class="scanner-subtitle">Look directly at the camera. If no employee match is found, you will automatically transition to visitor processing.</p>
 
-            <!-- Camera Source Selector Dropdown (Shown when USB WebCam connected) -->
-            <div class="mb-3 text-center" id="camera-select-wrapper" style="display: none;">
-                <select id="camera-select" class="form-select text-sm font-medium border border-slate-300 rounded-lg shadow-sm bg-white p-2 text-slate-700" style="max-width: 320px; margin: 0 auto; cursor: pointer;">
-                </select>
-            </div>
-
             <!-- Spacious Rounded Viewfinder with Clockwise Green Border Light -->
             <div class="camera-frame-wrapper">
                 <div class="camera-inner">
@@ -59,75 +53,59 @@
 <script>
     const video = document.getElementById('webcam');
     const cameraFeed = document.getElementById('camera-feed');
-    const cameraSelectWrapper = document.getElementById('camera-select-wrapper');
-    const cameraSelect = document.getElementById('camera-select');
     let useWebcamJS = false;
-    let currentStream = null;
 
-    function stopCurrentStream() {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
+    function initAutoCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            video.style.display = 'none';
+            cameraFeed.style.display = 'block';
+            return;
         }
-    }
 
-    function startCamera(deviceId = null) {
-        stopCurrentStream();
-        const constraints = {
-            video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-        };
-        
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.enumerateDevices().then(function(devices) {
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
+            let constraints = { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } };
+
+            if (videoDevices.length > 1) {
+                const externalCam = videoDevices.find(d => 
+                    d.label.toLowerCase().includes('usb') || 
+                    d.label.toLowerCase().includes('external') ||
+                    d.label.toLowerCase().includes('webcam')
+                ) || videoDevices[videoDevices.length - 1];
+
+                if (externalCam && externalCam.deviceId) {
+                    constraints = { video: { deviceId: { exact: externalCam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } };
+                }
+            }
+
             navigator.mediaDevices.getUserMedia(constraints)
                 .then(function(stream) {
-                    currentStream = stream;
                     video.srcObject = stream;
                     video.style.display = 'block';
                     cameraFeed.style.display = 'none';
                     useWebcamJS = true;
-                    populateCameraList();
                 })
-                .catch(function(err) {
-                    console.log("Browser camera fallback:", err);
-                    video.style.display = 'none';
-                    cameraFeed.style.display = 'block';
+                .catch(function() {
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then(function(stream) {
+                            video.srcObject = stream;
+                            video.style.display = 'block';
+                            cameraFeed.style.display = 'none';
+                            useWebcamJS = true;
+                        })
+                        .catch(function() {
+                            video.style.display = 'none';
+                            cameraFeed.style.display = 'block';
+                        });
                 });
-        } else {
+        }).catch(function() {
             video.style.display = 'none';
             cameraFeed.style.display = 'block';
-        }
-    }
-
-    function populateCameraList() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
-        
-        navigator.mediaDevices.enumerateDevices()
-            .then(function(devices) {
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
-                if (videoDevices.length > 1) {
-                    cameraSelectWrapper.style.display = 'block';
-                    cameraSelect.innerHTML = '';
-                    videoDevices.forEach((device, index) => {
-                        const option = document.createElement('option');
-                        option.value = device.deviceId;
-                        option.text = device.label || `📷 Camera ${index + 1} (USB WebCam)`;
-                        if (currentStream && currentStream.getVideoTracks()[0].getSettings().deviceId === device.deviceId) {
-                            option.selected = true;
-                        }
-                        cameraSelect.appendChild(option);
-                    });
-                }
-            });
-    }
-
-    if (cameraSelect) {
-        cameraSelect.addEventListener('change', function() {
-            if (this.value) {
-                startCamera(this.value);
-            }
         });
     }
 
-    startCamera();
+    initAutoCamera();
+
 
 
     let timeLeft = 3;
